@@ -1,0 +1,61 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: instructlab/knowledge/textbook/science/biology/photosynthesis
+task_description: To teach a language model about photosynthesis
+created_by: IBM Research
+
+data_builder: instructlab/knowledge
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_examples:
+  - answer: The word respiration is commonly used to describe the process of breathing in oxygen and breathing out carbon dioxide.
+    question: What is respiration?
+  - answer: An ecosystem is a community of organisms and their physical environment interacting together.
+    question: What is an ecosystem?
+  - answer: Metabolism is the chemical reactions in the body's cells that change food into energy.
+    question: What is metabolism?
+
+# SPECIAL DIRECTIVE (Recommended to use sparingly): Contents of files are included/appended in this YAML
+include:
+  documents:
+    photosynthesis: ${DGT_DATA_DIR}/public/instructlab/knowledge/textbook/science/biology/photosynthesis/photosynthesis.md
+
+formatter:
+  type: formatters/native
+  format:
+    input: "{{question}}"
+    output: "{{answer}}"
+    domain: "{{domain}}"
+    document: "{{context}}"
+
+runner_config:
+  save_formatted_output: true
+
+######################################################
+#                   TASK FIELDS
+######################################################
+domain: biology
+
+# Max size of documents
+chunk_size: 800
+
+# Whether to loop over documents
+loop_over: True
+
+# [Optional] number of in-context learning (icl) examples to use per prompt
+num_icl_examples_per_prompt: 3
+
+# [Optional] Number of documents to use per iteration
+num_docs_per_iteration: 100
+
+# [Optional] Style of questions. Allowed values are "FRQ" (Free-Response Questions) and "MCQ" (Multiple-Choice Questions)
+question_style: FRQ
+
+# [Optional] Question-Answer validity criteria. Allowed values are "faithfulness", "relevancy" and "question_verification"
+criteria:
+  - faithfulness
+  - relevancy
+  - question_verification

@@ -1,0 +1,176 @@
+# Standard
+from typing import Any, Dict, List, Mapping, Optional, Union
+import collections
+import os
+
+# Local
+from fms_dgt.constants import BLOCKS_KEY, NAME_KEY
+from fms_dgt.utils import dgt_logger
+import fms_dgt.utils as utils
+
+
+class DataBuilderIndex:
+    """DataBuilderIndex indexes all data builders from the default `fms_dgt/databuilders/` and an optional directory if provided."""
+
+    def __init__(self, include_builder_paths: Optional[List[str]] = None) -> None:
+
+        include_builder_paths = include_builder_paths if include_builder_paths else []
+        self._builder_index = collections.defaultdict(list)
+        self._initialize_data_builders(include_paths=include_builder_paths)
+
+        self._all_builders = sorted(list(self._builder_index.keys()))
+        self.data_builder_group_map = collections.defaultdict(list)
+
+    def _initialize_data_builders(self, include_paths: List[str]):
+        # default location for databuilders / pipelines
+        for data_builder_dir in include_paths:
+            self._get_data_builder(data_builder_dir)
+
+    @property
+    def all_builders(self):
+        return self._all_builders
+
+    @property
+    def builder_index(self):
+        return self._builder_index
+
+    def match_builders(self, builder_pattern_list: List[str]) -> List[str]:
+        """Retrieves correct names of builders that match with list of patterns provided
+
+        Args:
+            builder_pattern_list (List[str]): List of patterns to match builder names to
+
+        Returns:
+            List[str]: Correct builder names
+        """
+        return utils.pattern_match(builder_pattern_list, self.all_builders)
+
+    def load_builder_configs(
+        self,
+        builder_list: Optional[Union[str, list]] = None,
+        config_overrides: Optional[Dict] = None,
+    ) -> Dict:
+        """Loads the config yamls for each builder specified and applies any overrides that are needed
+
+        Args:
+            builder_list (Optional[Union[str, list]], optional): List of builders to retrieve configs for. Defaults to None.
+            config_overrides (Optional[Dict], optional): Overrides for specific data builders. Defaults to None.
+
+        Returns:
+            Dict: Configs for specified builders (keys are their names)
+        """
+        if isinstance(builder_list, str):
+            builder_list = [builder_list]
+
+        all_loaded_builders = dict(
+            [
+                self._load_individual_builder_config(builder, config_overrides)
+                for builder in builder_list
+            ]
+        )
+
+        return all_loaded_builders
+
+    def _name_is_registered(self, name) -> bool:
+        if name in self.all_builders:
+            return True
+        return False
+
+    def _get_yaml_path(self, name):
+        if name not in self.builder_index:
+            raise ValueError
+        return self.builder_index[name]["yaml_path"]
+
+    def _load_individual_builder_config(
+        self,
+        name: Optional[str] = None,
+        config_overrides: Optional[Dict] = None,
+    ) -> Mapping:
+        def override_builder_config(config: Dict, override: Dict):
+            if BLOCKS_KEY not in config:
+                config[BLOCKS_KEY] = []
+            for k in config:
+                if k == BLOCKS_KEY and BLOCKS_KEY in override:
+                    addlt_blocks = []
+                    for block in override[BLOCKS_KEY]:
+                        config_block = [
+                            i
+                            for i, cb in enumerate(config[BLOCKS_KEY])
+                            if cb[NAME_KEY] == block[NAME_KEY]
+                        ]
+                        if config_block:
+                            i = config_block[0]
+                            config[BLOCKS_KEY][i] = utils.merge_dictionaries(
+                                config[BLOCKS_KEY][i], block
+                            )
+                        else:
+                            addlt_blocks.append(block)
+                    config[BLOCKS_KEY].extend(addlt_blocks)
+                elif k in override:
+                    if isinstance(config[k], dict) and isinstance(override[k], dict):
+                        config[k] = utils.merge_dictionaries(config[k], override[k])
+                    else:
+                        config[k] = override[k]
+            # add overrides that are not part of config directly
+            for k in override:
+                if k not in config:
+                    config[k] = override[k]
+
+        if config_overrides is None:
+            config_overrides = dict()
+
+        config = self.builder_index[name]["config"]
+        override = config_overrides.get(name, dict())
+        override_builder_config(config, override)
+
+        return (name, config)
+
+    def _get_data_builder(self, builder_path: str):
+        def rindex(alist: List, value: Any):
+            return len(alist) - alist[-1::-1].index(value) - 1
+
+        def add_file(root, f):
+
+            if f.endswith(".yaml"):
+                f_builder_dir = root.split(os.sep)
+                if "databuilders" in f_builder_dir:
+                    check_from = f_builder_dir[: rindex(f_builder_dir, "databuilders")]
+                    if "fms_dgt" in check_from:
+                        r_dir_index = rindex(check_from, "fms_dgt")
+                    elif "src" in check_from:
+                        r_dir_index = rindex(check_from, "src")
+                    else:
+                        raise ValueError(
+                            f"Cannot automatically determine root directory of databuilders"
+                        )
+
+                    f_builder_dir = os.path.join(*f_builder_dir[r_dir_index:])
+                    yaml_path = os.path.join(root, f)
+                    config = utils.load_yaml_config(yaml_path, simple_mode=True)
+
+                    # TODO: better validation as to what files are builders and what files aren't
+                    if not NAME_KEY in config:
+                        return
+
+                    builder_name = config[NAME_KEY]
+
+                    if builder_name in self._builder_index:
+                        dgt_logger.warning(
+                            "Multiple overriding configuration files detected for data builder %s, the two databuilders are found at '%s' and '%s'",
+                            builder_name,
+                            f_builder_dir,
+                            self._builder_index[builder_name]["builder_dir"],
+                        )
+
+                    self._builder_index[builder_name] = {
+                        "builder_dir": f_builder_dir,
+                        "config": config,
+                    }
+
+        if os.path.isfile(builder_path):
+            root, f = os.path.split(builder_path)
+            add_file(root, f)
+        else:
+            for root, _, file_list in os.walk(builder_path):
+                for f in file_list:
+                    add_file(root, f)

@@ -1,0 +1,37 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: core/simple/temporal_reasoning
+task_description: To teach a language model about chronological order of time.
+created_by: IBM
+
+data_builder: simple # Must match exactly with the databuilder name
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_examples:
+  - answer:
+      "Hello! I'm here to help you understand the order of arrival at a party.
+      Let's analyze the situation step by step:
+
+
+      1. Joe reached first (before you).
+
+      2. You arrived next.
+
+      3. David arrived after you.
+
+      4. John reached last (after David).
+
+
+      Based on this information, Joe was the first one to arrive at the party, followed
+      by you, then David, and finally John.
+
+      "
+    question:
+      "Consider I went to a party. I reached before John. David arrived after.
+      Joe reached before me. John arrived after David. Who reached first and who reached
+      last?
+
+      "

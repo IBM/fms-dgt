@@ -3,7 +3,7 @@ requires = ["setuptools>=40.8.0", "setuptools-scm>=8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dgt"
+name = "fms_dgt"
 version = "0.1"
 description = "A framework for synthetic data generation"
 license = { "text" = "Apache-2.0" }
@@ -22,52 +22,41 @@ dependencies = [
     "datasets",
     "rouge-score",
     "scikit-learn",
+    "sentence-transformers",
     "transformers",
     "openapi-schema-validator",
     "ibm-watsonx-ai",
-    "openai", 
+    "openai",
     "tiktoken",
     "python-dateutil",
-    "tqdm"
+    "tqdm",
+    "ollama",
+    "anthropic",
+    "faiss-cpu",
 ]
 
 [tool.setuptools.packages.find]
-include = ["dgt*"]
+include = ["fms_dgt*"]
 
 # required to include yaml files in pip installation
 [tool.setuptools.package-data]
-dgt = ["**/*.yaml", "data/**/*"]
+fms_dgt = ["**/*.yaml", "data/**/*"]
 
 [project.scripts]
-dgt = "dgt.research.__main__:main"
+fms_dgt = "fms_dgt.public.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/IBM/dgt"
-Repository = "https://github.com/IBM/dgt"
+Homepage = "https://github.com/IBM/fms_dgt"
+Repository = "https://github.com/IBM/fms_dgt"
 
 [project.optional-dependencies]
 # Feature specific dependencies
 vllm = ["vllm", "more_itertools"]
-search = [
-    "duckduckgo-search", # duckduckgo search engine API
-    # document processing & website crawling
-    "docling", 
-    "firecrawl-py",
-    "langchain-docling",
-    # document retrieval
-    "elasticsearch==8.2",
-    "langchain", 
-    "langchain-core",
-    "langchain-text-splitters",
-    "langchain-ibm",
-    "langchain-openai", 
-    "langchain-milvus"
-]
 
 # Pipeline specific dependencies
 
-# namespace specific dependencies
-public = [dgt[search], "lingua-language-detector"]
+# Namespace specific dependencies
+public = ["lingua-language-detector"]
 
 # Development setup dependencies
 dev-test = ["pytest", "pytest-cov"]
@@ -75,21 +64,42 @@ dev-fmt = ["pre-commit", "ruff"]
 dev-build = ["setuptools>=60", "setuptools-scm>=8.0"]
 
 # Full install from end-user perspective
-all = ["dgt[public]"]
+all = ["fms_dgt[public]"]
 
 # Full install from developer perspective
-all-dev = ["dgt[all, dev-test, dev-fmt, dev-build]"]
+all-dev = ["fms_dgt[all, dev-test, dev-fmt, dev-build]"]
 
+
+# -----------------------
+# Black configuration
+# -----------------------
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+# -----------------------
+# isort configuration
+# -----------------------
+[tool.isort]
+profile = "black"
+line_length = 100
+py_version = 310
+
+# -----------------------
+# Ruff configuration
+# -----------------------
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-ignore = ["I001"] # Import block is un-sorted or un-formatted (clash with isort instead)
+ignore = ["I001", "E501"]  # Ignore import sorting (handled by isort)
 
 [tool.ruff.lint]
-select = ["I"]
+# Enable rules for linting (flake8, pycodestyle, warnings)
+select = ["F", "E", "W"]
+
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
     "F401", # imported but unused
-    "F403" # unable to detect undefined names
+    "F403"  # unable to detect undefined names
 ]

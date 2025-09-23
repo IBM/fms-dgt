@@ -1,0 +1,16 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+name: public/examples/qa_rater
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+blocks:
+  - name: rater
+    type: watsonx
+    model_id_or_path: meta-llama/llama-3-3-70b-instruct
+    temperature: 0.0
+    max_tokens: 1024
+metadata:
+  version: 1.0

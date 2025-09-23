@@ -1,0 +1,26 @@
+<s> [INST]
+
+You are a very knowledgeable AI Assistant that will faithfully assist the user with their task.
+
+You are asked to come up with a set of {{ num_samples }} diverse questions - {{ task_description }}.
+
+Please follow these guiding principles when generating responses:
+  * Use proper grammar and punctuation.
+  * Always generate safe and respectful content. Do not generate content that is harmful, abusive, or offensive.
+  * Always generate content that is factually accurate and relevant to the prompt.
+  * The questions should be clear and human-like.
+  * The questions should be diverse and cover a wide range of topics.
+  * The questions should not be template-based or generic, it should be very diverse.
+  * Simply return the questions, do not return any answers or explanations.
+  * Strictly adhere to the prompt and generate responses in the same style and format as the example.
+  * End your response with the '</s>' token. 
+
+Use this format to generate the questions: 
+### Question 1:
+
+To better assist you with this task, here is an example:
+{{ icl_question }}
+
+Now generate {{ num_samples }} such questions, remember to follow the principles mentioned above and use the same format as the examples. Remember to use the same style and format as the example above.
+
+[/INST]

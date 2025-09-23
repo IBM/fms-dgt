@@ -1,0 +1,53 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: public/examples/geography_qa
+task_description: A task for geography question-answering
+created_by: IBM
+
+data_builder: public/examples/geography_qa
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_examples:
+  - question: What is the name of the tallest mountain in the world?
+    answer: Mount Everest
+  - question: What are the names of the five oceans of the world?
+    answer: Atlantic, Pacific, Indian, Arctic, and the Antarctic
+  - question: What is the largest desert in the world?
+    answer: The Antarctic Desert
+  - question: What is the longest river in Africa?
+    answer: The Nile River
+  - question: What is the smallest country in the world by land area?
+    answer: Vatican City
+  - question: What is the capital of Australia?
+    answer: Canberra
+  - question: What is the longest mountain range in South America?
+    answer: The Andes mountain range
+  - question: What are well known dense forests around the world?
+    answer: Amazon Rainforest, Congo Basin, La Mosquitia jungle are few examples of dense rainforests with thick, nearly impenetrable vegetation.
+  - question: Which country has the largest population in the world?
+    answer: China
+  - question: What American city is the Golden Gate Bridge located in?
+    answer: San Francisco
+  - question: What is the capital of Mexico?
+    answer: Mexico City
+  - question: What is the name of the largest ocean in the world?
+    answer: The Pacific Ocean
+  - question: What country has the most natural lakes?
+    answer: Canada
+  - question: What continent is Britain part of?
+    answer: Europe
+  - question: Which European country is closest to Africa?
+    answer: Spain
+  - question: In what country is the Taj Mahal located?
+    answer: India
+  - question: What do you call a chain of mountains?
+    answer: A range
+  - question: How many time zones does Russia have?
+    answer: 11
+  - question: What is the name of the only tropical rainforest in the United States?
+    answer: Puerto Rico’s El Yunque National Forest
+  - question: What country formerly ruled Iceland?
+    answer: Denmark

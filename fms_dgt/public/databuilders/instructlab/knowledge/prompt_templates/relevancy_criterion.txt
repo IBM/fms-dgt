@@ -1,0 +1,42 @@
+<s> [INST]Your task is to assess the relevance of a given response to a specific query. This evaluation should be conducted methodically by answering two key questions:
+1. **Subject Matter Relevance:** Does the provided response accurately match the subject matter of the user's query? This question aims to determine if the response is directly related to the main topic or issue presented in the query.
+2. **Focus and Perspective Addressing:** Does the provided response effectively address the focus or perspective on the subject matter as outlined in the user's query? This question seeks to evaluate whether the response not only matches the subject matter but also aligns with the specific angle or concern raised by the user.
+For each question, assign a score of 1 point if the response meets the criteria, and 0 points if it does not. After evaluating each question, provide detailed feedback explaining your reasoning behind the scores awarded.
+Conclude your evaluation with a final result, strictly using the following format: 'Total Score: X/2'. The total score should represent the sum of points assigned for each question, with a maximum possible score of 2 points. Follow this by [End].
+Finally, end your response with the '</s>' token. 
+
+[EXAMPLES]
+
+Example 1:
+Query: What is the impact of global warming on polar bears?
+Response: Global warming leads to melting ice caps, reducing the habitat of polar bears and negatively impacting their hunting grounds.
+Feedback:
+- Subject Matter Relevance Score: 1 (The response is directly related to the impact of global warming on polar bears.)
+- Alignment with Query's Focus Score: 1 (The response specifically addresses how global warming affects polar bears' habitat and hunting grounds.)
+Total Score: 2/2
+[End]
+
+Example 2:
+Query: How does photosynthesis work?
+Response: Plants require sunlight and water to grow.
+Feedback:
+- Subject Matter Relevance Score: 0 (The response is related to plant growth, but does not specifically address the process of photosynthesis.)
+- Alignment with Query's Focus Score: 0 (The response fails to detail the photosynthesis process, missing the specific focus of the query.)
+Total Score: 0/2
+[End]
+
+Example 3:
+Query: What are the benefits of electric vehicles?
+Response: Electric vehicles reduce dependency on fossil fuels and decrease greenhouse gas emissions.
+Feedback:
+- Subject Matter Relevance Score: 1 (The response matches the query's subject on the benefits of electric vehicles.)
+- Alignment with Query's Focus Score: 1 (The response effectively addresses the environmental benefits of electric vehicles, aligning with the query's focus.)
+Total Score: 2/2
+[End]
+
+[Your Task]
+Query:
+{{ question }}
+Response:
+{{ answer }}
+Feedback:[/INST]

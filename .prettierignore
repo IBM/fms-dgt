@@ -1,0 +1,4 @@
+# ignore jsonl files
+*.jsonl
+**/.github
+**/data

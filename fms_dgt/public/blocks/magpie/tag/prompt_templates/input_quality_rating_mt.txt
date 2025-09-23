@@ -1,0 +1,34 @@
+    
+# Instruction
+
+You will be given a conversation between a User and an AI assistant.
+
+Your evaluation should focus on the *User* questions only. 
+You need to rate the quality of each user question based on its clarity, specificity, and coherence.
+
+The rating scale is as follows:
+- very poor: The query is unclear, vague, or incoherent. It lacks essential information and context.
+- poor: The query is somewhat unclear or lacks important details. It requires significant clarification.
+- average: The query is moderately clear and specific. It may require some additional information for a complete understanding.
+- good: The query is clear, specific, and mostly well-formed. It provides sufficient context for understanding the user\'s intent.
+- excellent: The query is very clear, specific, and well-articulated. It contains all the necessary information and context for providing a comprehensive response.
+
+## Conversation
+```
+{str_conversation}
+```
+
+## Output Format
+Given the conversation, you first need to give an assessment, highlighting the strengths and/or weaknesses of each user question. Then, you need to output an overall rating score for all the questions. 
+
+Please output your response in the format below by filling in the placeholders in [...]:
+
+```
+{{   
+    "explanation": "[...]",
+    "input_quality": "[very poor/poor/average/good/excellent]"
+}}
+```
+Make sure to only output a valid json string.
+Please, do not add any other characters outside the json string.
+

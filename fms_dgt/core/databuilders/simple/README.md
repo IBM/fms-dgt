@@ -1,4 +1,40 @@
-                                 Apache License
+# Instruct Lab Data Generator
+
+Data builder used as part of the basic instruct-lab code. It generates general-purpose data and filters based on the rouge similarity to already-existing data.
+
+## Data specification
+
+This data builder supports generation defining the following parameters:
+
+### Parameters
+
+- `created_by`: creator of the task.
+- `task_description`: description of the task.
+- `data_builder`: simple
+
+An example can be found [here](../../../../tasks/core/simple/logical_reasoning/causal/task.yaml)
+
+### Seed data fields
+
+- `question`: task for model to follow
+- `answer`: result that model should produce
+- `context`: additional context to be fed to model
+- `document`: document to be added as additional context
+
+## How to run
+
+To execute this databuilder, run the following command
+
+```bash
+python -m fms_dgt.core --task-path ./tasks/core/simple/logical_reasoning/causal/task.yaml --restart --num-outputs 10
+```
+
+## Notice
+
+The code in this folder is modified from the instruct-lab repository on GitHub. For the original code, see [instruct-lab](https://github.com/instructlab/instructlab/tree/main/src/instructlab/generator) with the following license.
+
+```license
+                                Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
 
@@ -186,7 +222,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [2025] [Maxwell Crouse, Kshitij Fadnis, Siva Sankalp Patel, Pavan Kapanipathi]
+   Copyright 2023 Rohan Taori, Ishaan Gulrajani, Tianyi Zhang, Yann Dubois, Xuechen Li
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -199,3 +235,4 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+```

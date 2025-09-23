@@ -1,0 +1,48 @@
+tasks:
+  core/simple/logical_reasoning/causal: # <-- name of task should go here, if this does not exist DGT will create it, otherwise it will be treated as an override
+    created_by: IBM
+    data_builder: simple
+    runner_config:
+      num_outputs_to_generate: 20
+      seed_batch_size: 10
+    seed_examples: # <-- NOTE: in this case, the seed examples were specified directly
+      - answer:
+          "While days tend to be longer in the summer, just because it is not summer
+          doesn't mean days are necessarily shorter.
+
+          "
+        question:
+          "If it is summer, then the days are longer. Are the days longer if it
+          is not summer ?
+
+          "
+      - answer:
+          'No, we cannot conclusively conclude that some cats are black based solely
+          on the given premises. The statement "some mammals are black" does not necessarily
+          guarantee that among those mammals are cats.
+
+          '
+        question:
+          If all cats are mammals and some mammals are black, can we conclude that
+          some cats are black?
+      - answer:
+          "Yes, we can conclude that all squares have four sides based on the given
+          premises.
+
+          "
+        question:
+          "If all squares are rectangles and a rectangle has four sides, can we
+          conclude that all squares have four sides?
+
+          "
+    task_description: To teach a language model about Logical Reasoning - causal relationships
+  core/simple/temporal_reasoning:
+    created_by: IBM
+    task_description: "To teach a language model about chronological order of time. \n"
+    runner_config:
+      num_outputs_to_generate: 10
+      seed_batch_size: 10
+    include: # <-- DGT takes the dictionary under the 'include' key and loads the leaf nodes of the dictionary (in this case the path), and then it merges the keys under the dictionary into the config
+      seed_examples: "${DGT_DATA_DIR}/core/simple/temporal_reasoning/additional_seed_examples.yaml"
+task_files:
+  - ./tasks/core/simple/temporal_reasoning/task.yaml

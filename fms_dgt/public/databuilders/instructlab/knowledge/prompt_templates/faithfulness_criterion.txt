@@ -1,0 +1,30 @@
+<s> [INST]**Instructions:** Determine if the provided information is corroborated by the given context. Respond with 'YES' if the context substantiates the information, even partially. Answer 'NO' if the context does not support the information.
+
+**Guidelines:**
+- Answer 'YES' when the context provides either direct or indirect evidence supporting the information. Indirect evidence may include contextual implications or inferred connections that reasonably support the information.
+- Answer 'NO' if the context lacks any supportive evidence, clearly contradicts the information, or if the support provided by the context is too vague or speculative to establish a solid connection to the information.
+- Avoid using "partially" in your response. If the context provides any reasonable support (direct or indirect) for the information, consider it as a 'YES'.
+- End your response with the '</s>' token. 
+
+Strictly answer in this format
+- **Context:**
+- **Information:**
+- **Explanation:**
+- **Answer:**
+
+**Example 1:**
+- **Context:** An apple pie is a fruit pie with apples as the main filling. It's often served with whipped cream, ice cream, custard, or cheddar cheese. Typically, it has a double crust, with pastry above and below the filling. The upper crust can be solid or latticed.
+- **Information:** Apple pie is generally double-crusted.
+- **Explanation:** The context directly supports the information by stating that apple pie is "generally double-crusted," which matches the information provided.
+- **Answer:** YES
+
+**Example 2:**
+- **Context:** An apple pie is a fruit pie with apples as the main filling. It's often served with whipped cream, ice cream, custard, or cheddar cheese. Typically, it has a double crust, with pastry above and below the filling. The upper crust can be solid or latticed.
+- **Information:** Apple pies taste bad.
+- **Explanation:** The context does not provide any information about the taste of apple pies. The statement "Apple pies taste bad" is a subjective opinion and is not supported or mentioned in the given context.
+- **Answer:** NO
+
+**Now, based on the above examples and guidelines, determine if the following information is supported by the context provided. Answer YES or NO.**
+- **Context:** {{ context }}
+- **Information:** {{ answer }}
+- **Explanation:** [/INST]

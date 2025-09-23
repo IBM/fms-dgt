@@ -1,0 +1,27 @@
+# Instruction 
+
+Label the difficulty level of the question based on the likelyhood of answering correctly.
+
+## Question
+{{ question }}
+
+## Answer
+{{ answer }}
+
+## Output Format
+Given the question, in your output, you first need to identify the knowledge needed to answer it.
+Then, rate the difficulty level of the question as `very easy`, `easy`, `medium`, `hard`, or `very hard`.
+
+Now, please output the difficulty level below in a json format by filling in the placeholders in []:
+```
+{% raw %}{{   
+    "knowledge": "To solve this problem, the models need to know [....]",
+    "difficulty": "[very easy/easy/medium/hard/very hard]"
+}}{% endraw %}
+```
+
+Make sure to only output a valid json string.
+Please, do not add any other characters outside the json string.
+
+## Solution
+
