@@ -54,9 +54,9 @@ An example can be found [here](../../../../../tasks/public/instructlab/skills/wr
 
 ## Databuilder specification
 
-- `generator`: `mistralai/mistral-medium-2505` via `watsonx`
-- `validator`: `mistralai/mistral-medium-2505` via `lm_judge` and `watsonx`
-- `tagger`: `mistralai/mistral-medium-2505` via `magpie_tag` and `watsonx` (see [Magpie Tagger](../../../blocks/magpie/tag/README.md) block)
+- `generator`: `mistral-small3.2` via `ollama`
+- `validator`: `mistral-small3.2` via `lm_judge` and `ollama`
+- `tagger`: `mistral-small3.2` via `magpie_tag` and `ollama` (see [Magpie Tagger](../../../blocks/magpie/tag/README.md) block)
 
 #### Postprocessors:
 

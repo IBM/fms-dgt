@@ -1,20 +1,16 @@
-# Filter transformation
+# Magpie Filter Block
 
-Block used for filtering data using Magpie .
+Block used for filtering data enriched via Magpie tagging and distance blocks.
 Modified version of [**Magpie**](https://magpie-align.github.io/) to enable working with opensource models.
-It filters based on the tagging done using Magpie.
 
 ## Data specification
 
 ### Required
 
 ```
-
 - `filter_type`: one of the following [all, invalid_samples,invalid_scores,high_quality_filter]
 - `hq_filter_criteria` : (Optional) criteria for filtering in terms of 'input_quality','sample_quality' or 'difficulty'. To be provided as a dictionary of list in yaml style . If hq_filter_criteria is not given the default high quality filter criteria used by magpie paper will be used (see explanantion). If hq_filter is given but only difficulty is provided then for the other two criteria, all possible values will be retained as criteria ie it will only filter based on difficulty values provided.
 - `remove_duplicates` : True/False whether to perform deduplication based on distance tagging. Default is False
-
-
 ```
 
 ### Format of Data

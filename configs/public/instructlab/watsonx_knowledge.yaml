@@ -1,0 +1,14 @@
+databuilders:
+  instructlab/knowledge: # <-- your databuilder name should go here
+    blocks:
+      - name: generator # <-- the name of the llm generator in your databuilder should go here
+        type: watsonx
+        model_id_or_path: mistralai/mistral-medium-2505
+      - name: validator # <-- the name of the llm validator in your databuilder should go here
+        lm_config:
+          type: watsonx
+          model_id_or_path: mistralai/mistral-medium-2505
+      - name: tagger
+        lm_config:
+          type: watsonx
+          model_id_or_path: mistralai/mistral-medium-2505
