@@ -11,7 +11,7 @@ from tests.core.blocks.llm.test_llm import (
 
 LM_WATSONX_CFG = {
     "type": "watsonx",
-    "model_id_or_path": "ibm/granite-3-8b-instruct",
+    "model_id_or_path": "ibm/granite-3-3-8b-instruct",
     **LM_CFG,
 }
 

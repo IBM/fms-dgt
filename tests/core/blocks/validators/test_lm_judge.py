@@ -7,10 +7,9 @@ from fms_dgt.core.blocks.validators.lm_judge import LMJudgeValidator
 GREEDY_CFG = {
     "lm_config": {
         "type": "watsonx",
-        "decoding_method": "greedy",
-        "temperature": 1.0,
+        "temperature": 0.5,
         "max_tokens": 25,
-        "model_id_or_path": "ibm/granite-8b-code-instruct",
+        "model_id_or_path": "ibm/granite-3-3-8b-instruct",
     }
 }
 

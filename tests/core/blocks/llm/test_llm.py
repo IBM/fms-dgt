@@ -30,14 +30,14 @@ LM_CFG = {
 }
 LM_VLLM_CFG = {
     "type": "vllm",
-    "model_id_or_path": "ibm-granite/granite-8b-code-instruct",
+    "model_id_or_path": "ibm/granite-3-3-8b-instruct",
     "tensor_parallel_size": 1,
     **LM_CFG,
     "n": 1,
 }
 LM_VLLM_SERVER_CFG = {
     "type": "vllm-server",
-    "model_id_or_path": "ibm-granite/granite-8b-code-instruct",
+    "model_id_or_path": "ibm/granite-3-3-8b-instruct",
     "tensor_parallel_size": 1,
     **LM_CFG,
 }
@@ -252,7 +252,7 @@ def test_vllm_remote_batch():
     """
     start server with
 
-    python -m vllm.entrypoints.openai.api_server --model ibm-granite/granite-8b-code-instruct
+    python -m vllm.entrypoints.openai.api_server --model ibm/granite-3-3-8b-instruct
 
     """
     model_cfg = dict(LM_VLLM_CFG)
@@ -281,7 +281,7 @@ def test_vllm_remote_batch():
 def test_vllm_remote_chat_template():
     """
     start server with
-    python -m vllm.entrypoints.openai.api_server --model ibm-granite/granite-8b-code-instruct
+    python -m vllm.entrypoints.openai.api_server --model ibm/granite-3-3-8b-instruct
     """
     model_cfg = dict(LM_VLLM_CFG)
     model_cfg["type"] = "vllm-remote"
@@ -320,7 +320,7 @@ def test_vllm_remote_chat_template():
 def test_vllm_remote_auto_chat():
     """
     start server with
-    python -m vllm.entrypoints.openai.api_server --model ibm-granite/granite-8b-code-instruct
+    python -m vllm.entrypoints.openai.api_server --model ibm/granite-3-3-8b-instruct
     """
     model_cfg = dict(LM_VLLM_CFG)
     model_cfg["type"] = "vllm-remote"

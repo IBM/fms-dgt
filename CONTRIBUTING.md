@@ -68,13 +68,7 @@ The following tools are required:
 - [python](https://www.python.org) (v3.10+)
 - [pip](https://pypi.org/project/pip/) (v23.0+)
 
-You can setup your dev environment using [tox](https://tox.wiki/en/latest/), an environment orchestrator which allows for setting up environments for and invoking builds, unit tests, formatting, linting, etc. Install tox with:
-
-```sh
-pip install tox
-```
-
-If you want to manage your own virtual environment instead of using `tox`, you can install `fms_dgt` and all dependencies with:
+Set up your own virtual environment and then install `fms_dgt` and all dependencies with:
 
 ```sh
 pip install -e ".[all-dev]"
@@ -84,10 +78,6 @@ pip install -e ".[all-dev]"
 
 Before pushing changes to GitHub, you need to run the tests as shown below. They can be run individually as shown in each sub-section or can be run with the one command:
 
-```shell
-tox
-```
-
 #### Unit tests
 
 Unit tests are enforced by the CI system. When making changes, run the tests before pushing the changes to avoid CI issues.
@@ -95,33 +85,31 @@ Unit tests are enforced by the CI system. When making changes, run the tests bef
 Running unit tests can be done with:
 
 ```sh
-tox -e unit
+pytest
 ```
 
-By default, all tests found within the `tests` directory are run. However, specific unit tests can run by passing filenames, classes and/or methods to `pytest` using tox positional arguments. The following example invokes a single test method `test_generate` is declared in the `tests/core/blocks/generators/test_llm.py` file:
+By default, all tests found within the `tests` directory are run. However, specific unit tests can run by passing filenames. For example:
 
 ```shell
-tox -e unit -- tests/core/blocks/generators/test_llm.py::test_generate
+pytest tests/core/blocks/validators/validators/test_lm_judge.py
 ```
 
-#### Coding style
+### Coding style
 
-FMS DGT follows the python [pep8](https://peps.python.org/pep-0008/) coding style. The coding style is enforced by the CI system, and your PR will fail until the style has been applied correctly.
+DGT follows the python [pep8](https://peps.python.org/pep-0008/) coding style. The coding style is enforced by the CI system, and your PR will fail until the style has been applied correctly.
 
-We use [pre-commit](https://pre-commit.com/) to enforce coding style using [black](https://github.com/psf/black), [prettier](https://github.com/prettier/prettier) and [isort](https://pycqa.github.io/isort/).
+We use [pre-commit](https://pre-commit.com/) to enforce coding style using [isort](https://pycqa.github.io/isort/), [black](https://github.com/psf/black), [ruff](https://docs.astral.sh/ruff/), and [prettier](https://github.com/prettier/prettier).
 
-You can invoke formatting with:
+Ensure you install `pre-commit` on your local repository:
 
 ```sh
-tox -e fmt
+pre-commit install
 ```
 
-In addition, we use [Ruff](https://docs.astral.sh/ruff/) to perform static code analysis of the code.
-
-You can invoke the linting with the following command
+You can then invoke the formatting with:
 
 ```sh
-tox -e lint
+pre-commit run --all-files
 ```
 
 ## Your First Code Contribution

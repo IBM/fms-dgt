@@ -84,3 +84,11 @@ python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal
 ```
 
 If successful, you should see the outputs of the command in the `./output` directory
+
+## The Team
+
+FMS-DGT is currently maintained by [Max Crouse](https://github.com/mvcrouse), [Kshitij Fadnis](https://github.com/kpfadnis), [Siva Sankalp Patel](https://github.com/sivasankalpp), and [Pavan Kapanipathi](https://github.com/pavan046).
+
+## License
+
+FMS-DGT has an Apache license, as found in the [LICENSE](LICENSE) file.
