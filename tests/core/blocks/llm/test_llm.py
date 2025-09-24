@@ -16,7 +16,7 @@ from fms_dgt.core.blocks.llm import CachingLM, LMProvider
 SKIP_VLLM = False
 try:
     # Third Party
-    import vllm
+    import vllm  # noqa: F401
 except ModuleNotFoundError:
     SKIP_VLLM = True
 
@@ -76,8 +76,7 @@ def execute_completion_flow(model_cfg, prompts: List[str] = PROMPTS):
         ), f"Input list has been rearranged at index {idx}"
 
         assert isinstance(output["result"], str) or (
-            isinstance(output["result"], list)
-            and len(output["result"]) == model_cfg["n"]
+            isinstance(output["result"], list) and len(output["result"]) == model_cfg["n"]
         )
 
 
@@ -109,15 +108,9 @@ def execute_chat_completion_flow(
         ), f"Input list has been rearranged at index {idx}"
 
         assert (
-            (
-                isinstance(output["result"], dict)
-                and isinstance(output["result"]["content"], str)
-            )
+            (isinstance(output["result"], dict) and isinstance(output["result"]["content"], str))
             or isinstance(output["result"], str)
-            or (
-                isinstance(output["result"], list)
-                and len(output["result"]) == model_cfg["n"]
-            )
+            or (isinstance(output["result"], list) and len(output["result"]) == model_cfg["n"])
         )
 
 
@@ -138,9 +131,7 @@ def auto_chat_template_test(model_cfg):
 
 
 def lm_caching_test(model_cfg):
-    cache_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "tmp_cache.db"
-    )
+    cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp_cache.db")
     if os.path.exists(cache_path):
         os.remove(cache_path)
 
@@ -320,7 +311,7 @@ def test_vllm_remote_chat_template():
             f = float(inp["result"])
             if f == i + 1:
                 correct += 1
-        except:
+        except Exception:
             pass  # nonfloat string is not correct
     assert correct > 5, f"Poor generation only {correct} of 25 correct"
 

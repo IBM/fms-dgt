@@ -45,6 +45,4 @@ def test_completion(model_backend):
     ]
     lm_judge(lm_inputs)
     assert lm_inputs[0]["is_valid"], "Result should be true!"
-    assert (
-        "yes" in lm_inputs[0]["result"].lower()
-    ), "Result should contain the word 'yes'!"
+    assert "yes" in lm_inputs[0]["result"].lower(), "Result should contain the word 'yes'!"

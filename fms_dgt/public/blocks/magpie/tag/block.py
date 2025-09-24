@@ -140,14 +140,10 @@ class MagpieTagger(Block):
 
         # Step 3: Assert all necessary information is available
         if TYPE_KEY not in lm_config:
-            raise ValueError(
-                f"Must specify {TYPE_KEY} in 'lm_config' field of {self.name} block"
-            )
+            raise ValueError(f"Must specify {TYPE_KEY} in 'lm_config' field of {self.name} block")
 
         # Step 4: Initialize langauge model
-        self._llm_generator: LMProvider = get_block(
-            lm_config.get(TYPE_KEY), **lm_config
-        )
+        self._llm_generator: LMProvider = get_block(lm_config.get(TYPE_KEY), **lm_config)
         self._blocks.append(self._llm_generator)
 
         # Step 5: Load prompts
@@ -192,9 +188,7 @@ class MagpieTagger(Block):
         elif task == "sample_quality":
             return self._prompts["sample_quality_rating_mt"].encode(input=conversation)
         elif task == "conversation_quality":
-            return self._prompts["conversations_quality_rating_mt"].encode(
-                input=conversation
-            )
+            return self._prompts["conversations_quality_rating_mt"].encode(input=conversation)
         else:
             raise ValueError(
                 "Invalid mission. Available missions: quality, sample_quality, conversation_quality"
@@ -222,9 +216,7 @@ class MagpieTagger(Block):
         elif task == "classification":
             return self._prompts["input_classification"].encode(input_text)
         elif task == "sample_quality":
-            return self._prompts["sample_quality_rating"].encode(
-                input_text, output_text
-            )
+            return self._prompts["sample_quality_rating"].encode(input_text, output_text)
         else:
             raise ValueError(
                 "Invalid tagging task. Available tagging tasks are 'difficulty', 'quality', 'classification' and 'sample_quality'"
@@ -347,10 +339,7 @@ class MagpieTagger(Block):
         model_name = self._llm_generator.model_id_or_path
 
         # Step 2: Initialize "metadata" for tag's field in the instance, if non existent
-        if (
-            not "metadata" in instance.magpie_tags
-            or not instance.magpie_tags["metadata"]
-        ):
+        if "metadata" not in instance.magpie_tags or not instance.magpie_tags["metadata"]:
             instance.magpie_tags["metadata"] = {}
 
         # Step 3: Process response
@@ -365,15 +354,11 @@ class MagpieTagger(Block):
 
             # Step 3.b.i: Salvage response, if necessary
             if TAG_DICT[tag_task] not in response_dict:
-                response_dict[TAG_DICT[tag_task]] = salvage_response(
-                    response, TAG_DICT[tag_task]
-                )
+                response_dict[TAG_DICT[tag_task]] = salvage_response(response, TAG_DICT[tag_task])
 
         except json.decoder.JSONDecodeError:
             response_dict = {}
-            response_dict[TAG_DICT[tag_task]] = salvage_response(
-                response, TAG_DICT[tag_task]
-            )
+            response_dict[TAG_DICT[tag_task]] = salvage_response(response, TAG_DICT[tag_task])
             response_dict["explanation"] = response
             if tag_task == "difficulty":
                 response_dict["intent"] = None
@@ -400,9 +385,7 @@ class MagpieTagger(Block):
                 "good",
                 "excellent",
             ]:
-                response_dict["input_quality"] = salvage_tag(
-                    response_dict["input_quality"]
-                )
+                response_dict["input_quality"] = salvage_tag(response_dict["input_quality"])
 
             # Step 3.c.iii: Validate format
             if not isinstance(response_dict["input_quality"], str):
@@ -444,10 +427,7 @@ class MagpieTagger(Block):
 
             # Step 3.d.iii: Validate format
             if not (
-                (
-                    isinstance(response_dict["score"], str)
-                    and response_dict["score"].isdigit()
-                )
+                (isinstance(response_dict["score"], str) and response_dict["score"].isdigit())
                 or isinstance(response_dict["score"], (int, float))
             ):
                 set_error_values(
@@ -506,16 +486,10 @@ class MagpieTagger(Block):
 
             # Step 3.e.iv: Save
             if "intent" in response_dict:
-                instance.magpie_tags["intent"] = [
-                    {f"{model_name}": response_dict["intent"]}
-                ]
+                instance.magpie_tags["intent"] = [{f"{model_name}": response_dict["intent"]}]
             if "knowledge" in response_dict:
-                instance.magpie_tags["knowledge"] = [
-                    {f"{model_name}": response_dict["knowledge"]}
-                ]
-            instance.magpie_tags["difficulty"] = [
-                {f"{model_name}": response_dict["difficulty"]}
-            ]
+                instance.magpie_tags["knowledge"] = [{f"{model_name}": response_dict["knowledge"]}]
+            instance.magpie_tags["difficulty"] = [{f"{model_name}": response_dict["difficulty"]}]
             instance.magpie_tags["metadata"]["label_model"] = [model_name]
 
         # Step 3.f: Process for "classification" tag task
@@ -569,10 +543,7 @@ class MagpieTagger(Block):
 
             # Step 3.g.iii: Validate format
             if not (
-                (
-                    isinstance(response_dict["score"], str)
-                    and response_dict["score"].isdigit()
-                )
+                (isinstance(response_dict["score"], str) and response_dict["score"].isdigit())
                 or isinstance(response_dict["score"], (int, float))
             ):
                 set_error_values(
@@ -679,16 +650,12 @@ class MagpieTagger(Block):
                                         continue
 
                                     if utterance[role_field] == "user":
-                                        user_utterance_texts.append(
-                                            utterance[txt_field]
-                                        )
+                                        user_utterance_texts.append(utterance[txt_field])
                                     elif utterance[role_field] in [
                                         "assistant",
                                         "agent",
                                     ]:
-                                        assistant_utterance_texts.append(
-                                            utterance[txt_field]
-                                        )
+                                        assistant_utterance_texts.append(utterance[txt_field])
                                     else:
                                         # Skipping roles that are not 'user' or 'assistant'
                                         continue
@@ -698,8 +665,7 @@ class MagpieTagger(Block):
                                     continue
 
                                 if (
-                                    len(user_utterance_texts)
-                                    != len(assistant_utterance_texts)
+                                    len(user_utterance_texts) != len(assistant_utterance_texts)
                                 ) and len(user_utterance_texts) > 1:
                                     dgt_logger.warning(
                                         "Mismatch in number of user (%d) and assistant (%d) utterances",

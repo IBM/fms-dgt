@@ -23,13 +23,9 @@ class LMJudgeValidator(ValidatorBlock):
 
     def __init__(self, lm_config: Dict = None, **kwargs: Any):
         super().__init__(**kwargs)
-        assert (
-            TYPE_KEY in lm_config
-        ), f"Must specify {TYPE_KEY} in 'lm' field of {self.name} block"
+        assert TYPE_KEY in lm_config, f"Must specify {TYPE_KEY} in 'lm' field of {self.name} block"
 
-        self._llm_generator: LMProvider = get_block(
-            lm_config.get(TYPE_KEY), **lm_config
-        )
+        self._llm_generator: LMProvider = get_block(lm_config.get(TYPE_KEY), **lm_config)
         self._blocks.append(self._llm_generator)
 
     def execute(
@@ -46,9 +42,7 @@ class LMJudgeValidator(ValidatorBlock):
 
         judge_outputs, to_save = [], []
         for llm_output in llm_outputs:
-            llm_output.is_valid, llm_output.metadata = self._validate(
-                judge_output=llm_output
-            )
+            llm_output.is_valid, llm_output.metadata = self._validate(judge_output=llm_output)
             if llm_output.is_valid or not self._filter_invalids:
                 judge_outputs.append(llm_output)
 

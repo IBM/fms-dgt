@@ -130,11 +130,7 @@ class vLLM(LMProvider):
             "tensor_parallel_size": int(tensor_parallel_size),
             "swap_space": int(swap_space) if swap_space is not NOT_GIVEN else NOT_GIVEN,
             "quantization": quantization,
-            "seed": (
-                int(self.random_seed)
-                if self.random_seed is not NOT_GIVEN
-                else NOT_GIVEN
-            ),
+            "seed": (int(self.random_seed) if self.random_seed is not NOT_GIVEN else NOT_GIVEN),
         }
         self.model = LLM(**{k: v for k, v in model_args.items() if v is not NOT_GIVEN})
 
@@ -164,9 +160,9 @@ class vLLM(LMProvider):
     def init_parameters(
         self, **kwargs
     ) -> Tuple[vLLMCompletionParameters, vLLMCompletionParameters]:
-        return vLLMCompletionParameters.from_dict(
+        return vLLMCompletionParameters.from_dict(kwargs), vLLMCompletionParameters.from_dict(
             kwargs
-        ), vLLMCompletionParameters.from_dict(kwargs)
+        )
 
     def init_tokenizer(self, model_id_or_path: str = None):
         """Initializes a tokenizer
@@ -175,9 +171,7 @@ class vLLM(LMProvider):
             model_id_or_path (str, optional): Model to be used for initializing tokenizer. Defaults to None.
         """
         try:
-            return AutoTokenizer.from_pretrained(
-                model_id_or_path or self.model_id_or_path
-            )
+            return AutoTokenizer.from_pretrained(model_id_or_path or self.model_id_or_path)
         except (OSError, ValueError) as err:
             dgt_logger.warning(
                 'Failed to initialize tokenizer for "%s" due to %s',
@@ -192,10 +186,7 @@ class vLLM(LMProvider):
     def _extract_token_log_probabilities(self, output: dict) -> List[Any] | None:
         return (
             [
-                {
-                    token_prob.decoded_token: token_prob.logprob
-                    for token_prob in entry.values()
-                }
+                {token_prob.decoded_token: token_prob.logprob for token_prob in entry.values()}
                 for entry in output.logprobs
             ]
             if output.logprobs
@@ -250,16 +241,16 @@ class vLLM(LMProvider):
 
                 # Step 3.b.ii: Extend completion/ chat-completion parameters from gen_kwargs and instantiate SamplingParams
                 params = (
-                    self._chat_parameters
-                    if method == self.CHAT_COMPLETION
-                    else self._parameters
+                    self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
                 ).to_params(chunk.gen_kwargs)
 
-                sampling_params = SamplingParams(**{
-                    k: v
-                    for k, v in params.items()
-                    if k in list(signature(SamplingParams).parameters)
-                })
+                sampling_params = SamplingParams(
+                    **{
+                        k: v
+                        for k, v in params.items()
+                        if k in list(signature(SamplingParams).parameters)
+                    }
+                )
 
                 # Step 3.b.iii: Trigger vLLM generate function
                 if method == self.CHAT_COMPLETION:
@@ -304,9 +295,7 @@ class vLLM(LMProvider):
                     outputs, addtl = [], {"token_logprobs": []}
                     for output in response_per_input.outputs:
                         if method == self.CHAT_COMPLETION:
-                            outputs.append(
-                                {"role": "assistant", "content": output.text}
-                            )
+                            outputs.append({"role": "assistant", "content": output.text})
                         else:
                             outputs.append(output.text)
 

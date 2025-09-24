@@ -123,9 +123,7 @@ def generate_data(
 
     # capture tasks specified only in config overrides
     for task_name, task_override in task_overrides.items():
-        if not any(
-            [task_init.get(TASK_NAME_KEY) == task_name for task_init in task_inits]
-        ):
+        if not any([task_init.get(TASK_NAME_KEY) == task_name for task_init in task_inits]):
             dgt_logger.info(
                 "Task '%s' in config was not found in task files, it will be created from the config",
                 task_name,
@@ -143,9 +141,7 @@ def generate_data(
     )
 
     # Step 7.c: Identify available databuilders
-    available_databuilder_names = databuilder_index.match_builders(
-        requested_databuilder_names
-    )
+    available_databuilder_names = databuilder_index.match_builders(requested_databuilder_names)
     dgt_logger.debug("Available databuilders: %s", available_databuilder_names)
 
     # Step 7.d: Identify missing databuilders
@@ -193,9 +189,7 @@ def generate_data(
                         task_name=task_init.get("task_name"),
                         databuilder_name=task_init.get("data_builder"),
                         task_spec={"task_init": task_init, "task_kwargs": task_kwargs},
-                        databuilder_spec=utils.load_nested_paths(
-                            builder_cfg, builder_dir
-                        ),
+                        databuilder_spec=utils.load_nested_paths(builder_cfg, builder_dir),
                         build_id=build_id,
                         save_formatted_output=task_kwargs.get("save_formatted_output"),
                     ),
@@ -204,11 +198,7 @@ def generate_data(
                         **task_init.get(RUNNER_CONFIG_KEY, dict()),
                         **task_kwargs,
                     },
-                    **{
-                        k: v
-                        for k, v in task_init.items()
-                        if k not in [RUNNER_CONFIG_KEY]
-                    },
+                    **{k: v for k, v in task_init.items() if k not in [RUNNER_CONFIG_KEY]},
                 }
                 for task_init in task_inits
                 if task_init["data_builder"] == builder_name
@@ -264,7 +254,7 @@ def generate_data(
 
         # Step 8.g: Cleanup ray
         if ray_initialized:
-            ray.shutdown()  # type: ignore
+            ray.shutdown()  # type: ignore   # noqa: F821
 
         # Step 8.h: Pre-cautionary garbage collection
         gc.collect()

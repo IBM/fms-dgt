@@ -67,11 +67,7 @@ class Parameters:
 
         params = {
             **{k: v for k, v in self.__dict__.items() if v is not NOT_GIVEN},
-            **{
-                k: v
-                for k, v in kwargs.items()
-                if k in field_names and v is not NOT_GIVEN
-            },
+            **{k: v for k, v in kwargs.items() if k in field_names and v is not NOT_GIVEN},
         }
         return params
 
@@ -156,9 +152,7 @@ class LMProvider(Block):
             model_id_or_path (str, optional): Model to be used for initializing tokenizer. Defaults to None.
         """
         try:
-            return AutoTokenizer.from_pretrained(
-                model_id_or_path or self.model_id_or_path
-            )
+            return AutoTokenizer.from_pretrained(model_id_or_path or self.model_id_or_path)
         except (OSError, ValueError) as err:
             dgt_logger.warning(
                 'Failed to initialize tokenizer for "%s" due to %s',
@@ -229,18 +223,14 @@ class LMProvider(Block):
                     )
 
                 # Step 2.b.ii.**: Apply chat template
-                prepared_input = self.tokenizer.apply_chat_template(
-                    instance.input, tokenize=False
-                )
+                prepared_input = self.tokenizer.apply_chat_template(instance.input, tokenize=False)
             else:
                 raise ValueError(
                     f'Unsupported type ({type(instance.input)}) for "LMBlockData.input". Only string or list[dict] are allowed as "LMBlockData.input".',
                 )
 
             # Step 2.b.iii: Truncate prepared input, if necessary
-            prepared_input = self._truncate(
-                string=prepared_input, max_tokens=max_tokens
-            )
+            prepared_input = self._truncate(string=prepared_input, max_tokens=max_tokens)
         else:
             raise ValueError(
                 f"Unsupported method ({method}). Please use one of the folllowing. {self.COMPLETION}, {self.CHAT_COMPLETION}.",
@@ -313,9 +303,7 @@ class LMProvider(Block):
                 prompt_tokens.append(entry.addtl.get("prompt_tokens", 0))
             else:
                 num_failed_inputs += 1
-                dgt_logger.debug(
-                    "Failed to generate valid output for input: %s ", entry.input
-                )
+                dgt_logger.debug("Failed to generate valid output for input: %s ", entry.input)
 
         if num_failed_inputs:
             dgt_logger.warning(
@@ -360,9 +348,7 @@ class LMProvider(Block):
 #                       UTILITY FUNCTIONS
 # ===========================================================================
 def _hash_args(attr: str, request: LMBlockData, base_lm: LMProvider):
-    dat = json.dumps(
-        [attr] + [request.input, request.gen_kwargs, base_lm.model_id_or_path]
-    )
+    dat = json.dumps([attr] + [request.input, request.gen_kwargs, base_lm.model_id_or_path])
     return hashlib.sha256(dat.encode("utf-8")).hexdigest()
 
 
@@ -374,9 +360,7 @@ class CacheHook:
     def __init__(self, dbdict: SqliteDict = None) -> None:
         self._dbdict: SqliteDict = dbdict
 
-    def add_partial(
-        self, attr: str, req: LMBlockData, lm: LMProvider, res: Any
-    ) -> None:
+    def add_partial(self, attr: str, req: LMBlockData, lm: LMProvider, res: Any) -> None:
         if self._dbdict is None:
             return
         hsh = _hash_args(attr, req, lm)
@@ -487,17 +471,13 @@ class CachingLM:
         input_map = input_map or self._lm._input_map
         output_map = output_map or self._lm._output_map
 
-        transformed_inputs = map(
-            lambda x: self._lm.transform_input(x, input_map), inputs
-        )
+        transformed_inputs = map(lambda x: self._lm.transform_input(x, input_map), inputs)
         if isinstance(inputs, (list, tuple)):
             transformed_inputs = type(inputs)(transformed_inputs)
 
         outputs = self.execute(transformed_inputs, *args, **kwargs)
 
-        transformed_outputs = map(
-            lambda x: self._lm.transform_output(x, output_map), outputs
-        )
+        transformed_outputs = map(lambda x: self._lm.transform_output(x, output_map), outputs)
         if isinstance(inputs, (list, tuple)):
             transformed_outputs = type(inputs)(transformed_outputs)
 

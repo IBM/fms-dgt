@@ -154,9 +154,7 @@ class DefaultDatastore(Datastore):
                 if os.path.isdir(data_path):
                     return (
                         item
-                        for item in utils.read_huggingface(
-                            [data_path], self._data_split, lazy=True
-                        )
+                        for item in utils.read_huggingface([data_path], self._data_split, lazy=True)
                     )
 
                 data_format = os.path.splitext(data_path)[-1]
@@ -165,9 +163,7 @@ class DefaultDatastore(Datastore):
                 if data_format == ".parquet":
                     file_kwargs = {"buffer_size": self._buffer_size}
 
-                return (
-                    item for item in _read_file(data_format, data_path, **file_kwargs)
-                )
+                return (item for item in _read_file(data_format, data_path, **file_kwargs))
 
             return None
 
@@ -184,24 +180,14 @@ class DefaultDatastore(Datastore):
         # List of data paths referring to Huggingface dataset
         if isinstance(data_path, list):
             return [
-                (
-                    item
-                    for item in utils.read_huggingface(
-                        data_path, self._data_split, lazy=True
-                    )
-                )
+                (item for item in utils.read_huggingface(data_path, self._data_split, lazy=True))
             ]
         # Data path expressed via glob pattern
         elif _is_glob_path(data_path):
             data_paths = glob.glob(data_path, recursive=True)
             for data_path in data_paths:
                 if self._data_formats:
-                    if any(
-                        [
-                            data_path.endswith(data_format)
-                            for data_format in self._data_formats
-                        ]
-                    ):
+                    if any([data_path.endswith(data_format) for data_format in self._data_formats]):
                         all_iterators.append(_get_iterator(data_path))
                 else:
                     all_iterators.append(_get_iterator(data_path))

@@ -128,9 +128,7 @@ def add_task_args(parser: argparse.ArgumentParser):
     return group
 
 
-def gather_grouped_args(
-    args: argparse.Namespace, parser: argparse.ArgumentParser, group_name: str
-):
+def gather_grouped_args(args: argparse.Namespace, parser: argparse.ArgumentParser, group_name: str):
     for g in parser._action_groups:
         if g.title == group_name:
             kwargs = dict()
@@ -164,9 +162,7 @@ def main(
         namespaces = []
     # "core" namespace will always be included
     namespaces.insert(0, "core")
-    namespaces.extend(
-        [x for x in base_args.pop("include_namespaces", []) if x not in namespaces]
-    )
+    namespaces.extend([x for x in base_args.pop("include_namespaces", []) if x not in namespaces])
 
     generate_data(
         task_kwargs=task_kwargs,

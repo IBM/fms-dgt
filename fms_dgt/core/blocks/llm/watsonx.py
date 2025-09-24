@@ -54,9 +54,7 @@ class WatsonXAI(LMProvider):
             call_limit = 10
 
         # Load WatsonX Resource
-        self._watsonx_resource: WatsonXResource = get_resource(
-            "watsonx", call_limit=call_limit
-        )
+        self._watsonx_resource: WatsonXResource = get_resource("watsonx", call_limit=call_limit)
 
         # Intialize parent
         super().__init__(*args, **kwargs)
@@ -77,8 +75,7 @@ class WatsonXAI(LMProvider):
 
         # NOTE: WatsonX chat completion only support greedy sampling (temperature=0) with n=1
         if (
-            "temperature" in self._chat_parameters
-            and self._chat_parameters["temperature"] == 0.0
+            "temperature" in self._chat_parameters and self._chat_parameters["temperature"] == 0.0
         ) and ("n" in self._chat_parameters and self._chat_parameters["n"] > 1):
             dgt_logger.warning(
                 'Defaulting "n=1" as per WatsonX.AI\'s chat completion API guidance when using greedy sampling (temperature=0)'
@@ -117,9 +114,7 @@ class WatsonXAI(LMProvider):
         Args:
             model_id_or_path (str, optional): Model to be used for initializing tokenizer. Defaults to None.
         """
-        raise NotImplementedError(
-            "WatsonX.AI does not support tokenizer initialization"
-        )
+        raise NotImplementedError("WatsonX.AI does not support tokenizer initialization")
 
     def _prepare_input(
         self,
@@ -182,9 +177,7 @@ class WatsonXAI(LMProvider):
             if k in [field.name for field in fields(TextGenParameters)]
         }
 
-    def _adjust_chat_completion_parameters(
-        self, params: dict, raised: Set[str] = set()
-    ) -> dict:
+    def _adjust_chat_completion_parameters(self, params: dict, raised: Set[str] = set()) -> dict:
         # Step 1: Remap known parameters
         params = generator_utils.remap(
             dictionary=params,
@@ -379,9 +372,7 @@ class WatsonXAI(LMProvider):
         # Step 4: Wait until all worker are finished
         await asyncio.gather(*executors, return_exceptions=True)
 
-    def completion(
-        self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs
-    ) -> None:
+    def completion(self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs) -> None:
         # group requests by their generation_kwargs
         grouper = generator_utils.Grouper(requests, lambda x: str(x.gen_kwargs))
 
@@ -410,18 +401,13 @@ class WatsonXAI(LMProvider):
                 )
 
                 # adding this here to simplify downstream processing
-                if (
-                    gen_kwargs.get("logprobs")
-                    and gen_kwargs.get("top_logprobs") is None
-                ):
+                if gen_kwargs.get("logprobs") and gen_kwargs.get("top_logprobs") is None:
                     gen_kwargs["top_logprobs"] = 1
 
                 # Step 3.b.vi: Execute generation routine
                 responses = self._model.generate(
                     prompt=[
-                        self._prepare_input(
-                            instance, gen_kwargs=gen_kwargs, method=self.COMPLETION
-                        )
+                        self._prepare_input(instance, gen_kwargs=gen_kwargs, method=self.COMPLETION)
                         for instance in chunk
                     ],
                     params=TextGenParameters(
@@ -432,12 +418,8 @@ class WatsonXAI(LMProvider):
                 # Step 3.b.vii: Process generated outputs
                 for idx, instance in enumerate(chunk):
                     addtl = {
-                        "completion_tokens": responses[idx]["results"][0][
-                            "generated_token_count"
-                        ],
-                        "prompt_tokens": responses[idx]["results"][0][
-                            "input_token_count"
-                        ],
+                        "completion_tokens": responses[idx]["results"][0]["generated_token_count"],
+                        "prompt_tokens": responses[idx]["results"][0]["input_token_count"],
                         "token_logprobs": [],
                     }
                     token_logprobs = self._extract_token_log_probabilities(
@@ -465,7 +447,5 @@ class WatsonXAI(LMProvider):
         self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs
     ) -> None:
         asyncio.run(
-            self._execute_chat_requests(
-                requests=requests, disable_tqdm=disable_tqdm, **kwargs
-            )
+            self._execute_chat_requests(requests=requests, disable_tqdm=disable_tqdm, **kwargs)
         )

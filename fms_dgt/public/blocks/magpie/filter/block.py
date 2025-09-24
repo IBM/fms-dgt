@@ -53,9 +53,9 @@ def flatten(instance: MagpieFilterBlockData) -> MagpieFilterBlockData:
         and "input_quality" in flattened_instance.field
         and flattened_instance.field["input_quality"]
     ):
-        flattened_instance.field["input_quality"] = flattened_instance.field[
-            "input_quality"
-        ][0].popitem()[1]
+        flattened_instance.field["input_quality"] = flattened_instance.field["input_quality"][
+            0
+        ].popitem()[1]
 
     if (
         flattened_instance.field
@@ -80,9 +80,9 @@ def flatten(instance: MagpieFilterBlockData) -> MagpieFilterBlockData:
         and "task_category" in flattened_instance.field
         and flattened_instance.field["task_category"]
     ):
-        flattened_instance.field["task_category"] = flattened_instance.field[
-            "task_category"
-        ][0].popitem()[1]
+        flattened_instance.field["task_category"] = flattened_instance.field["task_category"][
+            0
+        ].popitem()[1]
 
     return flattened_instance
 
@@ -113,9 +113,7 @@ def has_valid_scores(instance: MagpieFilterBlockData) -> Tuple[bool, Dict | None
         ]:
             return (
                 False,
-                {
-                    "reason": f'Invalid value: {instance.field["difficulty"]} for "difficulty" score'
-                },
+                {"reason": f'Invalid value: {instance.field["difficulty"]} for "difficulty" score'},
             )
 
     if instance.field and "judge_quality_score" in instance.field:
@@ -127,17 +125,11 @@ def has_valid_scores(instance: MagpieFilterBlockData) -> Tuple[bool, Dict | None
                 },
             )
 
-    if (
-        instance.field
-        and "task_category" in instance.field
-        and instance.field["task_category"]
-    ):
+    if instance.field and "task_category" in instance.field and instance.field["task_category"]:
         if len(instance.field["task_category"]) < 1:
             return (
                 False,
-                {
-                    "reason": f'Invalid value: {instance.field["task_category"]} for "task_category"'
-                },
+                {"reason": f'Invalid value: {instance.field["task_category"]} for "task_category"'},
             )
 
     return True, None
@@ -248,9 +240,7 @@ def is_qualified(
     filter_criteria: Optional[Dict] = None,
 ) -> Tuple[bool, Dict | None]:
     if filter_criteria:
-        input_quality_requirements = filter_criteria.get(
-            "input_quality", ["good", "excellent"]
-        )
+        input_quality_requirements = filter_criteria.get("input_quality", ["good", "excellent"])
         judge_quality_score_requirements = filter_criteria.get("sample_quality", ["5"])
         difficulty_requirements = filter_criteria.get(
             "difficulty",
@@ -278,10 +268,7 @@ def is_qualified(
             return False, {"reason": "Failed to meet input quality requirements"}
 
     if instance.field and "judge_quality_score" in instance.field:
-        if (
-            instance.field["judge_quality_score"]
-            not in judge_quality_score_requirements
-        ):
+        if instance.field["judge_quality_score"] not in judge_quality_score_requirements:
             return False, {"reason": "Failed to meet judge quality requirements"}
 
     if instance.field and "difficulty" in instance.field:

@@ -22,9 +22,7 @@ def test_matches():
         {"input": "I went to the store"},
         {"input": "I went to the store yesterday"},
     ]
-    validator = RougeDedupValidator(
-        name="test_rouge_validator", fast_rouge=False, threshold=0.91
-    )
+    validator = RougeDedupValidator(name="test_rouge_validator", fast_rouge=False, threshold=0.91)
     validator(inputs, context=all_data)
     assert inputs[0]["is_valid"] and not inputs[1]["is_valid"]
 
@@ -33,26 +31,16 @@ def test_matches():
         {"input": "I went to the store"},
         {"input": "I went to the store yesterday"},
     ]
-    validator = RougeDedupValidator(
-        name="test_rouge_validator", fast_rouge=False, threshold=1.0
-    )
+    validator = RougeDedupValidator(name="test_rouge_validator", fast_rouge=False, threshold=1.0)
     validator(inputs, context=all_data)
-    assert (
-        inputs[0]["is_valid"]
-        and not inputs[1]["is_valid"]
-        and not inputs[2]["is_valid"]
-    )
+    assert inputs[0]["is_valid"] and not inputs[1]["is_valid"] and not inputs[2]["is_valid"]
 
-    validator = RougeDedupValidator(
-        name="test_rouge_validator", fast_rouge=False, threshold=None
-    )
+    validator = RougeDedupValidator(name="test_rouge_validator", fast_rouge=False, threshold=None)
     validator(inputs, context=all_data)
     assert inputs[0]["is_valid"] and inputs[1]["is_valid"] and inputs[2]["is_valid"]
 
     inputs = [{"input": "one two three"}]
-    validator = RougeDedupValidator(
-        name="test_rouge_validator", fast_rouge=False, threshold=0.0
-    )
+    validator = RougeDedupValidator(name="test_rouge_validator", fast_rouge=False, threshold=0.0)
     validator(inputs, context=all_data)
     assert not inputs[0]["is_valid"]
 

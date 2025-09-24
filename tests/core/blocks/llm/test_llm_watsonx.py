@@ -31,6 +31,4 @@ def test_auto_chat_template(model_cfg):
     with pytest.raises(NotImplementedError) as exc_info:
         auto_chat_template_test(model_cfg)
 
-    assert (
-        exc_info.value.args[0] == "WatsonX.AI does not support tokenizer initialization"
-    )
+    assert exc_info.value.args[0] == "WatsonX.AI does not support tokenizer initialization"

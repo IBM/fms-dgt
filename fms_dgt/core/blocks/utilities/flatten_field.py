@@ -23,7 +23,7 @@ class FlattenField(Block):
     def execute(self, inputs: Iterable[FlattenFieldData]):
         outputs = []
         for x in inputs:
-            to_flatten = x.to_flatten if type(x.to_flatten) == list else [x.to_flatten]
+            to_flatten = x.to_flatten if isinstance(x.to_flatten, list) else [x.to_flatten]
             for el in to_flatten:
                 new_x = copy.deepcopy(x)
                 new_x.flattened = el

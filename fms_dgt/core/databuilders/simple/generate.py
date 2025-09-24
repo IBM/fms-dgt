@@ -58,9 +58,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
         random.shuffle(instruction_data)
         for grouped_data in group_data_by_task(instruction_data):
             for i in range(0, len(grouped_data), self._num_prompt_instructions):
-                prompt_instructions = grouped_data[
-                    i : i + self._num_prompt_instructions
-                ]
+                prompt_instructions = grouped_data[i : i + self._num_prompt_instructions]
                 prompt = self._encode_prompt(prompt_instructions)
                 inp = {
                     "input": prompt,
@@ -83,9 +81,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
                 gen_inp["output"],
             )
             # make sure the generated instruction carried over extra fields
-            for new_ins_dict, orig_ins in zip(
-                new_instruction_dicts, prompt_instructions
-            ):
+            for new_ins_dict, orig_ins in zip(new_instruction_dicts, prompt_instructions):
                 new_ins = copy.copy(orig_ins)
                 new_ins.instruction = new_ins_dict.get("instruction")
                 new_ins.input = new_ins_dict.get("input")

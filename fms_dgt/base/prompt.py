@@ -40,22 +40,16 @@ class JinjaPromptTemplate(PromptTemplate):
             dgt_logger.warning(
                 'Both "template" and "template_path" are provided. Using "template".'
             )
-            self._prompt_template = self.environment.from_string(
-                template, globals=globals
-            )
+            self._prompt_template = self.environment.from_string(template, globals=globals)
         elif template:
-            self._prompt_template = self.environment.from_string(
-                template, globals=jinja_globals
-            )
+            self._prompt_template = self.environment.from_string(template, globals=jinja_globals)
         else:
             # Convert template path to string, if necessary
             if isinstance(template_path, Path):
                 template_path = str(template_path)
 
             if not template_path.endswith("txt"):
-                raise ValueError(
-                    f"Provided non text file ({template_path}) for template path"
-                )
+                raise ValueError(f"Provided non text file ({template_path}) for template path")
             self._prompt_template = self.environment.from_string(
                 open(template_path, "r", encoding="utf-8").read(), globals=jinja_globals
             )

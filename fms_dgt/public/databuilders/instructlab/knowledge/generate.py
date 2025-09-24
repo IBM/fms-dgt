@@ -50,9 +50,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
             outputs.extend(
                 self(
                     domain=task.domain,
-                    documents=task.get_documents(
-                        docs_per_batch=task.num_docs_per_iteration
-                    ),
+                    documents=task.get_documents(docs_per_batch=task.num_docs_per_iteration),
                     seed_data=task.get_batch_examples(),
                     prompt_templates=task.prompt_templates,
                     num_icl_examples_per_prompt=task.num_icl_examples_per_prompt,
@@ -77,9 +75,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         criteria: List[str] | None = None,
     ) -> List[KnowledgeData]:
         # Generation
-        dgt_logger.info(
-            "Generating question-answer pairs for the domain %s ...", domain
-        )
+        dgt_logger.info("Generating question-answer pairs for the domain %s ...", domain)
         generated_question_answer_pairs = self._generate_question_answer_pairs(
             seed_data=seed_data,
             domain=domain,
@@ -133,17 +129,13 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                         "input": prompt_templates["mcq_question_generation"].encode(
                             render_dict={"document": document["content"]}
                         ),
-                        "gen_kwargs": {
-                            "stop": prompt_templates["mcq_question_generation"].stop
-                        },
+                        "gen_kwargs": {"stop": prompt_templates["mcq_question_generation"].stop},
                         "document": document,
                         "reference": shuffled_seed_data,
                     }
                 )
             else:
-                for start_idx in range(
-                    0, len(shuffled_seed_data), num_icl_examples_per_prompt
-                ):
+                for start_idx in range(0, len(shuffled_seed_data), num_icl_examples_per_prompt):
                     icl_examples = shuffled_seed_data[
                         start_idx : start_idx + num_icl_examples_per_prompt
                     ]
@@ -176,9 +168,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         # Process generator outputs
         outputs = []
         for generator_output in generator_outputs:
-            generated_question_answer_pairs = utils.clean_generated_data(
-                generator_output["result"]
-            )
+            generated_question_answer_pairs = utils.clean_generated_data(generator_output["result"])
             reference: KnowledgeData = generator_output["reference"][0]
             for question_answer_pair in generated_question_answer_pairs:
 
@@ -258,9 +248,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                 return False, metadata
 
             return {
-                "input": prompt_templates["faithfulness_criterion"].encode(
-                    render_dict=parameters
-                ),
+                "input": prompt_templates["faithfulness_criterion"].encode(render_dict=parameters),
                 "success_func": is_faithful,
                 "gen_kwargs": {"stop": prompt_templates["faithfulness_criterion"].stop},
             }
@@ -274,9 +262,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                 return False, metadata
 
             return {
-                "input": prompt_templates["relevancy_criterion"].encode(
-                    render_dict=parameters
-                ),
+                "input": prompt_templates["relevancy_criterion"].encode(render_dict=parameters),
                 "success_func": is_relevant,
                 "gen_kwargs": {"stop": prompt_templates["relevancy_criterion"].stop},
             }
@@ -294,9 +280,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                     render_dict=parameters
                 ),
                 "success_func": is_verified,
-                "gen_kwargs": {
-                    "stop": prompt_templates["question_verification_criterion"].stop
-                },
+                "gen_kwargs": {"stop": prompt_templates["question_verification_criterion"].stop},
             }
         else:
             raise ValueError(

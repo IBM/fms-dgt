@@ -40,18 +40,11 @@ def add_namespace_to_searchable_dirs(namespace: str):
 def _build_importable_registration_map(registration_func: str):
     def extract_registered_classes(file_contents: str):
         classes = []
-        for matching_pattern in re.findall(
-            rf"{registration_func}\(.*\)", file_contents
-        ):
+        for matching_pattern in re.findall(rf"{registration_func}\(.*\)", file_contents):
             # last character is ")"
-            matching_pattern = matching_pattern.replace(registration_func + "(", "")[
-                :-1
-            ]
+            matching_pattern = matching_pattern.replace(registration_func + "(", "")[:-1]
             classes.extend(
-                [
-                    pattern.replace('"', "").strip()
-                    for pattern in matching_pattern.split(",")
-                ]
+                [pattern.replace('"', "").strip() for pattern in matching_pattern.split(",")]
             )
         return classes
 
@@ -66,25 +59,18 @@ def _build_importable_registration_map(registration_func: str):
             for filename in filenames:
                 filepath = os.path.join(dirpath, filename)
                 if filepath.endswith(".py"):
-                    import_path = filepath.replace(base_dir, "").replace(os.sep, ".")[
-                        :-3
-                    ]
+                    import_path = filepath.replace(base_dir, "").replace(os.sep, ".")[:-3]
                     if import_path.startswith("."):
                         import_path = import_path[1:]
                     with open(filepath, mode="r", encoding="utf-8") as f:
                         class_names = extract_registered_classes(f.read())
                         for class_name in class_names:
                             # we have this be a list to allow conflicts to naturally occur when duplicate names are detected
-                            if (
-                                not class_name
-                                in REGISTRATION_MODULE_MAP[registration_func]
-                            ):
-                                REGISTRATION_MODULE_MAP[registration_func][
-                                    class_name
-                                ] = []
-                            REGISTRATION_MODULE_MAP[registration_func][
-                                class_name
-                            ].append(import_path)
+                            if class_name not in REGISTRATION_MODULE_MAP[registration_func]:
+                                REGISTRATION_MODULE_MAP[registration_func][class_name] = []
+                            REGISTRATION_MODULE_MAP[registration_func][class_name].append(
+                                import_path
+                            )
 
 
 def dynamic_registration_import(registration_func: str, class_name: str):

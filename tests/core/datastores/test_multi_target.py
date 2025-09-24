@@ -8,9 +8,7 @@ from fms_dgt.core.datastores.multi import MultiTargetDatastore
 
 class TestMultiTarget:
     def test_multi_target(self):
-        cache_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "tmp_cache"
-        )
+        cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp_cache")
 
         if os.path.exists(cache_path):
             shutil.rmtree(cache_path)

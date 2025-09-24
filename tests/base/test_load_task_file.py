@@ -34,6 +34,6 @@ def test_include_yaml():
 
     res = load_yaml_config(os.path.join(dir_path, "file1.yaml"))
 
-    assert "e" in res and res["e"] == "f", f"Error with include directive"
+    assert "e" in res and res["e"] == "f", "Error with include directive"
 
     shutil.rmtree(dir_path)

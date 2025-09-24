@@ -72,9 +72,7 @@ class DataBuilder:
 
         # Initialize blocks
         self._block_datastores_per_task = {}
-        self._blocks: List[Block] = self._init_blocks(
-            verify_block_type=verify_block_type
-        )
+        self._blocks: List[Block] = self._init_blocks(verify_block_type=verify_block_type)
 
         # Initialize epoch counter (always start with 1)
         self._epoch = 1
@@ -138,14 +136,10 @@ class DataBuilder:
             if isinstance(v, type) and issubclass(v, Block)
         }
         found_annotations = []
-        required_annotations = [
-            k for k in type_annotations if getattr(self, k, True) is not None
-        ]
+        required_annotations = [k for k in type_annotations if getattr(self, k, True) is not None]
 
         # Verify all necessary details are available
-        if len(self._config.blocks) != len(
-            [b.get("name") for b in self._config.blocks]
-        ):
+        if len(self._config.blocks) != len([b.get("name") for b in self._config.blocks]):
             raise ValueError(f"Duplicate block in '{self.name}' data builder detected")
 
         # TODO: need to handle nested blocks
@@ -192,20 +186,13 @@ class DataBuilder:
             }
 
             # Extend block configuration with datastore configuration, if necessary
-            if (
-                DATASTORES_KEY not in block_configuration
-                or not block_configuration[DATASTORES_KEY]
-            ):
+            if DATASTORES_KEY not in block_configuration or not block_configuration[DATASTORES_KEY]:
                 block_configuration[DATASTORES_KEY] = []
                 self._block_datastores_per_task[block_name] = defaultdict(list)
                 for task in self._tasks:
                     # Create block store name
-                    block_store_name = os.path.join(
-                        task.store_name, BLOCKS_KEY, block_name
-                    )
-                    self._block_datastores_per_task[block_name][task.name].append(
-                        block_store_name
-                    )
+                    block_store_name = os.path.join(task.store_name, BLOCKS_KEY, block_name)
+                    self._block_datastores_per_task[block_name][task.name].append(block_store_name)
                     block_configuration[DATASTORES_KEY].append(
                         {
                             **task.datastore_configuration,
@@ -284,9 +271,7 @@ class DataBuilder:
 
         return
 
-    def _report_block_wise_profiling_information(
-        self, block: Block, prefix: str = None
-    ):
+    def _report_block_wise_profiling_information(self, block: Block, prefix: str = None):
         if block.blocks:
             for child_block in block.blocks:
                 self._report_block_wise_profiling_information(
@@ -371,9 +356,7 @@ class DataBuilder:
             task.set_new_postprocessing_datastore()
 
         # TODO: make this more efficient
-        tasks: Dict[str, Tuple[Task, int]] = {
-            task.name: [task, 0] for task in completed_tasks
-        }
+        tasks: Dict[str, Tuple[Task, int]] = {task.name: [task, 0] for task in completed_tasks}
         for d in data:
             task_name = d[TASK_NAME_KEY]
             # have to cast this to OUTPUT_TYPE
@@ -457,9 +440,7 @@ class DataBuilder:
         )
 
     @abstractmethod
-    def call_with_task_list(
-        self, tasks: List[Task], *args, **kwargs
-    ) -> Iterable[DataPoint]:
+    def call_with_task_list(self, tasks: List[Task], *args, **kwargs) -> Iterable[DataPoint]:
         """Executes data builder __call__ function for all in-progress tasks. Is executed in the inner loop of `execute_tasks`
 
         Args:
@@ -527,9 +508,7 @@ class GenerationDataBuilder(DataBuilder):
         for task in self._tasks:
             task.machine_data = task.load_intermediate_data()
             if task.machine_data:
-                dgt_logger.debug(
-                    "Loaded %s machine-generated data", len(task.machine_data)
-                )
+                dgt_logger.debug("Loaded %s machine-generated data", len(task.machine_data))
             task.load_dataloader_state()
 
         # Identify active and completed task
@@ -571,9 +550,7 @@ class GenerationDataBuilder(DataBuilder):
             # - No tasks in generation phase OR
             # - Maximum number of attempts to complete tasks is reached
             attempt_within_epoch = 0
-            while (
-                tasks_in_generation_phase and attempt <= self._num_attempts_to_complete
-            ):
+            while tasks_in_generation_phase and attempt <= self._num_attempts_to_complete:
                 # Increment attempt counter
                 attempt += 1
                 attempt_within_epoch += 1
@@ -633,8 +610,7 @@ class GenerationDataBuilder(DataBuilder):
                 for task in tasks_in_generation_phase:
                     if (
                         task.is_complete()
-                        or remaining_unstalled_generation_attempts_per_task[task.name]
-                        <= 0
+                        or remaining_unstalled_generation_attempts_per_task[task.name] <= 0
                     ):
                         tasks_in_postprocessing_phase.append(task)
                     else:
@@ -650,9 +626,7 @@ class GenerationDataBuilder(DataBuilder):
             self.execute_postprocessing(tasks_in_postprocessing_phase)
             for task in tasks_in_postprocessing_phase:
                 if task.machine_data:
-                    remaining_unstalled_epochs_per_task[task.name] = (
-                        self._max_stalled_attempts
-                    )
+                    remaining_unstalled_epochs_per_task[task.name] = self._max_stalled_attempts
                 else:
                     remaining_unstalled_epochs_per_task[task.name] -= 1
             dgt_logger.info("Postprocessing completed")
@@ -763,11 +737,7 @@ class TransformationDataBuilder(DataBuilder):
         # Transform tasks
         for transformed_datapoint in self.call_with_task_list(tasks):
             # save incrementally
-            task = next(
-                task
-                for task in tasks
-                if get_row_name(transformed_datapoint) == task.name
-            )
+            task = next(task for task in tasks if get_row_name(transformed_datapoint) == task.name)
             task.save_intermediate_data(transformed_datapoint)
             task.save_dataloader_state()
 
@@ -797,9 +767,7 @@ class TransformationDataBuilder(DataBuilder):
         # Report transformation duration
         dgt_logger.info("Transformation took %.2fs", time.time() - start_time)
 
-    def call_with_task_list(
-        self, tasks: List[TransformationTask]
-    ) -> Iterable[DataPoint]:
+    def call_with_task_list(self, tasks: List[TransformationTask]) -> Iterable[DataPoint]:
         """Executes data builder __call__ function for all in-progress tasks.
 
         Args:

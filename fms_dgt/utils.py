@@ -80,9 +80,7 @@ def init_dataclass_from_dict(d_obj: Dict, inp_type: T) -> T:
     elif d_obj is None:
         return inp_type()
     else:
-        raise ValueError(
-            f"Unhandled input type {type(d_obj)}, cannot convert to type {inp_type}"
-        )
+        raise ValueError(f"Unhandled input type {type(d_obj)}, cannot convert to type {inp_type}")
 
 
 def merge_dictionaries(*args: List[dict]) -> Dict[str, Any]:
@@ -121,9 +119,7 @@ class TimeoutException(Exception):
 def execute_with_timeout(timeout: int, func: Callable, *args: Any, **kwargs: Any):
 
     def timeout_handler(signum: int, frame: Any):
-        raise TimeoutException(
-            f"Execution of {func} has exceeded time limit of {timeout}"
-        )
+        raise TimeoutException(f"Execution of {func} has exceeded time limit of {timeout}")
 
     signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(timeout)
@@ -171,9 +167,7 @@ def simple_parse_args_string(args_string):
     if not args_string:
         return {}
     arg_list = [arg for arg in args_string.split(",") if arg]
-    args_dict = {
-        k: handle_arg_string(v) for k, v in [arg.split("=") for arg in arg_list]
-    }
+    args_dict = {k: handle_arg_string(v) for k, v in [arg.split("=") for arg in arg_list]}
     return args_dict
 
 
@@ -192,11 +186,7 @@ def validate_block_sequence(block_list: List[Dict]):
 
 def all_annotations(cls) -> ChainMap:
     return ChainMap(
-        *(
-            c.__annotations__
-            for c in cls.__mro__
-            if getattr(c, "__annotations__", False)
-        )
+        *(c.__annotations__ for c in cls.__mro__ if getattr(c, "__annotations__", False))
     )
 
 
@@ -357,9 +347,7 @@ def process_yaml_config(
             to_include = os.path.expandvars(to_include)
             if os.path.isfile(to_include):  # check absolute
                 return load_file(to_include)
-            elif yaml_dir and os.path.isfile(
-                os.path.join(yaml_dir, to_include)
-            ):  # check relative
+            elif yaml_dir and os.path.isfile(os.path.join(yaml_dir, to_include)):  # check relative
                 return load_file(os.path.join(yaml_dir, to_include))
             abs_matching_files = glob.glob(to_include)
             if abs_matching_files:  # check absolute w/ pattern
@@ -385,9 +373,7 @@ def process_yaml_config(
         elif isinstance(to_include, dict):
             final_yaml_config.update(to_add)
         else:
-            raise ValueError(
-                f"Unhandled input format in 'include' directive: {to_include}"
-            )
+            raise ValueError(f"Unhandled input format in 'include' directive: {to_include}")
 
         final_yaml_config.update(yaml_config)
         return final_yaml_config
@@ -487,17 +473,14 @@ def load_joint_config(yaml_path: str, encoding: str = "utf-8"):
                 db_overrides = v
             else:
                 task_overrides = {
-                    task_name: process_yaml_config(task_cfg)
-                    for task_name, task_cfg in v.items()
+                    task_name: process_yaml_config(task_cfg) for task_name, task_cfg in v.items()
                 }
         elif k == "task_files":
             if not isinstance(v, list):
                 raise ValueError(f"'{k}' field in config must be provided as a list")
             data_paths = v
         else:
-            raise ValueError(
-                "Config must only specify 'databuilders' and 'tasks' fields"
-            )
+            raise ValueError("Config must only specify 'databuilders' and 'tasks' fields")
 
     return data_paths, db_overrides, task_overrides
 
@@ -597,9 +580,7 @@ def read_jsonl(file_path: str, encoding: str = "utf-8", lazy: bool = False):
                     try:
                         yield json.loads(line)
                     except json.JSONDecodeError as err:
-                        dgt_logger.warning(
-                            "Decoding error %s for line: %s", str(err), line
-                        )
+                        dgt_logger.warning("Decoding error %s for line: %s", str(err), line)
 
     if lazy:
         return _yield(file_path=file_path, encoding=encoding)
@@ -612,9 +593,7 @@ def read_jsonl(file_path: str, encoding: str = "utf-8", lazy: bool = False):
                     try:
                         data.append(json.loads(line))
                     except json.JSONDecodeError as err:
-                        dgt_logger.warning(
-                            "Decoding error %s for line: %s", str(err), line
-                        )
+                        dgt_logger.warning("Decoding error %s for line: %s", str(err), line)
 
         return data
 
@@ -651,17 +630,13 @@ def read_huggingface(dataset_args: List[str], split: str, lazy=False):
         return data
 
 
-def write_yaml(
-    data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"
-):
+def write_yaml(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as fp:
         yaml.safe_dump(data_to_write, fp, sort_keys=False)
 
 
-def write_json(
-    data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"
-):
+def write_json(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as f:
         json.dump(data_to_write, f, indent=4)
@@ -694,14 +669,15 @@ def write_parquet(
             append=os.path.isfile(file_path),
         )
     else:
+        writer = None
 
         def _write_batch(batch: List[T]):
+            nonlocal writer
             table = pa.Table.from_pylist(batch)
             if writer is None:
                 writer = pq.ParquetWriter(file_path, schema=table.schema)
             writer.write_table(table)
 
-        writer = None
         batch = []
         for item in data_to_write:
             batch.append(item)
@@ -777,9 +753,7 @@ def from_dict(dictionary: Dict[str, Any], key: str):
             dict_key, pos_idx = key_segments[0].split("[")
 
             if ":" in pos_idx.rstrip("]").strip():
-                raise ValueError(
-                    "List notation ([:n], [n:]) is not allowed for intermediate keys."
-                )
+                raise ValueError("List notation ([:n], [n:]) is not allowed for intermediate keys.")
 
             if not isinstance(dictionary.get(dict_key), list):
                 raise TypeError(
@@ -816,9 +790,7 @@ def to_dict(dictionary: Dict[str, Any], key: str, value: Any):
             else:
                 # Step 2.a.ii.*: Raise error, if position index refers to multiple multiple indices
                 if ":" in pos_idx:
-                    raise ValueError(
-                        "List notation ([:n], [n:]) is not allowed for  keys."
-                    )
+                    raise ValueError("List notation ([:n], [n:]) is not allowed for  keys.")
                 else:
                     # Step 2.a.ii.**: Parse position index
                     pos_idx = int(pos_idx.rstrip("]").strip())
@@ -852,9 +824,7 @@ def to_dict(dictionary: Dict[str, Any], key: str, value: Any):
             else:
                 # Step 2.a.ii.*: Raise error, if position index refers to multiple multiple indices
                 if ":" in pos_idx:
-                    raise ValueError(
-                        "List notation ([:n], [n:]) is not allowed for  keys."
-                    )
+                    raise ValueError("List notation ([:n], [n:]) is not allowed for  keys.")
                 else:
                     # Step 2.a.ii.**: Parse position index
                     pos_idx = int(pos_idx.rstrip("]").strip())

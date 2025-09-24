@@ -1,12 +1,12 @@
 # FMS-DGT
-DGT (pronounced "digit") is a framework that enables different algorithms and models to be used to generate synthetic data.
 
+DGT (pronounced "digit") is a framework that enables different algorithms and models to be used to generate synthetic data.
 
 ![Python Version](https://badgen.net/static/Python/3.10.15-3.12/blue?icon=python)
 [![Code style: black](https://badgen.net/static/Code%20Style/black/black)](https://github.com/psf/black)
 ![GitHub License](https://badgen.net/static/license/Apache%202.0/green)
 
-**[Setup](#setup) | [Usage](#usage)
+\*\*[Setup](#setup) | [Usage](#usage)
 
 This is the main repository for DiGiT, our **D**ata **G**eneration and **T**ransformation framework.
 

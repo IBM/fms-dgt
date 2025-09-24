@@ -137,7 +137,6 @@ python -m fms_dgt.public --task-paths ./tasks/public/instructlab/knowledge/textb
 
 This launches a data generation job by passing seed examples data using the `--task-paths` argument.
 
-
 ## Contributors
 
 **Authors**: Siva Sankalp Patel, Maxwell Crouse, Kshitij Fadnis

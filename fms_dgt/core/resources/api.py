@@ -19,9 +19,7 @@ class ApiKeyResource(BaseResource):
         if self._key == "":
             self._key = None
 
-        assert (
-            self._key is not None
-        ), f"Could not find API key {key_name} in config or environment!"
+        assert self._key is not None, f"Could not find API key {key_name} in config or environment!"
 
         self._max_calls = call_limit
 

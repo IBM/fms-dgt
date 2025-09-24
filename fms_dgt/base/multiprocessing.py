@@ -49,20 +49,16 @@ class RayBlock(Block):
 
         ray_config: RayConfig = init_dataclass_from_dict(ray_config, RayConfig)
 
-        worker_cfgs: Dict = {
-            worker_idx: dict() for worker_idx in range(ray_config.num_workers)
-        }
+        worker_cfgs: Dict = {worker_idx: dict() for worker_idx in range(ray_config.num_workers)}
 
         if not isinstance(ray_config.worker_configs, list):
-            raise ValueError(
-                f"If [worker_configs] field is specified, it must be given as list"
-            )
+            raise ValueError("If [worker_configs] field is specified, it must be given as list")
 
         for cfg in ray_config.worker_configs:
             if not cfg.get("workers"):
-                raise ValueError(f"Must identify list of worker ids in [workers] field")
+                raise ValueError("Must identify list of worker ids in [workers] field")
             for worker_idx in cfg.pop("workers"):
-                if type(worker_idx) != int:
+                if not isinstance(worker_idx, int):
                     raise ValueError(
                         f"Worker ids must be integers, not [{worker_idx}] which is of type {type(worker_idx)}"
                     )
@@ -73,9 +69,7 @@ class RayBlock(Block):
             actor = ray.remote(
                 num_cpus=ray_config.num_cpus_per_worker,
                 num_gpus=ray_config.num_gpus_per_worker,
-            )(block_class).remote(
-                *args, **{**kwargs, **worker_cfgs.get(worker_idx, dict())}
-            )
+            )(block_class).remote(*args, **{**kwargs, **worker_cfgs.get(worker_idx, dict())})
             self._workers.append(actor)
 
     @property
@@ -122,11 +116,7 @@ class RayBlock(Block):
                     (
                         inputs[worker_idx * partition_size :]
                         if (worker_idx == len(self._workers) - 1)
-                        else inputs[
-                            worker_idx
-                            * partition_size : (worker_idx + 1)
-                            * partition_size
-                        ]
+                        else inputs[worker_idx * partition_size : (worker_idx + 1) * partition_size]
                     ),
                     *args,
                     **kwargs,

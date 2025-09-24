@@ -35,7 +35,7 @@ from fms_dgt.utils import dgt_logger, get_open_port
 
 try:
     # Third Party
-    import vllm
+    import vllm  # noqa: F401
 except ModuleNotFoundError as err:
     raise ModuleNotFoundError(
         "attempted to use 'vllm' LM type, but package `vllm` not installed. ",
@@ -121,9 +121,7 @@ class vLLMServer(LMProvider):
         ), OpenAIChatCompletionParameters.from_dict(kwargs)
 
     def serve(self, model_id_or_path: str = None):
-        model_id_or_path = (
-            self.model_id_or_path if model_id_or_path is None else model_id_or_path
-        )
+        model_id_or_path = self.model_id_or_path if model_id_or_path is None else model_id_or_path
         cmd = [
             [
                 "python",
@@ -146,9 +144,7 @@ class vLLMServer(LMProvider):
 
         dgt_logger.info("Starting vllm server with command:\n\t%s", " ".join(cmd))
 
-        self._vllm_process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        self._vllm_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         lines = []
         while True:
@@ -181,7 +177,7 @@ class vLLMServer(LMProvider):
                 dgt_logger.error(
                     "Error in vllm server instance. The full traceback is provided below:\n\n%s\n\n%s\n\n%s",
                     "*" * 50,
-                    "\n".join([l for l in lines if l]),
+                    "\n".join([line for line in lines if line]),
                     "*" * 50,
                 )
                 raise SystemError("Underlying vllm process has terminated!")

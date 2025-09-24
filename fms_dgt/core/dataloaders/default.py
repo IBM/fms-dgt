@@ -57,9 +57,7 @@ class DatastoreDataloader(Dataloader):
     ) -> None:
 
         if datastore and iterators:
-            raise ValueError(
-                "Must specify one of 'datastore' or 'iterators' but not both"
-            )
+            raise ValueError("Must specify one of 'datastore' or 'iterators' but not both")
 
         if datastore:
             self._datastore = datastore
@@ -164,9 +162,7 @@ class DatastoreDataloader(Dataloader):
                 to_dict(updated_item, key=dest_field, value=from_dict(item, src_field))
             except (AttributeError, ValueError, TypeError, KeyError) as e:
                 dgt_logger.error("Error transforming field '%s': %s", src_field, e)
-                raise KeyError(
-                    f"Missing or invalid key in input item: {src_field}"
-                ) from e
+                raise KeyError(f"Missing or invalid key in input item: {src_field}") from e
 
         return updated_item
 

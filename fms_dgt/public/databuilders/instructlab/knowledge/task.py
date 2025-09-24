@@ -62,9 +62,7 @@ class KnowledgeTask(GenerationTask):
         state_datastore = get_datastore(
             "default",
             **{
-                "store_name": os.path.join(
-                    self._store_name, "knowledge_dataloader_state"
-                ),
+                "store_name": os.path.join(self._store_name, "knowledge_dataloader_state"),
                 "output_dir": self._output_dir,
                 "restart": self._restart_generation,
             },
@@ -95,9 +93,7 @@ class KnowledgeTask(GenerationTask):
                 loop_over=loop_over,
             )
         else:
-            raise ValueError(
-                "Must provide either `knowledge` or `documents` in task.yaml"
-            )
+            raise ValueError("Must provide either `knowledge` or `documents` in task.yaml")
 
         self.load_knowledge_dataloader_state()  # load knowledge state
 

@@ -83,10 +83,12 @@ class SkillsDataBuilder(GenerationDataBuilder):
 
         # Generate context based and freeform question answer pairs appropriately
         if context_based_question_answer_pairs_seed_data:
-            context_based_question_answer_pairs = self._generate_context_based_question_answer_pairs(
-                data_points=context_based_question_answer_pairs_seed_data,
-                prompt_templates=prompt_templates,
-                num_questions_to_generate_per_prompt=num_questions_to_generate_per_prompt,
+            context_based_question_answer_pairs = (
+                self._generate_context_based_question_answer_pairs(
+                    data_points=context_based_question_answer_pairs_seed_data,
+                    prompt_templates=prompt_templates,
+                    num_questions_to_generate_per_prompt=num_questions_to_generate_per_prompt,
+                )
             )
 
             if hasattr(self, "tagger"):
@@ -111,9 +113,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
 
             if hasattr(self, "tagger"):
                 # Invoke tagger
-                tagged_data_points = self.tagger(
-                    qa_pairs_without_context, disable_tqdm=True
-                )
+                tagged_data_points = self.tagger(qa_pairs_without_context, disable_tqdm=True)
 
                 # Add to final generated data
                 generated_data_points.extend(tagged_data_points)
@@ -158,12 +158,10 @@ class SkillsDataBuilder(GenerationDataBuilder):
 
         # Generate responses
         dgt_logger.info("Generating answers..")
-        context_based_question_answer_pairs = (
-            self._generate_responses_for_context_based_questions(
-                data_points=valid_questions,
-                seed_data=data_points,
-                prompt_template=prompt_templates["context_based_answer_generation"],
-            )
+        context_based_question_answer_pairs = self._generate_responses_for_context_based_questions(
+            data_points=valid_questions,
+            seed_data=data_points,
+            prompt_template=prompt_templates["context_based_answer_generation"],
         )
 
         # Step 5: Validate final QA pairs
@@ -178,9 +176,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
         # Return
         return validated_context_based_question_answer_pairs
 
-    def _generate_contexts(
-        self, seed_data: List[SkillsData], prompt_template: JinjaPromptTemplate
-    ):
+    def _generate_contexts(self, seed_data: List[SkillsData], prompt_template: JinjaPromptTemplate):
         # Build generator inputs
         generator_inputs: List[Dict] = [
             {
@@ -393,21 +389,17 @@ class SkillsDataBuilder(GenerationDataBuilder):
 
         # Generate responses for valid freeform questions
         dgt_logger.info("Generating answers..")
-        freeform_questions_with_responses = (
-            self._generate_responses_to_freeform_questions(
-                data_points=validated_questions,
-                seed_data=seed_data,
-                prompt_template=prompt_templates["answer_generation"],
-            )
+        freeform_questions_with_responses = self._generate_responses_to_freeform_questions(
+            data_points=validated_questions,
+            seed_data=seed_data,
+            prompt_template=prompt_templates["answer_generation"],
         )
 
         # Validate final QA pairs
         dgt_logger.info("Validating final QA pairs..")
-        valid_freeform_question_answers = (
-            self._validate_responses_to_freeform_questions(
-                data_points=freeform_questions_with_responses,
-                prompt_template=prompt_templates["answer_validation"],
-            )
+        valid_freeform_question_answers = self._validate_responses_to_freeform_questions(
+            data_points=freeform_questions_with_responses,
+            prompt_template=prompt_templates["answer_validation"],
         )
 
         # Return
@@ -436,9 +428,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                             "icl_question": "\n".join(
                                 [
                                     f"### Question {example_index}: {example.instruction}"
-                                    for example_index, example in enumerate(
-                                        icl_examples, start=1
-                                    )
+                                    for example_index, example in enumerate(icl_examples, start=1)
                                 ]
                             ),
                         }

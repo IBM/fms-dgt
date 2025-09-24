@@ -23,9 +23,7 @@ class NativeFormatter(Formatter):
         if isinstance(self._format, dict):
             for key in formatted_data:
                 for df_k, df_v in data_to_format.items():
-                    formatted_data[key] = formatted_data[key].replace(
-                        "{{" + df_k + "}}", str(df_v)
-                    )
+                    formatted_data[key] = formatted_data[key].replace("{{" + df_k + "}}", str(df_v))
 
         elif isinstance(self._format, str):
             for df_k, df_v in data_to_format.items():

@@ -142,7 +142,7 @@ def encode_prompt(prompt_instructions: List[SimpleData], prompt: str):
             instruction,
             prompt_input,
             prompt_output,
-            taxonomy_path,
+            taxonomy_path,  # noqa: F841
         ) = (
             task_obj.instruction,
             task_obj.input,
@@ -180,9 +180,7 @@ def post_process_gpt3_response(num_prompt_instructions, response):
 
         splitted_data = re.split(r"\*\*\s+(Instruction|Input|Output):?", inst)
         if len(splitted_data) != 7:
-            dgt_logger.info(
-                "Discarded instruction (didn't match expected format): %s", repr(inst)
-            )
+            dgt_logger.info("Discarded instruction (didn't match expected format): %s", repr(inst))
             discarded += 1
             continue
         inst = splitted_data[2].strip()
@@ -225,14 +223,10 @@ def post_process_gpt3_response(num_prompt_instructions, response):
             continue
         # filter those starting with non-english character
         if not inst[0].isascii():
-            dgt_logger.info(
-                "Discarded instruction(began with non-ascii): %s", repr(splitted_data)
-            )
+            dgt_logger.info("Discarded instruction(began with non-ascii): %s", repr(splitted_data))
             discarded += 1
             continue
-        instructions.append(
-            {"instruction": inst, "input": prompt_input, "output": prompt_output}
-        )
+        instructions.append({"instruction": inst, "input": prompt_input, "output": prompt_output})
     return instructions, discarded
 
 

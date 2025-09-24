@@ -28,12 +28,8 @@ to_execute = [
 ]
 
 
-@pytest.mark.parametrize(
-    "namespace,data_builder_name,cmd_line_args,timeout", to_execute
-)
-def test_data_builders(
-    namespace: str, data_builder_name: str, cmd_line_args: str, timeout: int
-):
+@pytest.mark.parametrize("namespace,data_builder_name,cmd_line_args,timeout", to_execute)
+def test_data_builders(namespace: str, data_builder_name: str, cmd_line_args: str, timeout: int):
     """This file contains execution tests for each data builder (in the same way it
     would be called from the command-line). To add a new test, add your data builder,
     its command-line arguments, and a timeout to the 'to_execute' list. The command line
@@ -64,13 +60,9 @@ def test_data_builders(
     # wait for 'timeout' seconds or until process finishes
     p.join(timeout)
 
-    assert (
-        not p.is_alive()
-    ), f"'{data_builder_name}' data builder took to long to execute"
+    assert not p.is_alive(), f"'{data_builder_name}' data builder took to long to execute"
 
-    assert (
-        p.exitcode == 0
-    ), f"'{data_builder_name}' data builder failed during execution"
+    assert p.exitcode == 0, f"'{data_builder_name}' data builder failed during execution"
 
     # if thread is still active
     if p.is_alive():
@@ -95,9 +87,7 @@ def execute_db_test(
 ):
     namespaces = [namespace] if namespace != "core" else []
     namespaces.insert(0, "core")
-    namespaces.extend(
-        [x for x in base_args.pop("include_namespaces", []) if x not in namespaces]
-    )
+    namespaces.extend([x for x in base_args.pop("include_namespaces", []) if x not in namespaces])
 
     REGISTRATION_SEARCHABLE_DIRECTORIES.clear()
     generate_data(task_kwargs, builder_kwargs, namespaces=namespaces, **base_args)

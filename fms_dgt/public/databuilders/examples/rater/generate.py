@@ -35,9 +35,7 @@ class RatingDataBuilder(TransformationDataBuilder):
         super().__init__(*args, **kwargs)
 
         self._prompts = {}
-        for template_path in Path(Path(__file__).parent, "prompt_templates").glob(
-            "*.txt"
-        ):
+        for template_path in Path(Path(__file__).parent, "prompt_templates").glob("*.txt"):
             self._prompts[template_path.name[:-4]] = JinjaPromptTemplate(
                 template_path=template_path
             )

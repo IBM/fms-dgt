@@ -35,11 +35,7 @@ def test_field_map_multi():
     block(test_data)
     block = FieldMapBlock(name="test_field_map", field_map={"field2": "field3"})
     block(test_data)
-    assert (
-        test_data[0].field1 == 1
-        and test_data[0].field2 == 1
-        and test_data[0].field3 == 1
-    )
+    assert test_data[0].field1 == 1 and test_data[0].field2 == 1 and test_data[0].field3 == 1
 
 
 def test_field_map_dict():

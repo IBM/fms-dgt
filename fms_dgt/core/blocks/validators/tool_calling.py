@@ -76,15 +76,12 @@ class ToolCallValidator(ValidatorBlock):
         # Extract available tool names, tool call names and tool call IDs
         available_tool_names = set([str(tool.get(NAME)) for tool in inp.tools])
         tc_names = set([str(tc.get(NAME)) for tc in tool_calls_to_validate])
-        tc_ids = set(
-            [str(tc.get(CALL_ID)) for tc in tool_calls_to_validate if tc.get(CALL_ID)]
-        )
+        tc_ids = set([str(tc.get(CALL_ID)) for tc in tool_calls_to_validate if tc.get(CALL_ID)])
 
         # Exact-match duplicates check
-        if (
-            len(set([str(x) for x in tool_calls_to_validate]))
-            != len(tool_calls_to_validate)
-        ) or (len(set(tc_ids)) != len(tc_ids)):
+        if (len(set([str(x) for x in tool_calls_to_validate])) != len(tool_calls_to_validate)) or (
+            len(set(tc_ids)) != len(tc_ids)
+        ):
             dgt_logger.debug(
                 'Duplicate tool calls in "%s" for text "%s"',
                 inp.answer,
@@ -117,10 +114,7 @@ class ToolCallValidator(ValidatorBlock):
                 )
 
         # Check multiple unique tool calls, if `multi_output` == True
-        if (
-            inp.multi_output
-            and len(set([str(tc) for tc in tool_calls_to_validate])) <= 1
-        ):
+        if inp.multi_output and len(set([str(tc) for tc in tool_calls_to_validate])) <= 1:
             dgt_logger.debug(
                 'Expected multiple tool calls for text "%s" but received "%s"',
                 inp.answer,
@@ -153,9 +147,7 @@ class ToolCallValidator(ValidatorBlock):
 
         for idx, tool_call_to_validate in enumerate(tool_calls_to_validate):
             # Malformedness check
-            if not set(tool_call_to_validate.keys()).issubset(
-                set([NAME, ARGS, CALL_ID])
-            ):
+            if not set(tool_call_to_validate.keys()).issubset(set([NAME, ARGS, CALL_ID])):
                 dgt_logger.debug(
                     'Malformed tool call "%s" with additional keys for text "%s"',
                     json.dumps(tool_call_to_validate),
@@ -201,8 +193,7 @@ class ToolCallValidator(ValidatorBlock):
             ) as err:
                 # if error is about a var label, e.g., $var1, then ignore error. Otherwise, raise error
                 if not (
-                    allow_nested
-                    and any([str(err).startswith(f"'{tc_id}") for tc_id in tc_ids])
+                    allow_nested and any([str(err).startswith(f"'{tc_id}") for tc_id in tc_ids])
                 ):
                     dgt_logger.debug(
                         '"%s" tool call for text "%s" has following parameter validation error:\n%s',
@@ -238,7 +229,7 @@ class ToolCallValidator(ValidatorBlock):
             for arg_name, arg_value in tc_args.items():
 
                 # Check for argument name hallucinations
-                if not arg_name in matching_tool_args:
+                if arg_name not in matching_tool_args:
                     dgt_logger.debug(
                         'Hallucinated argument name "%s" for tool call "%s" for text "%s"',
                         arg_name,
@@ -281,10 +272,7 @@ class ToolCallValidator(ValidatorBlock):
                 if (
                     inp.check_arg_question_overlap
                     and not is_nested_call
-                    and (
-                        matching_tool_args[arg_name].get(TYPE_KEY)
-                        not in inp.ignore_types
-                    )
+                    and (matching_tool_args[arg_name].get(TYPE_KEY) not in inp.ignore_types)
                     and not ("date" in inp.ignore_types and _is_date_time(arg_value))
                     and not is_valid_tc_arg_overlap(arg_value, inp.question)
                 ):
@@ -320,9 +308,7 @@ class ToolCallValidator(ValidatorBlock):
                     )
 
         # if has_nested, then check_nested must be true. Otherwise, require_nested must be false
-        is_valid = (not has_nested and not inp.require_nested) or (
-            has_nested and allow_nested
-        )
+        is_valid = (not has_nested and not inp.require_nested) or (has_nested and allow_nested)
 
         if not is_valid:
             dgt_logger.debug(
@@ -452,9 +438,7 @@ def _indirect_nested_call(
                 continue
 
             # Find matching tool from list of tools
-            matching_tool = next(
-                tool for tool in tools if tool[NAME] == tool_call[NAME]
-            )
+            matching_tool = next(tool for tool in tools if tool[NAME] == tool_call[NAME])
 
             if (
                 (str(tool_call[CALL_ID]) + ".") in val
@@ -473,9 +457,7 @@ def _indirect_nested_call(
                     val.startswith(str(tool_call[CALL_ID]) + "." + out_param_name)
                     and " " not in val
                     for out_param_name in (
-                        matching_tool.get(OUTPUT_PARAMETERS, dict())
-                        .get(PROPERTIES, dict())
-                        .keys()
+                        matching_tool.get(OUTPUT_PARAMETERS, dict()).get(PROPERTIES, dict()).keys()
                     )
                 ]
             ):

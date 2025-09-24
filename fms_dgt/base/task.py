@@ -109,9 +109,7 @@ class Task:
         self.machine_data = []  # Tracks machine generated/transformed data
 
         # Determine store name from __init__ OR datastore's property, if defined OR task's name
-        self._store_name = (
-            store_name or (datastore or dict()).pop("store_name", None) or self._name
-        )
+        self._store_name = store_name or (datastore or dict()).pop("store_name", None) or self._name
 
         # Datastore configurations
         self._minimum_datastore_config = {
@@ -128,11 +126,7 @@ class Task:
         }
         self._formatted_datastore_config = {
             **self._minimum_datastore_config,
-            **(
-                formatted_datastore
-                if formatted_datastore is not None
-                else self._datastore_cfg
-            ),
+            **(formatted_datastore if formatted_datastore is not None else self._datastore_cfg),
         }
         self._task_card_datastore_cfg = {
             **self._minimum_datastore_config,
@@ -356,9 +350,7 @@ class Task:
         """
         self._post_proc_id += 1
         pp_ds_kwargs = {
-            "store_name": os.path.join(
-                self._store_name, f"postproc_data_{self._post_proc_id}"
-            ),
+            "store_name": os.path.join(self._store_name, f"postproc_data_{self._post_proc_id}"),
             **self._datastore_cfg,
             "restart": True,
         }
@@ -380,9 +372,7 @@ class Task:
         Returns:
             INPUT_DATA_TYPE: An instance of INPUT_DATA_TYPE.
         """
-        return self.INPUT_DATA_TYPE(
-            task_name=kwargs.pop("task_name", self.name), **kwargs
-        )
+        return self.INPUT_DATA_TYPE(task_name=kwargs.pop("task_name", self.name), **kwargs)
 
     def instantiate_output_example(self, **kwargs: Any) -> OUTPUT_DATA_TYPE:  # type: ignore
         """Instantiate an output example for this task. Designed to be overridden with custom initialization.
@@ -439,9 +429,7 @@ class Task:
         """
 
         if not self.formatter:
-            raise ValueError(
-                '"formatter" must be specified in the task to apply formatting.'
-            )
+            raise ValueError('"formatter" must be specified in the task to apply formatting.')
 
         return self.formatter.apply(data=data)
 
@@ -452,12 +440,9 @@ class Task:
             if iterators:
                 iterator = iterators[0]  # since we only have one final_data.jsonl
                 formatted_iterator = (
-                    self.apply_formatting(self.instantiate_output_example(**d))
-                    for d in iterator
+                    self.apply_formatting(self.instantiate_output_example(**d)) for d in iterator
                 )
-                dgt_logger.info(
-                    "Saving formatted data to %s", self.formatted_datastore.output_path
-                )
+                dgt_logger.info("Saving formatted data to %s", self.formatted_datastore.output_path)
                 self.formatted_datastore.save_data(formatted_iterator)
 
     def finish(self) -> None:
@@ -530,9 +515,7 @@ class GenerationTask(Task):
         # Initialize parent
         super().__init__(
             *args,
-            runner_config=init_dataclass_from_dict(
-                runner_config, GenerationTaskRunnerConfig
-            ),
+            runner_config=init_dataclass_from_dict(runner_config, GenerationTaskRunnerConfig),
             **kwargs,
         )
 
@@ -570,9 +553,7 @@ class GenerationTask(Task):
         # Initialize seed dataloader
         self._dataloader = None
         self._seed_dataloader_config = (
-            dataloader
-            if dataloader is not None
-            else {TYPE_KEY: "default", "loop_over": True}
+            dataloader if dataloader is not None else {TYPE_KEY: "default", "loop_over": True}
         )
         self._dataloader_state_datastore: Datastore = None
         self._dataloader_state: Any = None
@@ -733,9 +714,7 @@ class TransformationTask(Task):
         # Initialize parent
         super().__init__(
             *args,
-            runner_config=init_dataclass_from_dict(
-                runner_config, TransformationTaskRunnerConfig
-            ),
+            runner_config=init_dataclass_from_dict(runner_config, TransformationTaskRunnerConfig),
             **kwargs,
         )
 
@@ -760,9 +739,7 @@ class TransformationTask(Task):
         # Initialize transformation data dataloader
         self._dataloader = None
         self._transformation_data_dataloader_config = (
-            dataloader
-            if dataloader is not None
-            else {TYPE_KEY: "default", "loop_over": False}
+            dataloader if dataloader is not None else {TYPE_KEY: "default", "loop_over": False}
         )
         self._dataloader_state_datastore: Datastore = None
         self._dataloader_state: Any = None

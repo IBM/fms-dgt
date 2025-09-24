@@ -51,9 +51,7 @@ class RougeDedupValidator(ValidatorBlock):
         if rouge_types is None:
             rouge_types = ["lcs"]
         if not isinstance(rouge_types, list):
-            raise ValueError(
-                f"'rouge_types' must be provided as list, instead got {rouge_types}"
-            )
+            raise ValueError(f"'rouge_types' must be provided as list, instead got {rouge_types}")
         rouge_types = [x.strip() for x in rouge_types]
         for rouge_type in rouge_types:
             if rouge_type not in ["lcs", "n_1", "n_2", "n_3"]:
@@ -203,9 +201,7 @@ def _score_seqs(
     scores = []
     for rouge_type in rouge_types:
         if rouge_type == "lcs":
-            scores.append(
-                _score_lcs(target_tokens, prediction_tokens, max_thresh, score_func)
-            )
+            scores.append(_score_lcs(target_tokens, prediction_tokens, max_thresh, score_func))
         elif rouge_type in ["n_1", "n_2", "n_3"]:
             n = int(rouge_type.split("_")[-1])
             scores.append(_score_n(target_tokens, prediction_tokens, n, score_func))
@@ -227,9 +223,7 @@ def _score_n(
     for i in range(len(prediction_tokens) - n):
         pred_n_grams[str(prediction_tokens[i : i + n])] = 1
 
-    overlap = sum(
-        [pred_n_grams[tgt_k] for tgt_k in tgt_n_grams if tgt_k in pred_n_grams]
-    )
+    overlap = sum([pred_n_grams[tgt_k] for tgt_k in tgt_n_grams if tgt_k in pred_n_grams])
     return _score(overlap, len(pred_n_grams), len(tgt_n_grams), score_func)
 
 

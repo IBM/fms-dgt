@@ -19,7 +19,7 @@ class FieldMapBlock(Block):
         super().__init__(*args, **kwargs)
 
         if not isinstance(field_map, dict):
-            raise ValueError(f"field_map must be a dictionary")
+            raise ValueError("field_map must be a dictionary")
 
         self._field_map = field_map
 

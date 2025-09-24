@@ -34,9 +34,7 @@ class MultiTargetDatastore(Datastore):
 
         self._datastores: List[Datastore] = []
         for datastore_cfg in [primary] + additional:
-            assert (
-                TYPE_KEY in datastore_cfg
-            ), f"Must specify data store type with '{TYPE_KEY}' key"
+            assert TYPE_KEY in datastore_cfg, f"Must specify data store type with '{TYPE_KEY}' key"
             self._datastores.append(
                 get_datastore(
                     datastore_cfg.get(TYPE_KEY),

@@ -20,9 +20,7 @@ LM_ANTHROPIC_CFG = {
 }
 
 
-@pytest.mark.skipif(
-    not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic key is not available"
-)
+@pytest.mark.skipif(not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic key is not available")
 @pytest.mark.parametrize("model_cfg", [LM_ANTHROPIC_CFG])
 def test_completion(model_cfg):
     with pytest.raises(RuntimeError) as exc_info:
@@ -34,9 +32,7 @@ def test_completion(model_cfg):
     )
 
 
-@pytest.mark.skipif(
-    not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic key is not available"
-)
+@pytest.mark.skipif(not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic key is not available")
 @pytest.mark.parametrize("model_cfg", [LM_ANTHROPIC_CFG])
 def test_chat_completion(model_cfg):
     execute_chat_completion_flow(
@@ -50,9 +46,7 @@ def test_chat_completion(model_cfg):
     )
 
 
-@pytest.mark.skipif(
-    not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic key is not available"
-)
+@pytest.mark.skipif(not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic key is not available")
 @pytest.mark.parametrize("model_cfg", [LM_ANTHROPIC_CFG])
 def test_auto_chat_template(model_cfg):
     with pytest.raises(NotImplementedError) as exc_info:

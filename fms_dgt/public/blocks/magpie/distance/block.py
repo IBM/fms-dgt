@@ -144,9 +144,7 @@ class MagpieDistance(Block):
         instances: List[MagpieDistanceBlockData],
     ):
 
-        n_batches = (
-            len(dataset) + self._search_batch_size - 1
-        ) // self._search_batch_size
+        n_batches = (len(dataset) + self._search_batch_size - 1) // self._search_batch_size
 
         for batch_idx in tqdm(range(n_batches)):
             start_idx = batch_idx * self._search_batch_size
@@ -178,9 +176,7 @@ class MagpieDistance(Block):
                     if score < self._distance_threshold
                 ]
                 # Should remove itself
-                filtered_indices = [
-                    index for index in filtered_indices if index != start_idx + idx
-                ]
+                filtered_indices = [index for index in filtered_indices if index != start_idx + idx]
 
                 if len(filtered_indices) == 0:
                     repeat_count = 0
@@ -204,17 +200,11 @@ class MagpieDistance(Block):
                     instances[start_idx + idx].magpie_tags = {}
 
                 # Store results
-                instances[start_idx + idx].magpie_tags[
-                    "min_neighbor_distance"
-                ] = min_distance
+                instances[start_idx + idx].magpie_tags["min_neighbor_distance"] = min_distance
                 instances[start_idx + idx].magpie_tags["repeat_count"] = repeat_count
-                instances[start_idx + idx].magpie_tags[
-                    "min_similar_uuid"
-                ] = min_similar_uuid
+                instances[start_idx + idx].magpie_tags["min_similar_uuid"] = min_similar_uuid
 
-    def execute(
-        self, inputs: List[MagpieDistanceBlockData]
-    ) -> List[MagpieDistanceBlockData]:
+    def execute(self, inputs: List[MagpieDistanceBlockData]) -> List[MagpieDistanceBlockData]:
         # Cast to list, if necessary
         inputs = [entry for entry in inputs] if isinstance(inputs, map) else inputs
 

@@ -93,11 +93,9 @@ class Ollama(OpenAI):
                 response = show(model=self.model_id_or_path)
                 if response.modelinfo:
                     try:
-                        return [
-                            v
-                            for k, v in response.modelinfo.items()
-                            if "context_length" in k
-                        ][0]
+                        return [v for k, v in response.modelinfo.items() if "context_length" in k][
+                            0
+                        ]
                     except (KeyError, IndexError):
                         return NOT_GIVEN
                 else:
@@ -157,9 +155,7 @@ class Ollama(OpenAI):
 
             # Extract parameters
             params = (
-                self._chat_parameters
-                if method == self.CHAT_COMPLETION
-                else self._parameters
+                self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
             ).to_params(instance.gen_kwargs)
 
             # Trigger OpenAI completion functions
@@ -248,9 +244,7 @@ class Ollama(OpenAI):
     # ===========================================================================
     #                       MAIN FUNCTIONS
     # ===========================================================================
-    def completion(
-        self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs
-    ) -> None:
+    def completion(self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs) -> None:
         asyncio.run(
             self._execute_requests(
                 requests=requests,

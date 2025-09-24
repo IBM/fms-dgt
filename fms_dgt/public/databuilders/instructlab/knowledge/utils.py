@@ -166,13 +166,7 @@ def parse_qa_v2(text):
     qa_list = []
     for match in matches:
         question = match[0].replace("[Question]", "").replace("[/INST]", "").strip()
-        answer = (
-            match[1]
-            .replace("[End]", "")
-            .replace("[END]", "")
-            .replace("[/INST]", "")
-            .strip()
-        )
+        answer = match[1].replace("[End]", "").replace("[END]", "").replace("[/INST]", "").strip()
         # 3.a If we encounter a [End]/[END] tag in the question, then it wasn't parsed correctly, so we skip this example
         if ("[End]" in question) or ("[END]" in question):
             continue

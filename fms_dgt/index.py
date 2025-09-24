@@ -141,7 +141,7 @@ class DataBuilderIndex:
                         r_dir_index = rindex(check_from, "src")
                     else:
                         raise ValueError(
-                            f"Cannot automatically determine root directory of databuilders"
+                            "Cannot automatically determine root directory of databuilders"
                         )
 
                     f_builder_dir = os.path.join(*f_builder_dir[r_dir_index:])
@@ -149,7 +149,7 @@ class DataBuilderIndex:
                     config = utils.load_yaml_config(yaml_path, simple_mode=True)
 
                     # TODO: better validation as to what files are builders and what files aren't
-                    if not NAME_KEY in config:
+                    if NAME_KEY not in config:
                         return
 
                     builder_name = config[NAME_KEY]

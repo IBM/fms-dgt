@@ -44,9 +44,7 @@ async def monitor(parent_pid: int, check_interval: float):
 
 if __name__ == "__main__":
     # This section should be in sync with vllm/scripts.py for CLI entrypoints.
-    parser = FlexibleArgumentParser(
-        description="vLLM OpenAI-Compatible RESTful API server."
-    )
+    parser = FlexibleArgumentParser(description="vLLM OpenAI-Compatible RESTful API server.")
     parser = make_arg_parser(parser)
     parser.add_argument("--pid", required=True, type=int)
     parser.add_argument("--check-interval", required=True, type=float)
