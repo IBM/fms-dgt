@@ -8,16 +8,16 @@ name: instructlab/knowledge
 ######################################################
 blocks:
   - name: generator
-    type: watsonx
-    model_id_or_path: mistralai/mistral-medium-2505
+    type: ollama
+    model_id_or_path: mistral-small3.2
     temperature: 0.5
     max_new_tokens: 1024
   - name: validator
     type: lm_judge
     filter: true
     lm_config:
-      type: watsonx
-      model_id_or_path: mistralai/mistral-medium-2505
+      type: ollama
+      model_id_or_path: mistral-small3.2
       temperature: 0.5
       max_new_tokens: 1024
   - name: tagger
@@ -28,8 +28,8 @@ blocks:
     output_map:
       magpie_tags: tags
     lm_config:
-      type: watsonx
-      model_id_or_path: mistralai/mistral-medium-2505
+      type: ollama
+      model_id_or_path: mistral-small3.2
       temperature: 0.0
       max_new_tokens: 512
       stop: ["Q:"]

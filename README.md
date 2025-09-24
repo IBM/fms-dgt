@@ -6,7 +6,7 @@ DGT (pronounced "digit") is a framework that enables different algorithms and mo
 [![Code style: black](https://badgen.net/static/Code%20Style/black/black)](https://github.com/psf/black)
 ![GitHub License](https://badgen.net/static/license/Apache%202.0/green)
 
-\*\*[Setup](#setup) | [Usage](#usage)
+| [Setup](#setup) | [Usage](#usage) |
 
 This is the main repository for DiGiT, our **D**ata **G**eneration and **T**ransformation framework.
 
@@ -43,22 +43,43 @@ pip install -e ".[all]"
 For whichever of various API services you plan on using, you need to add configurations to `.env` file. Copy the `.env.example` as `.env` and add your KEYS as follows:
 
 ```yaml
-# watsonx
+# watsonx [Optional]
 WATSONX_API_KEY=<WatsonX key goes here>
 WATSONX_PROJECT_ID=<Project env variable>
 
-# openai
+# OpenAI [Optional]
 OPENAI_API_KEY=<OPENAI key goes here>
+
+# Azure OpenAI [Optional]
+AZURE_OPENAI_API_KEY=<AZURE OPENAI key goes here>
+
+# Antropic [Optional]
+ANTHROPIC_API_KEY=<ANTHROPIC key goes here>
 ```
 
 ## Usage
 
 To test whether you have been successful, run the following operation that references a databuilder.
 
-- If you have set up a `WATSONX_API_KEY` and `WATSONX_PROJECT_ID`
+- Using [ollama](https://ollama.com/)
+    > [!TIP]
+    > To run `mistral-small3.2` for one hour
+    > ```bash
+    > ollama run mistral-small3.2 --keepalive "1h" &
+    > ```
 
-```bash
-python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal --restart-generation
-```
+
+    ```bash
+    python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal --restart-generation
+    ```
+
+- Using [IBM watsonx](https://www.ibm.com/products/watsonx)
+
+    > [!CAUTION]
+    > you must set up a `WATSONX_API_KEY` and `WATSONX_PROJECT_ID` before using watsonx API service
+
+    ```bash
+    python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal --restart-generation --config-path configs/core/watsonx_simple.yaml
+    ```
 
 If successful, you should see the outputs of the command in the `./output` directory

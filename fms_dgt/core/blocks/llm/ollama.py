@@ -6,7 +6,7 @@ import logging
 
 # Third Party
 from httpx import HTTPError
-from ollama import chat, generate, show
+from ollama import show, Client
 from tqdm import tqdm
 
 # Local
@@ -65,19 +65,22 @@ class OllamaChatCompletionParameters(OllamaCompletionParameters):
 class Ollama(OpenAI):
     def __init__(
         self,
-        base_url: str,
+        base_url: str | None = None,
         **kwargs: Any,
     ):
-        # Step 1: Initialize parent
+        # Initialize parent
         super().__init__(
-            base_url=f"{base_url}/v1",
+            base_url=base_url,
             api_key="ollama",
             **kwargs,
         )
 
-        # Step 2: Set batch size, if None
+        # Set batch size, if None
         if not self.batch_size or self.batch_size > 1:
             self._batch_size = 1
+
+        # Create Ollama client
+        self._client = Client(host=base_url)
 
     # ===========================================================================
     #                       PROPERTIES
@@ -160,7 +163,7 @@ class Ollama(OpenAI):
 
             # Trigger OpenAI completion functions
             if method == self.CHAT_COMPLETION:
-                response = chat(
+                response = self._client.chat(
                     model=self.model_id_or_path,
                     messages=self._prepare_input(
                         instance,
@@ -172,7 +175,7 @@ class Ollama(OpenAI):
                     stream=False,
                 )
             elif method == self.COMPLETION:
-                response = generate(
+                response = self._client.generate(
                     model=self._model_id_or_path,
                     prompt=self._prepare_input(
                         instance,
