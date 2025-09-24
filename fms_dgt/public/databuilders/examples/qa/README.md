@@ -21,7 +21,7 @@ Default configuration for generator used by the data builder is available [here]
 
 ### Generators
 
-- `meta-llama/llama-3-3-70b-instruct` via `watsonx`.
+- `mistral-small3.2` via `ollama`.
 
 ### Post-processors
 
