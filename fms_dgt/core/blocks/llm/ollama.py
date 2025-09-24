@@ -6,7 +6,7 @@ import logging
 
 # Third Party
 from httpx import HTTPError
-from ollama import show, Client
+from ollama import Client, show
 from tqdm import tqdm
 
 # Local
