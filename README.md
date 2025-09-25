@@ -91,4 +91,4 @@ FMS-DGT is currently maintained by [Max Crouse](https://github.com/mvcrouse), [K
 
 ## License
 
-FMS-DGT has an Apache license, as found in the [LICENSE](LICENSE) file.
+FMS-DGT has an Apache 2.0 license, as found in the [LICENSE](LICENSE) file.
