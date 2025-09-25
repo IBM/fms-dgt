@@ -1,0 +1,17 @@
+name: simple
+blocks:
+  - name: generator
+    type: ollama
+    model_id_or_path: mistral-small3.2
+    temperature: 0.0
+    max_tokens: 512
+  - name: validator
+    type: noop
+  - name: rouge_val
+    type: rouge_scorer
+    filter: true
+    threshold: 1.0
+postprocessors:
+  - name: rouge_val
+metadata:
+  version: 1.0

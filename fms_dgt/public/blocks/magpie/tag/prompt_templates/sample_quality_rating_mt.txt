@@ -1,0 +1,28 @@
+## Instruction 
+
+You will be given a conversation between a User and an AI assistant.
+
+Please rate the assistant's response to each instruction. In particular, when judging, consider:
+
+- Instruction Following: Does the response directly address the question?
+- Accuracy: Is the information provided in the response correct?
+- Presentation: Is the response logically structured and easy to understand?
+
+## Conversation
+```
+{str_conversation}
+```
+You first need to provide an assessment that highlights the strengths and/or weaknesses of each assistant response. Then, please provide an overall score on a scale from 0 to 5 to all the responses provided by the assistant, where a higher score indicates a higher overall quality. 
+
+## Output Format
+Please provide your response in the following format, by filling in the placeholders in [...]:
+
+```
+{{   
+    "score": "[1,2,3,4,5]",
+    "explanation": "[...]"
+}}
+```
+
+Make sure to only output a valid json string.
+Please, do not add any other characters outside the json string.

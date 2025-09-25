@@ -1,0 +1,15 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: public/examples/qa_ratings
+task_description: A task for rating question-answering pairs on difficulty level
+created_by: IBM
+
+data_builder: public/examples/qa_rater
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+data:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/examples/rate/data.jsonl

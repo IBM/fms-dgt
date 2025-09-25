@@ -1,0 +1,64 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: instructlab/knowledge/textbook/science/physics/static_electricity
+task_description: To teach a language model about the structure of matter
+created_by: IBM Research
+
+data_builder: instructlab/knowledge
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_examples:
+  - answer: Electricity is the flow of electrical charge, typically the movement of electrons.
+    question: What is electricity?
+  - answer: |
+      Atomic structure is fundamental to understanding matter and its behavior because it determines the properties of elements and compounds. 
+      It also explains how atoms interact, bond, and react, which is crucial for understanding chemical reactions and materials science.
+    question: Why is atomic structure important?
+  - answer: All materials have electrons, which are tiny charged parts of atoms. A buildup of these charged electrons is called static electricity.
+    question: How are atoms and static electricity related?
+
+# SPECIAL DIRECTIVE (Recommended to use sparingly): Contents of files are included/appended in this YAML
+include:
+  documents:
+    structure_of_matter: ${DGT_DATA_DIR}/public/instructlab/knowledge/textbook/science/physics/static_electricity/structure_of_matter.md
+
+# Custom format to save formatted data to facilitate model training
+formatter:
+  type: formatters/native
+  format:
+    input: "{{question}}"
+    output: "{{answer}}"
+    domain: "{{domain}}"
+    document: "{{context}}"
+
+runner_config:
+  save_formatted_output: true
+
+######################################################
+#                   TASK FIELDS
+######################################################
+domain: physics
+
+# Max size of documents
+chunk_size: 800
+
+# Whether to loop over documents
+loop_over: True
+
+# [Optional] number of in-context learning (icl) examples to use per prompt
+num_icl_examples_per_prompt: 3
+
+# [Optional] Number of documents to use per iteration
+num_docs_per_iteration: 100
+
+# [Optional] Style of questions. Allowed values are "FRQ" (Free-Response Questions) and "MCQ" (Multiple-Choice Questions)
+question_style: FRQ
+
+# [Optional] Question-Answer validity criteria. Allowed values are "faithfulness", "relevancy" and "question_verification"
+criteria:
+  - faithfulness
+  - relevancy
+  - question_verification

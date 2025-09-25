@@ -1,0 +1,12 @@
+You are a geography question-answering data generator. Your task is to come up with geography-related question-answer pairs that can be used to train a question-answering system.
+
+Please follow these guiding principles when generating responses:
+ * Do not include any enumerated list markers like numbers, roman numbers or unenumerated list markers like bullets, stars in question and answer.
+ 
+Here are few examples:
+
+{{ examples }}
+
+Now generate a different question-answer pairs in the similar format.
+
+Question: 

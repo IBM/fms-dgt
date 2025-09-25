@@ -1,0 +1,105 @@
+[build-system]
+requires = ["setuptools>=40.8.0", "setuptools-scm>=8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fms_dgt"
+version = "0.1"
+description = "A framework for synthetic data generation"
+license = { "text" = "Apache-2.0" }
+readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: Apache License",
+]
+requires-python = ">=3.10.15,<3.13"
+dependencies = [
+    "Jinja2",
+    "psutil",
+    "sqlitedict",
+    "ray[default]",
+    "python-dotenv",
+    "pandas",
+    "datasets",
+    "rouge-score",
+    "scikit-learn",
+    "sentence-transformers",
+    "transformers",
+    "openapi-schema-validator",
+    "ibm-watsonx-ai",
+    "openai",
+    "tiktoken",
+    "python-dateutil",
+    "tqdm",
+    "ollama",
+    "anthropic",
+    "faiss-cpu",
+]
+
+[tool.setuptools.packages.find]
+include = ["fms_dgt*"]
+
+# required to include yaml files in pip installation
+[tool.setuptools.package-data]
+fms_dgt = ["**/*.yaml", "data/**/*"]
+
+[project.scripts]
+fms_dgt = "fms_dgt.public.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/IBM/fms_dgt"
+Repository = "https://github.com/IBM/fms_dgt"
+
+[project.optional-dependencies]
+# Feature specific dependencies
+vllm = ["vllm", "more_itertools"]
+
+# Pipeline specific dependencies
+
+# Namespace specific dependencies
+public = ["lingua-language-detector"]
+
+# Development setup dependencies
+dev-test = ["pytest", "pytest-cov"]
+dev-fmt = ["pre-commit", "ruff"]
+dev-build = ["setuptools>=60", "setuptools-scm>=8.0"]
+
+# Full install from end-user perspective
+all = ["fms_dgt[public]"]
+
+# Full install from developer perspective
+all-dev = ["fms_dgt[all, dev-test, dev-fmt, dev-build]"]
+
+
+# -----------------------
+# Black configuration
+# -----------------------
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+# -----------------------
+# isort configuration
+# -----------------------
+[tool.isort]
+profile = "black"
+line_length = 100
+py_version = 310
+
+# -----------------------
+# Ruff configuration
+# -----------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+ignore = ["I001", "E501"]  # Ignore import sorting (handled by isort)
+
+[tool.ruff.lint]
+# Enable rules for linting (flake8, pycodestyle, warnings)
+select = ["F", "E", "W"]
+
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "F401", # imported but unused
+    "F403"  # unable to detect undefined names
+]

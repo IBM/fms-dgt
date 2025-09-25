@@ -1,0 +1,32 @@
+# Standard
+import os
+
+# Third Party
+from dotenv import load_dotenv
+
+# Local
+from fms_dgt.base.registry import register_resource
+from fms_dgt.base.resource import BaseResource
+
+
+@register_resource("api")
+class ApiKeyResource(BaseResource):
+    def __init__(self, key_name: str, call_limit: int):
+        super().__init__(key_name)
+
+        load_dotenv()
+        self._key = os.getenv(key_name, None)
+        if self._key == "":
+            self._key = None
+
+        assert self._key is not None, f"Could not find API key {key_name} in config or environment!"
+
+        self._max_calls = call_limit
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def max_calls(self):
+        return self._max_calls

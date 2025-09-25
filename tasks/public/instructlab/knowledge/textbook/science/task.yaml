@@ -1,0 +1,73 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: instructlab/knowledge/textbook/science_photosynthesis_and_electricity
+created_by: IBM Research
+task_description: To teach a language model about science
+
+data_builder: instructlab/knowledge
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_examples:
+  - answer: The word respiration is commonly used to describe the process of breathing in oxygen and breathing out carbon dioxide.
+    question: What is respiration?
+  - answer: An ecosystem is a community of organisms and their physical environment interacting together.
+    question: What is an ecosystem?
+  - answer: Electricity is the flow of electrical charge, typically the movement of electrons.
+    question: What is electricity?
+  - answer: All materials have electrons, which are tiny charged parts of atoms. A buildup of these charged electrons is called static electricity.
+    question: How are atoms and static electricity related?
+
+# Custom format to save formatted data to facilitate model training
+formatter:
+  type: formatters/native
+  format:
+    input: "{{question}}"
+    output: "{{answer}}"
+    domain: "{{domain}}"
+    document: "{{context}}"
+
+runner_config:
+  save_formatted_output: true
+
+######################################################
+#                   TASK FIELDS
+######################################################
+domain: science
+
+# Max size of documents
+chunk_size: 800
+
+# Whether to loop over documents
+loop_over: True
+
+# Specify knowledge datastore and field-mapping
+knowledge:
+  # Datastore containing knowledge documents
+  datastore_config:
+    type: default
+    store_name: documents
+    data_path: ${DGT_DATA_DIR}/public/instructlab/knowledge/textbook/science/**
+    data_formats:
+      - jsonl
+
+  # Field mapping ("*": "*" indicates retain everything as is)
+  fields:
+    "*": "*"
+
+# [Optional] number of in-context learning (icl) examples to use per prompt
+num_icl_examples_per_prompt: 3
+
+# [Optional] Number of documents to use per iteration
+num_docs_per_iteration: 100
+
+# [Optional] Style of questions. Allowed values are "FRQ" (Free-Response Questions) and "MCQ" (Multiple-Choice Questions)
+question_style: FRQ
+
+# [Optional] Question-Answer validity criteria. Allowed values are "faithfulness", "relevancy" and "question_verification"
+criteria:
+  - faithfulness
+  - relevancy
+  - question_verification

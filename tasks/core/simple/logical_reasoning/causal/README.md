@@ -1,4 +1,9 @@
-                                 Apache License
+# Notice
+
+The code in this folder is modified from the instructlab/taxonomy repository on GitHub. For the original code, see [instructlab/taxonomy](https://github.com/instructlab/taxonomy) with the following license.
+
+```license
+Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
 
@@ -186,7 +191,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [2025] [Maxwell Crouse, Kshitij Fadnis, Siva Sankalp Patel, Pavan Kapanipathi]
+   Copyright [yyyy] [name of copyright owner]
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -199,3 +204,4 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+```

@@ -1,0 +1,16 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+name: public/examples/qa_rater
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+blocks:
+  - name: rater
+    type: ollama
+    model_id_or_path: mistral-small3.2
+    temperature: 0.0
+    max_tokens: 1024
+metadata:
+  version: 1.0

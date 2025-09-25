@@ -1,0 +1,31 @@
+## Instruction 
+
+We would like to request your feedback on the performance of AI assistant in regard to the instruction and response displayed following.
+
+Instruction: 
+```
+{input}
+```
+Response:
+```
+{output}
+```
+
+Please rate according to the accuracy, instruction following, and presentation of the response to the instruction. In particular, when judging, consider:
+
+- Instruction Following: Does the answer directly address the question?
+- Accuracy: Is the information provided in the response correct?
+- Presentation: Is the answer logically structured and easy to understand?
+
+You should provide each assistant a score on a scale from 0 to 5, where a higher score indicates a higher overall quality. 
+You should also provide a comprehensive explanation of your assesment.
+
+## Output Format
+Please provide your response in the following format, by filling in the placeholders in [...]:
+
+```
+{{   
+    "score": "[1,2,3,4,5]",
+    "explanation": "[...]"
+}}
+```

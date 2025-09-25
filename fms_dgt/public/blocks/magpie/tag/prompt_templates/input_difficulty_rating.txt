@@ -1,0 +1,21 @@
+# Instruction 
+
+You first need to identify the given user intent and then label the difficulty level of the user query based on the content of the user query.
+
+## User Query
+```
+{input}
+```
+
+## Output Format
+Given the user query, in your output, you first need to identify the user intent and the knowledge needed to solve the task in the user query.
+Then, rate the difficulty level of the user query as `very easy`, `easy`, `medium`, `hard`, or `very hard`.
+
+Now, please output the user intent and difficulty level below in a json format by filling in the placeholders in []:
+```
+{{   
+    "intent": "The user wants to [....]",
+    "knowledge": "To solve this problem, the models need to know [....]",
+    "difficulty": "[very easy/easy/medium/hard/very hard]"
+}}
+```
