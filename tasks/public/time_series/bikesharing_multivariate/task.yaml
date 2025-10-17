@@ -1,0 +1,40 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: time_series/bikesharing_multivariate
+task_description: This task is used to generate synthetic time series data.
+created_by: IBM Research
+
+data_builder: time_series
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+data:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/time_series/bikesharing_full.parquet
+
+######################################################
+#                   TASK FIELDS
+######################################################
+data_params:
+  train_length: 5000 # length of the original time series that we want to use for augmentation
+  train_samples: 1 # number of sample in the original data, 1 for univariate / multivariate case
+  augmentation_strategy: multivariate
+  train_channels:
+    - cnt
+    - temp
+
+# sdforger args
+sdforger_params:
+  k_bit: null
+  min_outputs_to_generate: 50
+  max_outputs_to_generate: 100
+  inference_batch: 64 # number of input generated per inference
+  norms_diversity_threshold: 1 # diversity score used to stop generation, set to 0 to disable
+  embedding_type: "fica" # "fpc"
+  embedding_dim: auto # int=3 used in paper, set 'auto' to dynamically determine the embedding diemnsion based on the variance_explained
+  variance_explained: 0.7
+  min_windows_number: 30 # minimum number of samples for training
+  min_windows_length: 300 # length of the samples generated
+  input_tokens_precision: 4 # decimal precision of input token values.

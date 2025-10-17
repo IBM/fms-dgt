@@ -1,0 +1,24 @@
+name: time_series
+
+blocks:
+  - name: trainer
+    type: public/trainers/sdforger-tuning
+
+    # General training args
+    model_id_or_path: gpt2 #ibm-granite/granite-3.0-2b-base
+    learning_rate: 0.00008
+    num_train_epochs: 100
+    per_device_train_batch_size: 32 # update this value as per your system memory
+    seed: 42
+
+# Target inference model will be loaded from the fine-tuned checkpoint above
+target:
+  type: vllm # Use only vllm as the lm provider type
+  dtype: float32
+  trust_remote_code: true
+  ignore_mismatched_sizes: true
+  temperature: 1.3
+  max_tokens: 1000
+
+metadata:
+  version: 1.0
