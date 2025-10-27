@@ -1,0 +1,24 @@
+site_name: DiGiT
+nav:
+  - Getting Started:
+    - sections/getting_started/installation.md
+    - sections/getting_started/try-it.md
+    - sections/getting_started/command_line_arguments.md
+  - Key Concepts:
+    - sections/key_concepts/tasks.md
+    - sections/key_concepts/databuilders.md
+    - sections/key_concepts/blocks.md
+    - sections/key_concepts/datastores.md
+    - sections/key_concepts/dataloaders.md
+  - Tutorials:
+    - sections/tutorials/from_scratch.md
+    - sections/tutorials/adding_new_blocks.md
+    - sections/tutorials/modify_existing.md
+    - sections/tutorials/bring_your_own.md
+    - sections/tutorials/transformation_pipeline.md
+    - sections/tutorials/examples.rst
+  - Contributing:
+    - sections/contributing/guidelines.md
+    - sections/contributing/ways_to_contribute.md
+    - sections/contributing/development.md
+theme: readthedocs
