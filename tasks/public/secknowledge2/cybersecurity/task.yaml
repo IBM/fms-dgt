@@ -12,6 +12,7 @@ retriever:
   cache_file: data/public/secknowledge2/cybersecurity_search_results_cache.json
 max_queries_per_instruction: 2
 summarize_web_results: False
+templates_dir: data/public/secknowledge2/templates/cybersecurity
 seed_datastore:
   type: default
   data_path: ${DGT_DATA_DIR}/public/secknowledge2/security_dataset_mc.json
