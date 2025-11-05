@@ -1,0 +1,367 @@
+[
+  {
+    "name": "MitreFlan",
+    "subcategories": [
+      {
+        "name": "cot_procedure_platform_mapping_CoT_procedure_platform",
+        "description": "Map a procedure description to its corresponding platform(s) using a Chain-of-Thought (CoT) approach.",
+        "structure": "In this task, your objective is to map a procedure description to its corresponding platform(s) using a Chain-of-Thought (CoT) approach. Follow the steps below to provide a clear and well-structured response:\n1. Identify the relevant procedure \u2013 Start by analyzing the description and linking it to a specific MITRE procedure. Clearly state how the software involved uses the corresponding technique or sub-technique.\nExample: \u201cThe provided description pertains to the MITRE procedure in which the software TEARDROP employs the technique Obfuscated Files or Information (T1027).\u201d\n2. State which platforms may potentially be mapped to the procedure. Example: \u201cThe technique Obfuscated Files or Information (T1027) is applicable to the platforms: Network, Windows, macOS, and Linux.\u201d\n3. Identify and describe all platforms that correspond to the technique or sub-technique\u2014list every platform where the (sub)technique is applicable4. Conclude with the procedure-to-platform mapping \u2013 Summarize the outcome of the mapping.\nExample: \u201cTherefore, the given procedure description is associated with the platforms: Network, Windows, macOS, and Linux.\u201d\n\n",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cot_procedure_tactic_mapping_CoT",
+        "description": "Map a procedure description to the specific tactic name and identifier in the MITRE ATT&CK framework using CoT.",
+        "structure": "In this task, your goal is to map a procedure description to its corresponding MITRE ATT&CK tactic name and identifier using a Chain-of-Thought (CoT) approach. Follow the steps below to ensure a clear and structured response:\n1. State and explain the procedure\nExample: \u201cThe description corresponds to the MITRE procedure involving the sub-technique Archive via Custom Method (T1560.003), as used in campaign C0017.\u201d\n2. State and explain, the key points in the procedure that may lead to relevant sub-techniques and techniques\n3. Following the previous points, map to tactic \u2013 Identify the broader tactic associated with the technique.\n4. Conclude with the tactic mapping \u2013 Summarize the mapping outcome.\nExample: \u201cTherefore, the description is associated with the tactic Collection (TA0009).\u201d\n\n**General Instructions:**  \nAlways ensure each step logically builds upon the previous one, and support conclusions with clear rationale.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cot_procedure_technique_mapping_CoT",
+        "description": "Map a procedure description to the specific tactic name and identifier in the MITRE ATT&CK framework using CoT.",
+        "structure": "In this task, your goal is to map a procedure description to its corresponding MITRE ATT&CK technique name and identifier using a Chain-of-Thought (CoT) approach. Follow the steps below to ensure a clear and structured response:\n1. Identify the relevant procedure \u2013 Begin by interpreting the description\n2. Map to sub-technique \u2013 explain the key points in the procedure while using hints which sub-technique could be relevant, followed by a conclusion of which specific sub-technique is relevant. \n3. Given the previous point, Map to technique  \u2013 Identify the broader technique  associated with the sub-technique previously introduced\n4. Conclude with the tactic mapping \u2013 Summarize the mapping outcome.\nExample: \u201cTherefore, the description is associated with the tactic Collection (TA0009).\u201d",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cot_tactic_mapping_CoT",
+        "description": "Map a sub-technique description to the corrosponding Tactic",
+        "structure": "In this task, you are asked to map a specific MITRE ATT&CK sub-technique to its corresponding tactic. Follow the structured guidance below to produce a clear and professional response:\n1. Task Introduction: Begin with a concise explanation of the task. Clearly state the sub-technique being analyzed and the goal of identifying relevant tactic.\n2. Map to sub-technique \u2013 explain the key points in the procedure while using hints which sub-technique could be relevant, followed by a conclusion of which specific sub-technique is relevant. \n3. State what is the techniques that the sub-techniques in previous points were mentioned. \n4. State the tactic related to all the points above\n4. Conclude with the tactic mapping \u2013 Summarize the mapping outcome.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cot_technique_mapping_CoT",
+        "description": "Map a technique description to the corrosponding Tactic",
+        "structure": "In this task, you are asked to map a specific MITRE ATT&CK technique to its corresponding tactic. Follow the structured guidance below to produce a clear and professional response:\n1. Task Introduction: Begin with a concise explanation of the task. Clearly state the technique being analyzed and the goal of identifying relevant tactic.\n2. Explain the key points raised in the description that may hint the relevant sub technique/ technique.\n3. From the above points, deduce which  technique are the relevant\n3. Justify the mapping: Briefly explain why this ) technique is appropriate based on the content of the description.\n4. Conclude with the tactic mapping \u2013 Summarize the mapping outcome.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cot_technique_platform_mapping_CoT_procedure_platform",
+        "description": "Map a technique description to its corresponding platform(s) using a Chain-of-Thought (CoT) approach.",
+        "structure": "In this task, your objective is to map a technique description to its corresponding platform(s) using a Chain-of-Thought (CoT) approach. Follow the steps below to provide a clear and well-structured response:\n1. Task Introduction: Begin with a concise explanation of the task. Clearly state the technique being analyzed and the goal of identifying relevant tactic.\n2. Explain the key points raised in the description that may hint the relevant sub technique/ technique.\n3. Map the technique or sub-technique to applicable platforms \u2013 Indicate all platforms where this (sub)technique is applicable.\n4. Conclude with the technique-to-platform mapping \u2013 Summarize the outcome of the mapping.\nExample: \u201cTherefore, the given procedure description is associated with the platforms: Network, Windows, macOS, and Linux.\u201d\n\n",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cot_yes_no_tactic_mapping_CoT",
+        "description": "Determine whether a sub-technique description corresponds to a specific tactic using a Chain-of-Thought (CoT) approach.",
+        "structure": "Your objective is to determine whether a given sub-technique description corresponds to a specific tactic, using the following Chain-of-Thought (CoT) reasoning process:\n1. Strategy Explanation: First, map the description to a relevant sub-technique. Then, identify the technique associated with that sub-technique. Finally, map the technique to its tactic.\n2. Mapping Steps:\nA. Sub-technique Mapping: Identify the most appropriate sub-technique and provide a one-line explanation for your choice.\nB. Technique Mapping: Specify the technique to which the sub-technique belongs.\nC.Tactic Mapping: Identify the tactic associated with the technique.\n4. Conclusion:Determine whether the final mapped tactic matches the given tactic. Clearly state your conclusion.\n\n",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cot_yes_no_technique_mapping_CoT",
+        "description": "Determine whether a sub-technique description corresponds to a specific technique using a Chain-of-Thought (CoT) approach.",
+        "structure": "Your objective is to determine whether a given sub-technique description corresponds to a specific technique, using the following Chain-of-Thought (CoT) reasoning process:\n1. Strategy Explanation: Begin by outlining your strategy. First, map the description to a relevant sub-technique. Then, identify the technique associated with that sub-technique.\n2.Mapping Steps:\nA. Sub-technique Mapping: Identify the most appropriate sub-technique and provide a one-line explanation for your choice.\nB. Technique Mapping: Specify the technique to which the sub-technique belongs.\n3. Conclusion: Determine whether the final mapped technique matches the given tactic. Clearly state your conclusion.\n\n",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mite_datasource_collection_layer_datasource",
+        "description": "Map a collocation layer to data source",
+        "structure": "The core task is to answer questions about the collection layers of specific data sources documented in the MITRE framework.\n\n**Response Structure:**\n1. Identify the specific data source mentioned in the question and briefly describe it.\n2. List the collection layers of this datasource, and provide 1-2 sentences that describe each collection layer.\n3. Connect between the datasource and collection layers - explain how the datasource can be physically collected from each collection layer.\n\n**General Instructions:**\n- Ensure that the information extracted is accurate and relevant to the question.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mite_used_by_correlation_campaign_software",
+        "description": "idetify the software used in a given campaiign",
+        "structure": "The core task is to identify the softwares used by threat actors in specific attack campaigns.\n\n**Response Structure:**\n1. Identify the specific campaign mentioned in the question and describe it.\n2. Recall the main attack vector that attackers carried in this attack.\n3. List all softwares used by the attackers in this campign and for each software describe how it helped the attackers achieve their goal in this campign.\n4. Conclude by summarizing the main takeaways.\n\n**General Instructions:**\nEnsure the accuracy of the information retrieved and provide only the relevant software names used in the specified campaign.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_description_campaign",
+        "description": "Answer a question about the description of a specific campign docummented in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked for providing a description to a campaign docummented in the MITRE ATT&CK framework. Here is a general guideline for describing one in a well-structured and professional way:\n1. High-level summary: One- or two-sentence overview: adversary, objective, and scope.\n2. Adversary Group: Name of the threat actor(s) behind the campaign (if known) and relevant aliases or APT designators.\n3. Timeline & Geography: Dates when the campaign was active, primary regions or sectors targeted.\n4. Software: List the malicious software that the attackers used, if known, and how they used each software.\n5. Techniques: List the techniques used in the campaign, and how each technique was used.\n6. Campaign Playbook: Typical kill-chain flow: how the adversary moved from reconnaissance to exfiltration.\n7. Impact & Objectives: What the adversary achieved or aimed to achieve (e.g., espionage, data destruction).\n8. Detection & Response: Key indicators of compromise (IOCs), recommended monitoring and detection methods.\n9. Mitigations & Recommendations: Best practices, patches, configurations, and user-level defenses.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_description_datasource",
+        "description": "Answer a question about the description of a specific data source docummented in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked for providing a description to a data source docummented in the MITRE ATT&CK framework. Here is a general guideline for describing one in a well-structured and professional way:\n1. Description: One-sentence description of what that data source captures.\n2. Contributors: Name the authoring organization or community group\n3. Platforms: List all platforms that this datasource supports.\n4. Collection Layers: Specify where the datasource may be physically collected.\n5. Data Components: Provide a comprehensive summary of all the data components of this data source, including examples, and collection measures.\n6. Technique Mapping: Select the top techniques that are associated with the datasrouce and explain how the datasource helps to detect the techniques.\n7. Applications: Find real world use cases where this datasource helped detect a threat before doing serious harm.\nItems 1-4 should be a single paragraph, item 5 should have a paragraph of its own and item 6 and 7 should be a single (but long) paragraph.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_description_mitigation",
+        "description": "Answer a question about the description of a specific mitigation docummented in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked for providing a description to a mitigation docummented in the MITRE ATT&CK framework. Here is a general guideline for describing one in a well-structured and professional way:\n1. Description: Describe, shortly, what the mitigation is, and what it is supposed to mitigate.\n2. Measures: Explain through what measures this mitigation could be implemented, and how.\n3. Technique Mapping: Select the top techniques that are associated with the mitigation and explain how the datasource helps to detect the techniques.\n4. Applications: Find real world use cases where this datasource helped detect a threat before doing serious harm.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_description_software",
+        "description": "Answer a question about the description of a specific software in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked for providing a description to a MITRE ATT&CK software. Here is a general guideline for describing one in a well-structured and professional way:\n1. Software description: Describe the software, explain how it operates and what it does that helps the attacker achieve his goal.\n2. Platform mapping: Throughout the explanation of the previous point, write the hints from the above points that helps to understand what are  the platforms where the software can be applied. \n3. Related techniques: List any known techniques that are associated with the software and explain how the software may utilized each technique. This helps to illustrate the practical applications of the software.\n4. Related groups and practical uses: List all known groups that are associated with the software, and if available, provide information about real-world use cases in campigns and reports of how the software was utilized to achieve a malicious goal. This helps the user to understand in which use cases the software is used and when to look for it.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_description_tactic",
+        "description": "Answer a question about the description of a specific tactic in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked for providing a description to a MITRE ATT&CK tactic. Here is a general guideline for describing one in a well-structured and professional way:\n1. Tactic description: provide a clear and concise description of the tactic. \n2. Why: explain why an attacker would want to accomplish the goal of the tactic.\n3. Related techniques: find core techniques that accomplish the goal of the tactic and explain how they do so.\n4. Give an example scenario where achieving the tactic goal was beneficial for an attacker to do something malicious.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_description_technique",
+        "description": "Answer a question about the description of a specific technique in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked for providing a description to a MITRE ATT&CK technique. Here is a general guideline for describing one in a well-structured and professional way:\n1. Tactic mapping: Identify the parent tactic for the technique, explain, if exists, its parent technique which is associated with. Explain them shortly so we can understand the domain,  this helps to understand the purpose of the technique within the context of an attack.\n2. Platform mapping: Identify the platforms where the technique can be applied. This includes operating systems, applications, and environments.\n3. Technique description: Provide a clear and concise description of the technique. Explain how it works, what it does, and its potential impact on the target system or network.\n4. Related Procedures: List any known procedures or examples of how the technique has been used in real-world attacks. This helps to illustrate the practical application of the technique.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_detection_detection",
+        "description": "Map a technique to the corrosponding Detection",
+        "structure": "In this task, you are asked to identify the appropriate detection for a given technique.\nGuidelines for Structuring Your Response:\n1. Begin with a short introduction to the mitre techniques. \n2. Provide a short explanation of how attackers exploit this technique\n3. Based on the previous point, with logical sense, provide a list of relevant detection. For each detection, include:\nA. The detection name\nB. A short description of the detection\nC. One sentence explaining how it helps detecting the given technique\n4. Conclude with a brief summary of the overall detections approach.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_mapping_datasource",
+        "description": "Map a data source description to the specific data source name and identifier in the MITRE ATT&CK framework.",
+        "structure": "The core task is to map a given datasource description to the relevant MITRE ATT&CK datasource with its respective ID and name.\n\n**Response Structure:**\n1. **Parse the description** - extract key cues like the possible platforms for this data source (Windows, Linux, macOS, cloud/IaaS/SaaS, mobile, network), what are the collection layers (host, network, cloud control plane, identity, application), primary nouns (\u201cprocess,\u201d \u201cregistry,\u201d \u201cservice,\u201d \u201cpipe,\u201d \u201cIAM role,\u201d \u201cS3 bucket,\u201d \u201cDNS\u201d), and action verbs (\u201ccreate,\u201d \u201cmodify,\u201d \u201cread,\u201d \u201cexecute,\u201d \u201cconnect,\u201d \u201cauthenticate,\u201d \u201cenumerate\u201d)\n2. **Candidates** - list 1-3 likely data sources and the specific components whose verbs match.\n3. **Break ties with platform + layer rules** - Windows-only clues (\u201cHKLM\u201d, \u201cLSASS\u201d, \u201cGPO\u201d, \u201cservice control manager\u201d) favor Windows-specific sources (Windows Registry, Active Directory, Service), kernel/driver vs user-mode puts me toward Driver/Module vs Process/Command, cloud control-plane terminology (\u201cCloudTrail\u201d, \u201cIAM\u201d, \u201cAuditLog\u201d) \u2192 Cloud Service/IAM/Cloud Storage sources, network-only signals (ports, protocols, flows) \u2192 Network Traffic...\n4. **Attack the canonical name + DS ID** - Once the best source is picked, supply the data source name and ID.\n\n**General Instructions:**\n- Ensure that the matched MITRE ATT&CK datasource accurately reflects the given description.\n- Always double-check your answer for accuracy before finalizing",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_mapping_mitigation",
+        "description": "Map mitigation description to Mitigation name and ID",
+        "structure": "Your goal is to map a given mitigation description to the correct MITRE ATT&CK mitigation name and ID.\nPlease follow these steps:\n1. Analyze the Description - Identify the key mitigation method or strategy described that may hint the actual mitre mitigation\n2. Map to MITRE Mitigation - Select the most relevant mitigation name and ID from the MITRE ATT&CK framework.\n3. Explain Your Reasoning - Briefly explain how the description aligns with the selected mitigation, highlighting the key matching elements.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_mapping_software",
+        "description": "Map Description to MITRE Software",
+        "structure": "Your goal is to identify the correct MITRE ATT&CK software (name and ID) based on a given description.\nPlease follow these steps:\n1. Analyze the Description: Extract key details such as functionality, behavior, or known usage patterns. Pay extra attention to details that may hint the software. \n2. Identify Matching Software:  Match the description to the most relevant MITRE software entry, including its name and ID.\n3. Explain Your Reasoning: Clearly state how the description aligns with the selected software, referencing specific details that support the match.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_mapping_tactic",
+        "description": "Map a tactic description to the specific tactic name and identifier in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked to map a description of an attack tactic to its corresponding MITRE ATT&CK tactic name and identifier. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Analysis: analyze what the description mentioned talks about and extract the key methodology discussed in it.\n2. Techniques: list some MITRE ATT&CK techniques that might implement this methodology.\n3. Put it all together: reason about what is common to all techniques and find out which tactic is common to most of them.\n4. Provide the mapping to the tactic name and identifier in the MITRE ATT&CK framework.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the mapping. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_mapping_technique",
+        "description": "Map a technique description to the specific technique name and identifier in the MITRE ATT&CK framework.",
+        "structure": "In this task, you are asked to map a description of an attack technique to its corresponding MITRE ATT&CK technique name and identifier. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Analysis: analyze what the description mentioned talks about and extract the key methodology discussed in it.\n2. Techniques: list some MITRE ATT&CK techniques that might implement this methodology.\n3. Candidate elimination: eliminate techniques from step 2 that are irrelevant, and explain in one sentence why a technique is eliminated / not eliminated.\n4. Provide the mapping to the technique name and identifier in the MITRE ATT&CK framework.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the mapping. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_description_datasource",
+        "description": "Given a description of a datasource and the name and ID of a specific datasource from the MITRE ATT&CK framework, determine whether or not the description corresponds to the datasource.",
+        "structure": "In this task, you are given the name and identifier of a datasource docummented in the MITRE ATT&CK framework, and additionaly a description of a datasource. Your task is to determine whether or not the description corresponds to the datasource. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. Datasource analysis: Shortly describe the given datasource to the best of your knowledge.\n3. Compare: compare between the given description and datasource based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the description corresponds to the datasource, or \"No\" if the description does not align with it. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_description_mitigation",
+        "description": "Given a description of a mitigation and the name and ID of a specific mitigation from the MITRE ATT&CK framework, determine whether or not the description corresponds to the mitigation.",
+        "structure": "In this task, you are given the name and identifier of a mitigation docummented in the MITRE ATT&CK framework, and additionaly a description of a mitigation. Your task is to determine whether or not the description corresponds to the mitigation. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. mitigation analysis: Shortly describe the given mitigation to the best of your knowledge.\n3. Compare: compare between the given description and mitigation based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the description corresponds to the mitigation, or \"No\" if the description does not align with it. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_description_software",
+        "description": "Given a description of a software and the name and ID of a specific software from the MITRE ATT&CK framework, determine whether or not the description corresponds to the software.",
+        "structure": "In this task, you are given the name and identifier of a software docummented in the MITRE ATT&CK framework, and additionaly a description of a software. Your task is to determine whether or not the description corresponds to the software. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. software analysis: Shortly describe the given software to the best of your knowledge.\n3. Compare: compare between the given description and software based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the description corresponds to the software, or \"No\" if the description does not align with it. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_description_tactic",
+        "description": "Given a description of a tactic and the name and ID of a specific tactic from the MITRE ATT&CK framework, determine whether or not the description corresponds to the tactic.",
+        "structure": "In this task, you are given the name and identifier of a tactic docummented in the MITRE ATT&CK framework, and additionaly a description of a tactic. Your task is to determine whether or not the description corresponds to the tactic. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. tactic analysis: Shortly describe the given tactic to the best of your knowledge.\n3. Compare: compare between the given description and tactic based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the description corresponds to the tactic, or \"No\" if the description does not align with it. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_description_technique",
+        "description": "Given a description of a technique and the name and ID of a specific technique from the MITRE ATT&CK framework, determine whether or not the description corresponds to the technique.",
+        "structure": "In this task, you are given the name and identifier of a technique docummented in the MITRE ATT&CK framework, and additionaly a description of a technique. Your task is to determine whether or not the description corresponds to the technique. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. technique analysis: Shortly describe the given technique to the best of your knowledge.\n3. Compare: compare between the given description and technique based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the description corresponds to the technique, or \"No\" if the description does not align with it. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_description_campaign",
+        "description": "Given a description of a campaign and the name and ID of a specific campaign from the MITRE ATT&CK framework, determine whether or not the description corresponds to the campaign.",
+        "structure": "In this task, you are given the name and identifier of a campaign docummented in the MITRE ATT&CK framework, and additionaly a description of a campaign. Your task is to determine whether or not the description corresponds to the campaign. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. campaign analysis: Shortly describe the given campaign to the best of your knowledge.\n3. Compare: compare between the given description and campaign based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the description corresponds to the campaign, or \"No\" if the description does not align with it. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_two_background_tactics_techniques",
+        "description": "Answer a question about the relation between a MITRE tactic and technique.",
+        "structure": "In this task, you are given a tactic and a technique, both docummented in the MITRE ATT&CK framework. Your task is to determine whether or not the technique is related to the tactic. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Tactic analysis: Shortly describe the tactic in high level.\n2. technique analysis: Shortly describe the technique in high level.\n3. Compare: compare between the given tactic and technique based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the tactic is related to the technique, or \"No\" if the two are not related. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_two_background_techniques_subtechniques",
+        "description": "Answer a question about the relation between a MITRE technique and sub-technique.",
+        "structure": "In this task, you are given a technique and a sub-technique, both docummented in the MITRE ATT&CK framework. Your task is to determine whether or not the sub-technique is related to the technique. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. technique analysis: Shortly describe the technique in high level.\n2. sub-technique analysis: Shortly describe the sub-technique in high level.\n3. Compare: compare between the given technique and sub-technique based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply write \"Yes\" if the technique is related to the sub-technique, or \"No\" if the two are not related. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_yes_no_background_procedure",
+        "description": "Answer a question about the relation between a MITRE procedure to a specific technique.",
+        "structure": "In this task, you are given some background, together with a procedure, and a technique, both docummented in the MITRE ATT&CK framework. Your task is to determine whether or not the procedure is related to the technique. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Software/group analysis: Shortly describe the attack group or attack software mentioned in the procedure.\n2. Technique analysis: Using the background briefly describe the technique while relating to the procedure, explainig why it is related or not related.\n3. Conclusion: simply write \"Yes\" if the technique is related to the procedure, or \"No\" if the two are not related. Do not output anything else other than \"Yes\" or \"No\".\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_options_datasource",
+        "description": "Given a description of a datasource and 4 names and IDs of a specific datasources from the MITRE ATT&CK framework, choose the datasource that corresponds to the given description.",
+        "structure": "In this task, you are given the description of a datasource docummented in the MITRE ATT&CK framework, and 4 names and IDs of specific datasources. Your task is to choose the datasource that corresponds to the given description. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. Datasource analysis: Shortly describe each of the given datasources to the best of your knowledge.\n3. Compare: compare between the given description and each datasource based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply output the corresponding identifier associated with the correct answer. Only output the identifier, DO NOT elaborate on the answer at this stage.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_options_mitigation",
+        "description": "Given a description of a mitigation and 4 names and IDs of a specific mitigations from the MITRE ATT&CK framework, choose the mitigation that corresponds to the given description.",
+        "structure": "In this task, you are given the description of a mitigation docummented in the MITRE ATT&CK framework, and 4 names and IDs of specific mitigations. Your task is to choose the mitigation that corresponds to the given description. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. mitigation analysis: Shortly describe each of the given mitigations to the best of your knowledge.\n3. Compare: compare between the given description and each mitigation based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply output the corresponding identifier associated with the correct answer. Only output the identifier, DO NOT elaborate on the answer at this stage.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_options_software",
+        "description": "Given a description of a software and 4 names and IDs of a specific softwares from the MITRE ATT&CK framework, choose the software that corresponds to the given description.",
+        "structure": "In this task, you are given the description of a software docummented in the MITRE ATT&CK framework, and 4 names and IDs of specific softwares. Your task is to choose the software that corresponds to the given description. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. software analysis: Shortly describe each of the given softwares to the best of your knowledge.\n3. Compare: compare between the given description and each software based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply output the corresponding identifier associated with the correct answer. Only output the identifier, DO NOT elaborate on the answer at this stage.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_options_tactic",
+        "description": "Given a description of a tactic and 4 names and IDs of a specific tactics from the MITRE ATT&CK framework, choose the tactic that corresponds to the given description.",
+        "structure": "In this task, you are given the description of a tactic docummented in the MITRE ATT&CK framework, and 4 names and IDs of specific tactics. Your task is to choose the tactic that corresponds to the given description. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. tactic analysis: Shortly describe each of the given tactics to the best of your knowledge.\n3. Compare: compare between the given description and each tactic based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply output the corresponding identifier associated with the correct answer. Only output the identifier, DO NOT elaborate on the answer at this stage.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_options_technique",
+        "description": "Given a description of a technique and 4 names and IDs of a specific techniques from the MITRE ATT&CK framework, choose the technique that corresponds to the given description.",
+        "structure": "In this task, you are given the description of a technique docummented in the MITRE ATT&CK framework, and 4 names and IDs of specific techniques. Your task is to choose the technique that corresponds to the given description. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. technique analysis: Shortly describe each of the given techniques to the best of your knowledge.\n3. Compare: compare between the given description and each technique based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply output the corresponding identifier associated with the correct answer. Only output the identifier, DO NOT elaborate on the answer at this stage.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_options_campaign",
+        "description": "Given a description of a campaign and 4 names and IDs of a specific campaigns from the MITRE ATT&CK framework, choose the campaign that corresponds to the given description.",
+        "structure": "In this task, you are given the description of a campaign docummented in the MITRE ATT&CK framework, and 4 names and IDs of specific campaigns. Your task is to choose the campaign that corresponds to the given description. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Description analysis: Shortly explain the description in high level. Do not deduce the answer if its not explicitly given in the description\n2. campaign analysis: Shortly describe each of the given campaigns to the best of your knowledge.\n3. Compare: compare between the given description and each campaign based on the previous steps, reason on this comparison to reach a conclusion in the next step.\n4. Conclusion: simply output the corresponding identifier associated with the correct answer. Only output the identifier, DO NOT elaborate on the answer at this stage.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_platform_mapping_options_technique",
+        "description": "Given a technique and 4 lists of platforms, choose the list of platforms that the given technique is applicable at.",
+        "structure": "In this task, you are given a technique docummented in the MITRE ATT&CK framework, and 4 lists of platforms. Your task is to choose the list of platforms that are exactly the platforms where the technique can be implemented. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Technique analysis: Shortly explain the technique in high level. Do not deduce the answer if its not explicitly given in the description\n2. platforms analysis: Shortly describe each of the platforms in all the answers.\n3. Reason: For each platform, reason whether or not the technique can be implemented on this platform.\n4. Projecting to the options: find the option that most closely matches your reasoning from the previous step. If there are any differences between your thoughts and the provided answers, provide possible explanations for these mismatches.\n5. Answer: finally choose the most appropriate list of platforms, the output of this step should be solely the option identifier.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_procedure_options_mitre_procedure_options",
+        "description": "Answer a question about choosing the most appropriate MITRE technique to given a procedure.",
+        "structure": "In this task, you are given a procedure, and 4 techniques, all docummented in the MITRE ATT&CK framework. Your task is to determine which technique corresponds to the procedure. Here is a general guideline for providing a mapping in a well-structured and professional way:\n1. Software/group analysis: Shortly describe the attack group or attack software mentioned in the procedure.\n2. Techniques analysis: Briefly describe each technique in the possible answers while relating to the procedure, explainig why it is related or not related.\n3. Conclusion: simply output the identifier of the option that enumerates the techniques that corresponds to the described procedure.\nEvery step should be detailed and you should provide a clear and concise explanation of how you arrived at the conclusion. Putting the reasoning process in the answer is important to help the user understand your conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_mitigation_technique_mitigations",
+        "description": "Idetify the mitigation for a given technique ",
+        "structure": "In this task, you are asked to identify the appropriate mitigations for a given technique.\nGuidelines for Structuring Your Response:\n1. Begin with briefly describes the technique.\n2. State, at high level the mitigation options for the relevant technique. \n3. Based on the above point, provide a list of relevant mitigations. For each mitigation, include:\n4. Conclude with a brief summary of the overall mitigation approach.\n\n** General Instruction **\nTake the original answer as a gold base line, try not to deviate from it, and keep the mitigation as it depicted in the gold answer, do not add more mitigations beyond whats depicted in the gold. ",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "mitre_platform_datasource",
+        "description": "List Platforms Related to a MITRE Data Source",
+        "structure": "Your goal is to identify the platforms associated with a given MITRE ATT&CK data source.\nInstructions:\n1. Identify the Data Source: Start by recognizing the MITRE data source provided (e.g., Active Directory). \n2. List Relevant Platforms: Provide the list of platforms (e.g., Windows, Linux, SaaS) where this data source is applicable, based on the MITRE ATT&CK framework, for each platform explain why the data source is relevant to each listed platform.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "platform_mapping_technique",
+        "description": "Identify Applicable Platforms for a MITRE Technique",
+        "structure": "Your goal is to determine which platforms a given MITRE ATT&CK technique applies to.\nPlease follow these steps:\n1. Understand the Technique: Briefly review the technique\u2019s purpose and how it is used by adversaries. \n2. Explain, based on the previous points which platforms may be relevant to the technique.\n3. Determine Applicable Platforms: List the platforms (e.g., Windows, Linux, macOS, Cloud, etc.) where this technique can be applied, based on its behavior and prerequisites. Please Explain Your Reasoning: Justify your platform selection by connecting the technique\u2019s functionality to relevant platform characteristics.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "loo_tactic_technique_LoO",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "mitre_mapping_campaign",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "loo_technique_procedure_LoO",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      }
+    ]
+  }
+]
