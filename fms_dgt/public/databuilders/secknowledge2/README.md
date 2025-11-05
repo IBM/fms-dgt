@@ -40,7 +40,6 @@ The SecKnowledge2 DataBuilder involves many unique building blocks that are used
 
 Additional specifications to this DataBuilder are:
 
-- `templates_path` - path to the folder with all the templates (combines all files in that folder). Defaults to `data/public/secknowledge2/templates/`
 - `adaptive` - in adaptive mode, the rewriter LLM is asked to first take a look at the old response and check if it needs rewriting. If it does not need rewriting the original response will stay the same. Defaults to `False`.
 - `search_method` - there are 3 options to what to search the web:
   - `instruction`: simply search the instruction.
@@ -52,6 +51,7 @@ Additional specifications to this DataBuilder are:
 
 The secknowledge2 task contains additional settings such as:
 
+- `templates_dir` - path to the folder with all the templates relevant to the task. Combines all files in that folder.
 - `seed_datastore` - the datastore configuration for the seed dataset.
 - `max_queries_per_instruction` - the maximum number of search queries to generate (or load from `search_queries_cache`) for each instruction. Defaults to 2.
 - `summarize_web_results` - whether to summarize each retrieved result guided by the task format of the instruction. Defaults to `False`.
