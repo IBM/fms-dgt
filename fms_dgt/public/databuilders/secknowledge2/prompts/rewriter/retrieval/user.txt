@@ -1,0 +1,19 @@
+Below is a user's question, the AI assistant's response, the provided format, and the evidences. 
+
+<evidence>
+{evidence}
+</evidence>
+
+<question>
+{question}
+</question>
+
+<original_response>
+{response}
+</original_response>
+
+<template>
+{structure}
+</template>
+
+The answer MUST be self contained without referring to the given evidence (context/search results).

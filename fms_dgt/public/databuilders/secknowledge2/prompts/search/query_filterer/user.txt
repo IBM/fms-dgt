@@ -1,0 +1,13 @@
+### Original question
+{user_question}
+
+### Draft answer
+{draft_answer}
+
+### Required structure
+{structure}
+
+### Candidate search queries
+{search_queries}
+
+Instruction: Using the provided information and following **all system rules**, return only the queries that should still be executed.
