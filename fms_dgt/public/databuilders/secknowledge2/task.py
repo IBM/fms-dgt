@@ -111,6 +111,7 @@ class SecKnowledge2Task(GenerationTask):
     def __init__(
         self,
         *args,
+        templates_dir: str,
         retriever: dict,
         summarize_web_results: bool = False,
         max_queries_per_instruction: int = 2,
@@ -118,6 +119,7 @@ class SecKnowledge2Task(GenerationTask):
     ):
         super().__init__(*args, **kwargs)
 
+        self.templates_dir = templates_dir
         self.retriever = get_unstructured_text_retriever(
             retriever[TYPE_KEY],
             **{k: v for k, v in retriever.items() if k not in [TYPE_KEY]},
