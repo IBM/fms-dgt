@@ -14,7 +14,7 @@ from fms_dgt.public.databuilders.secknowledge2.helper.categories import (
 
 @dataclass(kw_only=True)
 class InputRow(DataPoint):
-    """Class representing a row of data in an input dataset for the ReAlign pipeline."""
+    """Class representing a row of data in an input dataset for the SecKnowledge2 pipeline."""
 
     instruction: str
     answer: str
@@ -70,7 +70,7 @@ class IntermediateRow(DataPoint):
 
 @dataclass(kw_only=True)
 class OutputRow(IntermediateRow):
-    """Class representing a row of data in an output dataset for the ReAlign pipeline."""
+    """Class representing a row of data in an output dataset for the SecKnowledge2 pipeline."""
 
     category: str
     subcategory: str
@@ -102,7 +102,7 @@ class OutputRow(IntermediateRow):
         )
 
 
-class ReAlignTask(GenerationTask):
+class SecKnowledge2Task(GenerationTask):
     """This class is intended to hold general task information"""
 
     INPUT_DATA_TYPE = InputRow

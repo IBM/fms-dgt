@@ -1,4 +1,4 @@
-name: realign
+name: secknowledge2
 blocks:
   - name: classifier
     type: rits
@@ -29,9 +29,8 @@ blocks:
     top_k: 1
     max_tokens: 1024
 specifications:
-  templates_path: data/research/realign/templates/
+  templates_path: data/public/secknowledge2/templates/
   adaptive: false
   search_method: llm
-  search_queries_cache: data/research/realign/instruction_to_query.json
 metadata:
   version: 1.0

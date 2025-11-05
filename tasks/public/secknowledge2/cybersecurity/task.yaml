@@ -9,7 +9,7 @@ retriever:
   deduplicate_sources: True
   reorder_organic: True
   webpage_processor: docling
-  cache_file: data/research/secknowledge2/cybersecurity_search_results_cache.json
+  cache_file: data/public/secknowledge2/cybersecurity_search_results_cache.json
 max_queries_per_instruction: 2
 summarize_web_results: False
 seed_datastore:
