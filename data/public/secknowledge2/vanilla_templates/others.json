@@ -1,0 +1,23 @@
+[
+    {
+    "name": "Others",
+    "subcategories": [
+      {
+        "name": "rejecting",
+        "description": "Reject to respond when the query is beyond capacity or it violates general ethical and legal rules.",
+        "structure": "This question should be rejected to answer. First, reject. Then, explain why to reject.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "option refuser",
+        "description": "You must choose what fits none of the other subcategories match the user's query well.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]
