@@ -14,4 +14,4 @@ max_queries_per_instruction: 2
 summarize_web_results: False
 seed_datastore:
   type: default
-  data_path: ${DGT_DATA_DIR}/research/secknowledge2/example_data_vanilla.json
+  data_path: ${DGT_DATA_DIR}/public/secknowledge2/example_data_vanilla.json

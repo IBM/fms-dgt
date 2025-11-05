@@ -27,7 +27,7 @@ from fms_dgt.public.databuilders.secknowledge2.task import (
     InputRow,
     IntermediateRow,
     OutputRow,
-    ReAlignTask,
+    SecKnowledge2Task,
 )
 from fms_dgt.utils import dgt_logger, read_json
 
@@ -160,11 +160,11 @@ class SearchMethod(Enum):
     HYBRID_JUDGE = "hybrid_judge"
 
 
-@register_data_builder("realign")
-class ReAlignDataBuilder(GenerationDataBuilder):
-    """Class for the implementation of the ReAlign pipeline as a data builder."""
+@register_data_builder("secknowledge2")
+class SecKnowledge2DataBuilder(GenerationDataBuilder):
+    """Class for the implementation of the SecKnowledge2 pipeline as a data builder."""
 
-    TASK_TYPE: GenerationTask = ReAlignTask  # type: ignore
+    TASK_TYPE: GenerationTask = SecKnowledge2Task  # type: ignore
 
     # classifier is the LLM that will classify a given instruction to its corresponding task and subtask (if not given)
     classifier: LMProvider
@@ -187,7 +187,7 @@ class ReAlignDataBuilder(GenerationDataBuilder):
         self._prompts = PromptsSchema(**prompts_dict)  # type: ignore
 
         templates_path = Path(
-            specifications.get("templates_path", "data/research/realign/templates/")
+            specifications.get("templates_path", "data/public/secknowledge2/templates/")
         )
         self._template_data = TemplateData.from_auto(templates_path)
         self._adaptive = specifications.get("adaptive", False)
@@ -821,7 +821,7 @@ class ReAlignDataBuilder(GenerationDataBuilder):
 
         return judged_rows
 
-    def call_with_task_list(self, tasks: List[ReAlignTask], request_idx: int) -> List[OutputRow]:
+    def call_with_task_list(self, tasks: List[SecKnowledge2Task], request_idx: int) -> List[OutputRow]:
         output = []
         for task in tasks:
             data_pool = task.get_batch_examples()

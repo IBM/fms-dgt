@@ -1,8 +1,8 @@
-# ReAlign
+# SecKnowledge2
 
-This pipeline is an implementation of [Reformatted Alignment](https://arxiv.org/abs/2402.12219).
+This pipeline is an implementation of the data reformatting and enrichment pipeline introduced in [CyberPal 2.0: TOWARD CYBERSECURITY-EXPERT SMALL LANGUAGE MODELS](https://www.arxiv.org/pdf/2510.14113).
 
-ReAlign reformats the responses of instruction data into a format that better aligns with pre-established criteria and the collated evidence (by either web search, pre-defined grounding document, or retrieval results from a document corpus). This approach minimizes human annotation, hallucination, and the difficulty in scaling. Experimentally, ReAlign significantly boosts the general alignment ability, math reasoning, factuality, and readability of the LLMs.
+SecKnowledge2 reformats the responses of instruction data into a format that better aligns with pre-established criteria and the collated evidence (by either web search, pre-defined grounding document, or retrieval results from a document corpus). This approach minimizes human annotation, hallucination, and the difficulty in scaling. Experimentally, SecKnowledge2 significantly boosts the general alignment ability, math reasoning, factuality, and readability of the LLMs.
 
 ![alt text](images/pipeline.png)
 
@@ -21,15 +21,15 @@ All categories and sub-categories that exists in the dataset must be defined ahe
 - `requires_grounding_doc` - a flag that indicates whether or not a grounding doc is provided for each question
 - `requires_rewrite` - a flag that indicates whether or not the responses under this sub-category need rewriting. We might have some sub-categories that their responses are already good enough and don't need rewriting.
 
-You should store your categories under the [`data/research/realign/templates`](data/research/realign/templates) folder. Check out the examples in [`data/research/realign/templates/vanilla.json`](data/research/realign/templates/vanilla.json) for templates used in the original ReAlign paper, and [`data/research/realign/templates/security.json`](data/research/realign/templates/security.json) for the templates used in the CyberPal 2.0 paper.
+You should store your categories under the [`data/public/secknowledge2/templates`](data/public/secknowledge2/templates) folder. Check out the examples in [`data/public/secknowledge2/templates/vanilla.json`](data/public/secknowledge2/templates/vanilla.json) for templates used in the original [ReAlign paper](https://arxiv.org/pdf/2402.12219), and [`data/public/secknowledge2/templates/security.json`](data/public/secknowledge2/templates/security.json) for the templates used in the CyberPal 2.0 paper.
 
 ## Databuilder Configuration
 
-The databuilder configuration is stored in [`realign.yaml`](realign.yaml) and contains numerous settings.
+The databuilder configuration is stored in [`secknowledge2.yaml`](secknowledge2.yaml) and contains numerous settings.
 
 ### Blocks
 
-The Realign DataBuilder involves many unique building blocks that are used in different locations in the pipeline. The blocks are:
+The SecKnowledge2 DataBuilder involves many unique building blocks that are used in different locations in the pipeline. The blocks are:
 
 - `classifier` - LLMBlock that is used to classify untagged rows in the dataset into the most closely aligned category and sub-category. The recommended option is to specify them in advance (and hence, do not use this LLM).
 - `query_builder` - LLMBlock that is used to extract search queries from the instruction, and then filter out irrelevant search queries based on the desired structure, and the existing response.
@@ -40,7 +40,7 @@ The Realign DataBuilder involves many unique building blocks that are used in di
 
 Additional specifications to this DataBuilder are:
 
-- `templates_path` - path to the folder with all the templates (combines all files in that folder). Defaults to `data/research/realign/templates/`
+- `templates_path` - path to the folder with all the templates (combines all files in that folder). Defaults to `data/public/secknowledge2/templates/`
 - `adaptive` - in adaptive mode, the rewriter LLM is asked to first take a look at the old response and check if it needs rewriting. If it does not need rewriting the original response will stay the same. Defaults to `False`.
 - `search_method` - there are 3 options to what to search the web:
   - `instruction`: simply search the instruction.
@@ -50,7 +50,7 @@ Additional specifications to this DataBuilder are:
 
 ## Task Configuration
 
-The ReAlign task contains additional settings such as:
+The secknowledge2 task contains additional settings such as:
 
 - `seed_datastore` - the datastore configuration for the seed dataset.
 - `max_queries_per_instruction` - the maximum number of search queries to generate (or load from `search_queries_cache`) for each instruction. Defaults to 2.
@@ -92,9 +92,9 @@ Refer to [this GitHub repo](https://github.ibm.com/Daniel-Ohayon/realign-format-
 After setting up all the needed configuration, for running the pipeline, run:
 
 ```bash
-num_outputs=$(jq length "data/research/realign/your_seed_dataset.json")
-python -m fms_dgt.research \
-      --task-paths "./tasks/research/realign/your_realign_task_name" \
+num_outputs=$(jq length "data/public/secknowledge2/your_seed_dataset.json")
+python -m fms_dgt.public \
+      --task-paths "./tasks/public/secknowledge2/your_secknowledge2_task_name" \
       --restart-generation \
       --num-outputs-to-generate "$num_outputs" \
       --seed-batch-size 30 \
@@ -125,7 +125,7 @@ else:
     inst_subcat_to_gen = {}
 
 # load seed dataset
-with open(f'data/research/realign/your_seed_dataset.json', 'r') as f:
+with open(f'data/public/secknowledge2/your_seed_dataset.json', 'r') as f:
   data = json.load(f)
 
 # load generated data in most recent iteration and merge to mapping of realigned data
@@ -146,11 +146,11 @@ with open('/safelocation/realigned_dataset.json', 'w') as f:
 remaining = [d for d in data if (d['instruction'], d['subcategory']) not in inst_subcat_to_gen]
 print(f"Remaining examples: {len(remaining)}")
 
-with open(f'data/research/realign/your_seed_dataset.json', 'w') as f:
+with open(f'data/public/secknowledge2/your_seed_dataset.json', 'w') as f:
     json.dump(s, f, indent=2)
 ```
 
-> **IMPORTANT NOTE: If you are using this code, make sure you have a backup of `data/research/realign/your_seed_dataset.json` because it replaces it with the remaining examples that the pipeline did not go over yet.**
+> **IMPORTANT NOTE: If you are using this code, make sure you have a backup of `data/public/secknowledge2/your_seed_dataset.json` because it replaces it with the remaining examples that the pipeline did not go over yet.**
 
 ### Using Multiple RITS API Keys to Boost Generation
 
@@ -165,13 +165,13 @@ import json
 
 NUM_KEYS = ... # fill this
 
-with open(f'data/research/realign/your_seed_dataset.json', 'r') as f:
+with open(f'data/public/secknowledge2/your_seed_dataset.json', 'r') as f:
   data = json.load(f)
 
 splits = [[data[i] for i in range(k, len(data), NUM_KEYS)] for k in range(NUM_KEYS)]
 
 for i, s in enumerate(splits, start=1):
-  with open(f'data/research/realign/your_seed_dataset_{i}.json', 'r') as f:
+  with open(f'data/public/secknowledge2/your_seed_dataset_{i}.json', 'r') as f:
     json.dump(s, f, indent=2)
 ```
 
@@ -186,8 +186,8 @@ At this stage, your folder structure will look something like this:
 
 ```
 data/
-└── research/
-    └── realign/
+└── public/
+    └── secknowledge2/
         ├── your_seed_dataset.json          # the original dataset
         ├── your_seed_dataset_1.json
         ├── your_seed_dataset_2.json
@@ -195,16 +195,16 @@ data/
         └── ...
 ...
 tasks/
-└── research/
-    └── realign/
-        ├── your_realign_task_name/
+└── public/
+    └── secknowledge2/
+        ├── your_secknowledge2_task_name/
         │   └── task.yaml                   # the original task configuration
-        ├── your_realign_task_name_1/
-        │   └── task.yaml                   # same as your_realign_task_name/task.yaml but points to split 1's data & has name your_realign_task_name_1
-        ├── your_realign_task_name_2/
-        │   └── task.yaml                   # same as your_realign_task_name/task.yaml but points to split 2's data & has name your_realign_task_name_2
-        ├── your_realign_task_name_3/
-        │   └── task.yaml                   # same as your_realign_task_name/task.yaml but points to split 3's data & has name your_realign_task_name_3
+        ├── your_secknowledge2_task_name_1/
+        │   └── task.yaml                   # same as your_secknowledge2_task_name/task.yaml but points to split 1's data & has name your_secknowledge2_task_name_1
+        ├── your_secknowledge2_task_name_2/
+        │   └── task.yaml                   # same as your_secknowledge2_task_name/task.yaml but points to split 2's data & has name your_secknowledge2_task_name_2
+        ├── your_secknowledge2_task_name_3/
+        │   └── task.yaml                   # same as your_secknowledge2_task_name/task.yaml but points to split 3's data & has name your_secknowledge2_task_name_3
         └── ...
 ```
 
@@ -231,7 +231,7 @@ printf '  [%s]\n' "${visible_devs[@]}"
 num_devices=${#visible_devs[@]}
 echo -e "Total: $num_devices\n"
 
-mkdir -p realign_logs
+mkdir -p secknowledge2_logs
 
 declare -A total_outputs    # idx → total expected lines
 
@@ -240,7 +240,7 @@ while IFS='=' read -r var val; do
   idx=${var##*_}                                # digits after last “_”
   key=$(echo "$val" | cut -d'#' -f1 | xargs)    # strip trailing comment
 
-  num_outputs=$(jq length "data/research/realign/your_seed_dataset_${idx}.json")
+  num_outputs=$(jq length "data/public/secknowledge2/your_seed_dataset_${idx}.json")
   total_outputs[$idx]=$num_outputs              # remember for the watcher
   export RITS_API_KEY="$key"
   if (( $num_devices > 0 )); then
@@ -250,13 +250,13 @@ while IFS='=' read -r var val; do
     cuda_device_idx=-1
   fi
 
-  python -m fms_dgt.research \
-      --task-paths "./tasks/research/realign/your_realign_task_name_${idx}" \
+  python -m fms_dgt.public \
+      --task-paths "./tasks/public/secknowledge2/your_secknowledge2_task_name_${idx}" \
       --restart-generation \
       --num-outputs-to-generate "$num_outputs" \
       --seed-batch-size 30 \
       --output-dir "output" \
-      > "realign_logs/log_${idx}.out" 2>&1 &
+      > "secknowledge2_logs/log_${idx}.out" 2>&1 &
   if (( $cuda_device_idx > 0 )); then
     echo "Started process idx=${idx}  PID=$! DEVICE=${visible_devs[$cuda_device_idx]}"
   else
@@ -270,14 +270,14 @@ echo -e "\nAll processes running …\n"
 while true; do
   ps_output=$(
     ps -axo pid=,args= |
-      grep -E "your_realign_task_name_[0-9]+" | grep -v grep |
+      grep -E "your_secknowledge2_task_name_[0-9]+" | grep -v grep |
       while read -r pid cmd; do
-        if [[ $cmd =~ your_realign_task_name_([0-9]+) ]]; then
+        if [[ $cmd =~ your_secknowledge2_task_name_([0-9]+) ]]; then
           idx=${BASH_REMATCH[1]}
-          out_file="output/realign_your_realign_task_name_${idx}/data.jsonl"
+          out_file="output/secknowledge2_your_secknowledge2_task_name_${idx}/data.jsonl"
           current=$([[ -f "$out_file" ]] && wc -l < "$out_file" || echo 0)
           total=${total_outputs[$idx]:-?}
-          printf "PID: %s | Task: your_realign_task_name_%s | Progress: %s/%s\n" \
+          printf "PID: %s | Task: your_secknowledge2_task_name_%s | Progress: %s/%s\n" \
                  "$pid" "$idx" "$current" "$total"
         fi
       done | sort -n -k4            # sort by idx for neatness
@@ -285,7 +285,7 @@ while true; do
 
   echo -e "Running Processes:\n$ps_output\n-----------------------------------------------------"
 
-  if ! pgrep -f "your_realign_task_name_[0-9]+" >/dev/null; then
+  if ! pgrep -f "your_secknowledge2_task_name_[0-9]+" >/dev/null; then
     break                               # nothing left, we’re done
   fi
 
@@ -318,15 +318,15 @@ else:
     inst_subcat_to_gen = {}
 
 # load seed dataset
-with open(f'data/research/realign/your_seed_dataset.json', 'r') as f:
+with open(f'data/public/secknowledge2/your_seed_dataset.json', 'r') as f:
   data = json.load(f)
 
 # load generated data in most recent iteration and merge to mapping of realigned data
 for i in range(1,NUM_KEYS+1):
-    if not os.path.exists(f'output/your_realign_task_name_{i}/data.jsonl'):
+    if not os.path.exists(f'output/your_secknowledge2_task_name_{i}/data.jsonl'):
         print(f"Skipping {i}...")
         continue
-    with open(f'output/your_realign_task_name_{i}/data.jsonl', 'r') as f:
+    with open(f'output/your_secknowledge2_task_name_{i}/data.jsonl', 'r') as f:
         gen_i = [json.loads(l) for l in f.readlines() if l]
     inst_subcat_to_gen |= {(g['instruction'], g['subcategory']): g for g in gen_i if g['rewritten_answer']}
     empty_gen.extend([g for g in gen_i if not g['rewritten_answer']])
@@ -344,6 +344,6 @@ print(f"Remaining examples: {len(remaining)}")
 
 splits = [[remaining[i] for i in range(k, len(remaining), NUM_KEYS)] for k in range(NUM_KEYS)]
 for i,s in enumerate(splits, start=1):
-    with open(f'data/research/realign/your_seed_dataset_{i}.json', 'w') as f:
+    with open(f'data/public/secknowledge2/your_seed_dataset_{i}.json', 'w') as f:
         json.dump(s, f, indent=2)
 ```
