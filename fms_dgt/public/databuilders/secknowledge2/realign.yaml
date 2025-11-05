@@ -1,0 +1,37 @@
+name: realign
+blocks:
+  - name: classifier
+    type: rits
+    base_url: https://inference-3scale-apicast-production.apps.rits.fmaas.res.ibm.com/gpt-oss-120b/v1
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0
+    top_k: 1
+    max_tokens: 1024
+  - name: query_builder
+    type: rits
+    base_url: https://inference-3scale-apicast-production.apps.rits.fmaas.res.ibm.com/gpt-oss-120b/v1
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0.7
+    top_p: 0.95
+    max_tokens: 1024
+  - name: rewriter
+    type: rits
+    base_url: https://inference-3scale-apicast-production.apps.rits.fmaas.res.ibm.com/gpt-oss-120b/v1
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0.7
+    top_p: 0.95
+    max_tokens: 4096
+  - name: judge
+    type: rits
+    base_url: https://inference-3scale-apicast-production.apps.rits.fmaas.res.ibm.com/gpt-oss-120b/v1
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0
+    top_k: 1
+    max_tokens: 1024
+specifications:
+  templates_path: data/research/realign/templates/
+  adaptive: false
+  search_method: llm
+  search_queries_cache: data/research/realign/instruction_to_query.json
+metadata:
+  version: 1.0
