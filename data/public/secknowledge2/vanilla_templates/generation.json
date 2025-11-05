@@ -1,0 +1,55 @@
+[
+    {
+    "name": "Generation",
+    "subcategories": [
+      {
+        "name": "question generation",
+        "description": "Write some questions based on the given description.",
+        "structure": "It is a question-generating task. Use a list to give the generated questions.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "story generation",
+        "description": "Write a story based on the given description.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "poem generation",
+        "description": "Write a poem based on the given description.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "email generation",
+        "description": "Write an email based on the given description.",
+        "structure": "It is an email-writing task. Here is a general guideline for creating a well-structured and professional email:\n1. Subject Line: Write a clear and concise subject line that accurately summarizes the content of your email. This helps the recipient understand the purpose of the email at a glance.\n2. Salutation: Begin your email with a formal salutation such as \"Dear [Recipient's Name],\" or use a more casual salutation if you have an informal relationship with the recipient.\n3. Introduction: Start your email with a brief introduction, stating who you are and the reason for writing the email. Be clear and to the point, and avoid unnecessary details.\n4. Body: This is the main content of your email. Organize your thoughts into paragraphs or bullet points to make them easier to read. Keep your sentences concise and focused. Use proper grammar, punctuation, and spelling to maintain professionalism. If you need to discuss multiple topics, consider using headings or numbered points to separate them.\n5. Politeness and Tone: Maintain a polite and respectful tone throughout your email. Be mindful of the recipient's perspective and use appropriate language. Avoid using excessive capitalization, exclamation marks, or emoticons, as they can come across as unprofessional.\n6. Closing: Conclude your email with a closing remark, such as \"Thank you,\" or \"Best regards,\" followed by your name. If you expect a response or need specific action, you can mention it in this section as well.\n7. Signature: Include your full name, job title, and contact information (e.g., phone number, email address) in your email signature. This helps the recipient easily identify and contact you if needed.\n8. Attachments: If you need to include attachments, mention them in the email body and make sure they are relevant to the email's purpose. Consider compressing large files or using cloud storage services if the attachments are too large to be sent via email.\n9. Proofread: Before sending the email, proofread it for any grammatical or spelling errors. Make sure the email conveys your message clearly and effectively.\nThe best emails are short, direct, professional, and scannable for the recipient. Follow formal business email structure unless you have an established casual rapport with the recipient.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "data generation",
+        "description": "Generate data based on the given description.",
+        "structure": "It is a data-generating task. Use a list to give the generated data.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "text-to-text translation",
+        "description": "Translate the given text into another language.",
+        "structure": "This is a translation task, please give the translated content first and then use a list to give an explanation.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      }
+    ]
+  }
+]
