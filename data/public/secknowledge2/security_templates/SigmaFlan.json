@@ -1,0 +1,39 @@
+[
+  {
+    "name": "SigmaFlan",
+    "subcategories": [
+      {
+        "name": "description_to_attack",
+        "description": "Contains Sigma rule descriptions with their mapping to its corresponding attack technique it detects. ",
+        "structure": "The task is to analyze detection rules and their associated log indicators to deduce the specific type of malicious cyber-attack or activity that these rules are designed to detect.\n\n**Response Structure:**  \n1. [IF GIVEN] Identify the logsource and context (such as system type, log category, and data source).  \n2. Explain shortly  the key detection indicators or criteria specified in the rule.  \n3. Analyze how these indicators relate to known attack patterns or malicious behaviors.  \n4. Conclude with a concise identification of the most likely malicious activity/attack depicted in the rule\n\n**General Instructions, do not include in the output:**  \n- Ensure each step is addressed clearly and sequentially.  \n- Focus on explicit analysis of how the presented indicators match known malicious activity.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "rule_goal_to_description",
+        "description": "maps a malicious activity/technique to a natural language explanation of how to detect it. ",
+        "structure": "**Task Introduction:**  \nThe core task is to provide a natural language explanation in details and specific,  how to detect a specific malicious activity or technique.\n\n**Response Structure:**  \n* high level explanation of request and the activity depicted * \n1. Identify the relevant data sources or system artifacts to monitor for signs of this activity.  \n2. Specify key indicators, behaviors, or signatures that would reveal the presence of the activity.  \n3. Describe any contextual information or nuances that should be considered to avoid false positives or negatives.  \n4. Conclude with actionable, concrete and specific! detection steps or rules that can be applied in a monitoring system. Make sure a human can figure out everything from this step. \n\n**General Instructions, do not include in the output:**   \n- Ensure each step is explicit and logically follows from the previous.  \n- Maintain clarity and focus on producing actionable and practical detection guidance.  \n- Use precise language that can be easily followed by security analysts.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "sigma_rule_build",
+        "description": "Given indicators write a sigma rule for a specific threat",
+        "structure": "**Task Introduction:**  \nThe core task is to generate a Sigma detection rule based on provided threat indicators, ensuring effective and accurate detection of specific malicious behaviors described in the scenario.\n\n**Response Structure:**  \n1. Identify and clearly define the threat behavior or malicious activity to be detected.\n2. Determine the relevant system events or log sources that should be monitored for this threat.\n3. Enumerate specific artifacts, patterns, or conditions in logs (such as process names, file paths, command line arguments, or domain names) that uniquely characterize the suspicious behavior.\n4. Specify any exclusions or filters needed to reduce false positives (for example, legitimate directories or processes to be ignored).\n5. Combine these detection logic elements into structured Sigma rule criteria targeting the defined threat surrounded by ```sigma X ```\n\n**General Instructions, do not include in the output:**    \n\u2013 Reason step-by-step through each part of the threat scenario to ensure comprehensive coverage and clarity.  \n\u2013 Justify each component included in the detection logic to maintain relevance and minimize noise.  \n\u2013 Structure your response explicitly according to the steps above for every task.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "sigma_rule_describe_goal",
+        "description": "Given a sigma rule, explain its detection objective (goal)",
+        "structure": "**Task Description:**  \nGiven a Sigma rule, analyze and explain the specific detection target or goal of the rule by interpreting its fields and logic. \n\n**Steps:**  \n1. Identify important meta data such as log source, tags, etc. \n2. Identify the key patterns or conditions specified in the detection section, state field filtered values but don't explicitly state the field name but rather its original name (example, ParentImage -> process's parent image) \n3. Note any relevant tags, attack techniques or false positives referenced.\n4. Summarize the activity or behavior the rule is designed to detect.\n\n**General Instructions, do not include in the output:**  \n- Do not repeat the sigma goal explicitly as may be written the reference response at the beginning of the response. \n- Focus on the end goal or behavior the rule is meant to identify.\n- Do not repeat the Sigma rule verbatim; explain its intent.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]
