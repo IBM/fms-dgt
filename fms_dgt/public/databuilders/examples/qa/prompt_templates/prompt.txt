@@ -7,6 +7,4 @@ Here are few examples:
 
 {{ examples }}
 
-Now generate a different question-answer pairs in the similar format.
-
-Question: 
+Now generate a single different question-answer pair in the similar format.

@@ -2,13 +2,6 @@
 
 This tutorial will cover how to design your own transformation pipeline. In this tutorial, we will walk through the process of turning GSM8K into a chain-of-thought dataset.
 
-## Prerequisites
-
-To successfully run this, you will need to have completed the following:
-
-1. Successfully completed the [Starting From Scratch](./from_scratch.md) tutorial
-2. Read through the [Databuilders](../key_concepts/databuilders.md) section
-
 ## Transformation Data Builders
 
 In addition to synthetic data generation where one uses a small number of examples to generate a much larger set of examples, DGT also has built-in support for data transformation. A transformation task involves taking an existing dataset (or set of datasets) and converting it to a new format. For instance, one might take an older dataset produced initially for a slot-filling task and convert it to an instruction-tuning dataset for API function calls. Often this will require the same infrastructure that a data generation task requires (e.g., ability to make LLM calls, storing and loading data from the same sources, etc.).
@@ -17,7 +10,7 @@ In DGT, transformation pipelines are treated as data builders. The main distingu
 
 ## Defining a Transformation Data Builder
 
-As in the other tutorials, we'll first create our base directory for our transformation pipeline. Starting from the base of the repo, create a directory `fms_dgt/research/databuilders/gsm8k_cot`  
+As in the other tutorials, we'll first create our base directory for our transformation pipeline. Starting from the base of the repo, create a directory `fms_dgt/research/databuilders/gsm8k_cot`
 
 ```bash
 # from repo root
@@ -34,7 +27,7 @@ from dataclasses import dataclass
 from fms_dgt.base.task import SdgData, TransformTask
 
 
-@dataclass(kw_only=True)
+@dataclass
 class Gsm8kInitialTransformData(SdgData):
 
     question: str
@@ -46,7 +39,7 @@ class Gsm8kInitialTransformData(SdgData):
         self.answer = self.answer.split("####")[-1].strip()
 
 
-@dataclass(kw_only=True)
+@dataclass
 class Gsm8kCotTransformData(SdgData):
 
     input: str
@@ -61,7 +54,6 @@ class Gsm8kCotTransformTask(TransformTask):
     OUTPUT_DATA_TYPE = Gsm8kCotTransformData
 ```
 
-
 Now that the task has been defined, we'll add the data transformation code. Create a `fms_dgt/research/databuilders/gsm8k_cot/generate.py` file with the following code
 
 ```python
@@ -74,7 +66,7 @@ from tqdm import tqdm
 # Local
 from fms_dgt.base.databuilder import TransformationDataBuilder
 from fms_dgt.base.registry import register_data_builder
-from fms_dgt.core.blocks.llm import LMProvider
+from fms_dgt.core.blocks.generators.llm import LMGenerator
 from fms_dgt.research.databuilders.gsm8k_cot.task import (
     Gsm8kInitialTransformData,
     Gsm8kCotTransformData,
@@ -87,7 +79,7 @@ Here are some examples:
 
 Question: { { question } }
 Answer: { { answer } }
-Explanation: Let's think step-by-step. 
+Explanation: Let's think step-by-step.
 """.strip()
 
 
@@ -99,7 +91,7 @@ class Gsm8kCotTransformDataBuilder(TransformationDataBuilder):
     TASK_TYPE: Gsm8kCotTransformTask = Gsm8kCotTransformTask
 
     # NOTE: this is the same llm1 as in our config yaml
-    llm1: LMProvider
+    llm1: LMGenerator
 
     # NOTE: this can be removed, but we've kept it for those who will copy-paste this as a template
     def __init__(self, **kwargs: Any) -> None:
@@ -174,7 +166,7 @@ data_builder: gsm8k_cot
 seed_datastore:
   type: default
   # NOTE: data_path will take either a string or a list of strings to be treated as *args to datasets.load_dataset(*args)
-  data_path: ['gsm8k', 'main']
+  data_path: ["gsm8k", "main"]
 task_description: Transformation of gsm8k into chain-of-thought dataset
 ```
 

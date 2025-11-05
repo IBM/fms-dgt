@@ -79,7 +79,6 @@ class GeographyQADataBuilder(GenerationDataBuilder):
             generator_inputs.append(
                 {
                     "input": prompt,
-                    "gen_kwargs": {"stop": ["Question:"]},
                     "reference": icl_examples,
                 }
             )

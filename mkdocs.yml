@@ -1,24 +1,74 @@
 site_name: DiGiT
+site_url: https://ibm.github.io/fms-dgt/
+repo_name: ibm/fms-dgt
+repo_url: https://github.com/ibm/fms-dgt
+
+theme:
+  name: material
+  palette:
+    # Default dark mode
+    - scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+
+    # System preference (dark)
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to system preference
+
+  features:
+    - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.preview
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
 nav:
-  - Getting Started:
-    - sections/getting_started/installation.md
-    - sections/getting_started/try-it.md
-    - sections/getting_started/command_line_arguments.md
-  - Key Concepts:
-    - sections/key_concepts/tasks.md
-    - sections/key_concepts/databuilders.md
-    - sections/key_concepts/blocks.md
-    - sections/key_concepts/datastores.md
-    - sections/key_concepts/dataloaders.md
+  - Home:
+      - Welcome to DGT: index.md
+      - Installation: installation.md
+      - Usage: usage.md
+  - Concepts:
+      - concepts/architecture.md
+      - concepts/tasks.md
+      - concepts/databuilders.md
+      - concepts/blocks.md
+      - concepts/datastores.md
+      - concepts/dataloaders.md
   - Tutorials:
-    - sections/tutorials/from_scratch.md
-    - sections/tutorials/adding_new_blocks.md
-    - sections/tutorials/modify_existing.md
-    - sections/tutorials/bring_your_own.md
-    - sections/tutorials/transformation_pipeline.md
-    - sections/tutorials/examples.rst
-  - Contributing:
-    - sections/contributing/guidelines.md
-    - sections/contributing/ways_to_contribute.md
-    - sections/contributing/development.md
-theme: readthedocs
+      - tutorials/changing_lm_engine.md
+      - tutorials/loading_seed_examples_from_file.md
+  - Examples:
+      - examples/write_your_own_databuilder.md

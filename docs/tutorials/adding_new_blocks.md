@@ -1,25 +1,18 @@
 # Adding New Blocks
 
-In this section, we'll go through the process of adding a new block to DGT. This will build off the data builder introduced in the [Starting From Scratch](./from_scratch.md) section.
-
-## Prerequisites
-
-To successfully run this, you will need to have completed the following:
-
-1. Successfully completed the [Starting From Scratch](./from_scratch.md) tutorial
-2. Read through the [Blocks](../key_concepts/blocks.md) section
+In this section, we'll go through the process of adding a new block to DGT.
 
 ## Recap of Blocks
 
-Blocks are how one can contribute specialized algorithms or tools into DGT for other teams to use. Each block accepts as input a list of dict-like objects (e.g., [a pandas table, a list of dictionaries, etc.](https://github.ibm.com/DGT/fms-dgt/blob/5d6226fa2fa19aeb6dedffa9c58a6b17a53c9699/fms_dgt/constants.py#L9)). In addition, you can also pass as arguments [`input_map` / `output_map`](https://github.ibm.com/DGT/fms-dgt/blob/main/fms_dgt/base/block.py#L285) (or you can set these [in the init of the block](https://github.ibm.com/DGT/fms-dgt/blob/5d6226fa2fa19aeb6dedffa9c58a6b17a53c9699/fms_dgt/base/block.py#L40)).
+Blocks are how one can contribute specialized algorithms or tools into DGT for other teams to use. Each block accepts as input a list of dict-like objects (e.g., [a pandas table, a list of dictionaries, etc.](https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/constants.py#L9)). In addition, you can also pass as arguments [`input_map` / `output_map`](https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/base/block.py#L65) (or you can set these [in the init of the block](https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/base/block.py#L61)).
 
-Internally, a block is expected to iterate over each element of its input and extract instances of its associated [`DATA_TYPE`](https://github.ibm.com/DGT/fms-dgt/blob/5d6226fa2fa19aeb6dedffa9c58a6b17a53c9699/fms_dgt/base/block.py#L179). The result of the block is written onto the input elements (usually the input dictionaries) as specified by `output_map`.
+Internally, a block is expected to iterate over each element of its input and extract instances of its associated [`DATA_TYPE`](https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/base/block.py#L235). The result of the block is written onto the input elements (usually the input dictionaries) as specified by `output_map`.
 
 ## Defining a New Block
 
-In this example, we'll define a [Validator Block](https://github.ibm.com/DGT/fms-dgt/blob/main/fms_dgt/core/blocks/validators/__init__.py). Validators are used to validate that the input element (most often being a newly generated data point from SDG) is valid and should be returned to the user.
+In this example, we'll define a [Validator Block](https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/base/block.py#L421). Validators are used to validate that the input element (most often being a newly generated data point from SDG) is valid and should be returned to the user.
 
-Recall, in the [Starting From Scratch](./from_scratch.md) tutorial the objective was to define a geography question-answering SDG pipeline. We will keep that as the goal, however, with a modified objective being that we want to restrict the types of questions to be only factoid questions. This will be achieved by putting a length restriction on the answers our system generates (with answers that are too long being flagged as invalid). Create a `fms_dgt/research/blocks/validators/length_constraint.py` file with the following code
+Recall, in the [Write your own databuilder](../examples/write_your_own_databuilder.md) tutorial the objective was to define a geography question-answering SDG pipeline. We will keep that as the goal, however, with a modified objective being that we want to restrict the types of questions to be only factoid questions. This will be achieved by putting a length restriction on the answers our system generates (with answers that are too long being flagged as invalid). Create a `fms_dgt/public/blocks/length_constraint/block.py` file with the following code
 
 ```python
 # Standard
@@ -28,16 +21,17 @@ from typing import Dict, Iterable, Optional
 
 # Local
 from fms_dgt.base.registry import register_block
-from fms_dgt.core.blocks.validators import BaseValidatorBlock, BaseValidatorBlockData
+from fms_dgt.base.block import ValidatorBlock
+from fms_dgt.base.data_objects import ValidatorBlockData
 
 
 @dataclass(kw_only=True)
-class LengthValidatorData(BaseValidatorBlockData):
+class LengthValidatorData(ValidatorBlockData):
     input: str
 
 
 @register_block("length_constraint")
-class LengthValidator(BaseValidatorBlock):
+class LengthValidator(ValidatorBlock):
     """Class for length-constraint validator"""
 
     # NOTE: we must associate LengthValidatorData as this class's DATA_TYPE for the input dictionaries to be mapped to instances of LengthValidatorData
@@ -85,7 +79,7 @@ class LengthValidator(BaseValidatorBlock):
 
 ```
 
-Next, we must update our data builder and data builder config to actually make use of this new block. Update your `fms_dgt/research/databuilders/geography_qa/generate.py` file with the following code
+Next, we must update our data builder and data builder config to actually make use of this new block. Update your `fms_dgt/public/databuilders/test/geography_qa/generate.py` file with the following code
 
 ```python
 # Standard
@@ -103,7 +97,7 @@ from fms_dgt.databuilders.geography_qa.task import (
 )
 
 
-_LLM_PROMPT = """You are a geography question-answering data generator. Your task is to come up with geography-related question-answer pairs that can be used to train a question-answering system. 
+_LLM_PROMPT = """You are a geography question-answering data generator. Your task is to come up with geography-related question-answer pairs that can be used to train a question-answering system.
 
 Here are some examples:
 
@@ -209,4 +203,3 @@ With those three files written / updated, you can run your code just as before. 
 Once this completes, you should be able to find the output of your system at
 
 `output/geography_qa/data.jsonl`
-

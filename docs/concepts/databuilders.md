@@ -45,4 +45,3 @@ In this, the `blocks` field shows the default settings for a generator and a val
 > **IMPORTANT**
 >
 > Make sure the value specified for `model_id_or_path` field matches models available for the specified LLM backends (`rits`, `watsonx`, `vllm`, `openai`).
-
