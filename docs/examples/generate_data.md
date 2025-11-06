@@ -1,19 +1,27 @@
-# Write your own generation databuilder
+# Data Generation
 
-In this section, we'll go through the process of developing your very own data builder from scratch. We'll go through all of the steps from coding a data builder to defining a task file.
+In this example, we'll walk through the process of building a custom generation databuilder from scratch using DGT. You'll learn how to set up the necessary directory structure, define your task and data instance classes, and prepare your builder for generating data. For this example, we'll focus on a simple geography question-answering task.
 
-For the purposes of this exercise, we'll assume we want to generate data pertaining to a simple geography question-answering task.
+### Set Up Your Directory
 
-## Defining a Data Builder
-
-We'll start by creating the base directory which will contain all of the code used to execute our SDG process. DGT supports both _generation_ and _transformation_ databuilders, but for this work, we'll be creating just a generation databuilder. First, create a directory `fms_dgt/public/databuilders/test/geography_qa`
+We'll begin by creating the base directory that will house all the code for our SDG (Structured Data Generation) process. Run the following command from the root of your cloned repository:
 
 ```bash
 # from the root of the cloned repository
 mkdir -p fms_dgt/public/databuilders/test/geography_qa
 ```
 
-In that directory, we will first add the data-specifying objects that our code will operate on. In DGT, we assume there to be a class for the overall `task` as well as a class for an individual data instance. Since we're doing a simple question-answering task, we don't need to instantiate much. Add the following code to a `fms_dgt/public/databuilders/test/geography_qa/task.py` file
+This creates a new folder for your custom databuilder:
+`fms_dgt/public/databuilders/test/geography_qa`
+
+### Define the Task and Data Classes
+
+Next, we'll define the core objects that represent our task and data. In DGT, each databuilder typically includes:
+
+- A Task class: representing the overall structure and metadata of the task.
+- A DataPoint class: representing individual input and generated examples or records.
+
+Since we're working with a simple question-answering format, our classes will be minimal. Create a new file at: `fms_dgt/public/databuilders/test/geography_qa/task.py` and the following code to define your task and instance structure:
 
 ```{.python title="fms_dgt/public/databuilders/test/geography_qa/task.py"}
 # Standard
@@ -39,7 +47,7 @@ class GeographyQATask(GenerationTask):
     """
 
     # We must always specify both the type of data that will be accepted as well as the type of data that will be generated
-    # For our example, we will be providing some seed examples to large languge model to create new synthetic data in the similar format.
+    # For our example, we will be providing some seed examples to large language model to create new synthetic data in the similar format.
     # Therefore, our `INPUT_DATA_TYPE` and `OUTPUT_DATA_TYPE` are identical.
     #
     # CAUTION: Be careful when you use different `INPUT_DATA_TYPE` and `OUTPUT_DATA_TYPE`. By default, `GenerationTask` type task are expected
@@ -76,7 +84,13 @@ class GeographyQATask(GenerationTask):
         )
 ```
 
-With the task file defined, we can now work on the code that will be used to actually execute data generation. Create a `fms_dgt/research/databuilders/geography_qa/generate.py` file with the following code
+This sets up the basic scaffolding for your databuilder. You can now proceed to implement the actual generation logic in a separate builder file.
+
+### Implement the Data Generation Logic
+
+Now that we've defined our task and data classes, it's time to implement the actual data generation logic. This is where we use a language model to synthesize new question-answer pairs based on seed examples.
+
+Create a new file at: `fms_dgt/public/databuilders/test/geography_qa/generate.py` and add the following code to define your custom generation databuilder:
 
 ```{.python title="fms_dgt/public/databuilders/test/geography_qa/generate.py"}
 # Standard
@@ -127,7 +141,7 @@ class GeographyQADataBuilder(GenerationDataBuilder):
             icl_examples = random.choices(seed_data, k=3)
 
             # Build prompt
-            prompt = f'{self._prompt_template}{"\n\n".join([f"Question: {icl_example.question}\nAnswer: {icl_example.answer}" for icl_example in icl_examples])}\n\nNow generate a single different question-answer pair in the similar format.\n\nQuestion: '
+            prompt = f'{self._prompt_template}{"\n\n".join([f"Question: {icl_example.question}\nAnswer: {icl_example.answer}" for icl_example in icl_examples])}\n\nNow generate a single different question-answer pair in the similar format.\n\n'
 
 
             # Build generator inputs
@@ -162,7 +176,10 @@ class GeographyQADataBuilder(GenerationDataBuilder):
                     GeographyQAData(
                         task_name=icl_examples[0].task_name,
                         is_seed=False,
-                        question=question_answer_pair[0].strip().rstrip("\n"),
+                        question=question_answer_pair[0]
+                        .split("Question:")[-1]
+                        .strip()
+                        .rstrip("\n"),
                         answer=question_answer_pair[1].strip().rstrip("\n"),
                     )
                 )
@@ -171,7 +188,9 @@ class GeographyQADataBuilder(GenerationDataBuilder):
         return outputs
 ```
 
-Lastly, we must define a config file in this directory that let's us define information about the data builder. Create a `fms_dgt/public/databuilders/test/geography_qa/geography_qa.yaml`
+### Define the Builder Configuration
+
+Next step is to define a configuration file that describes how the databuilder should operate. This file provides metadata, specifies the components involved in generation, and configures post-processing steps. Create a new file at: `fms_dgt/public/databuilders/test/geography_qa/geography_qa.yaml` and add the following contents:
 
 ```{.yaml title="fms_dgt/public/databuilders/test/geography_qa/geography_qa.yaml"}
 ######################################################
@@ -204,18 +223,20 @@ metadata:
 
 ```
 
-## Creating a Task
+This configuration sets up the generation databuilder using a language model (mistral-small3.2) and includes a deduplication block to filter out near-duplicate questions using Rouge-L scoring. The name field uniquely identifies your databuilder, and the metadata section can be extended as needed.
 
-Now that we have code for our SDG in place, we can define a simple task file that can be processed by this code. All SDG begins with a `task.yaml` task file. To begin, create the directory `tasks/public/test/geography_qa`
+### Create a Task File
+
+With the databuilder code and configuration in place, the final step is to define a task file that will drive the SDG process. Every SDG workflow begins with a task.yaml file that specifies the task name, description, seed examples, and the associated databuilder. Start by creating the task directory:
 
 ```bash
 # from repo root
 mkdir -p tasks/public/test/geography_qa
 ```
 
-Within that directory, add a task.yaml file with the following contents
+Inside this directory, create a file named task.yaml with the following contents:
 
-```yaml
+```{.yaml title="tasks/public/test/geography_qa/task.yaml"}
 ######################################################
 #                   MANDATORY FIELDS
 ######################################################
@@ -271,12 +292,16 @@ seed_examples:
     answer: Denmark
 ```
 
-## Running your SDG Code
+These seed examples will be used by the generation databuilder to produce additional synthetic question-answer pairs in a similar format.
 
-With `fms_dgt/public/databuilders/test/geography_qa` and `tasks/public/test/geography_qa/task.yaml` defined, this can now be run by executing (from the base of the repo)
+### Running your Code
 
-`python -m fms_dgt.public --task-path ./tasks/public/test/geography_qa/task.yaml`
+From the root of your repository, execute the following command:
 
-Once this completes, you should be able to find the output of your system at
+```bash
+python -m fms_dgt.public --task-path ./tasks/public/test/geography_qa/task.yaml
+```
+
+Once the process completes, the generated data will be available at:
 
 `output/public/test/geography_qa/final_data.jsonl`

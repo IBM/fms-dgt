@@ -70,5 +70,7 @@ nav:
   - Tutorials:
       - tutorials/changing_lm_engine.md
       - tutorials/loading_seed_examples_from_file.md
+      - tutorials/creating_validator.md
   - Examples:
-      - examples/write_your_own_databuilder.md
+      - examples/generate_data.md
+      - examples/transform_data.md
