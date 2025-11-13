@@ -1,0 +1,38 @@
+name: magpie
+blocks:
+  - name: tagger
+    type: magpie_tag
+    input_map:
+      question: magpie_input
+      answer: magpie_output
+      messages: magpie_mt_input
+    lm_config:
+      type: ollama
+      model_id_or_path: mistral-small3.2
+      temperature: 0.0
+      max_new_tokens: 512
+      stop: ["Q:"]
+    tag_task: all
+  - name: dedup
+    type: magpie_distance
+    input_map:
+      question: magpie_input
+      messages: magpie_mt_input
+      magpie_tags: magpie_tags
+      id: id
+  - name: filter
+    type: magpie_filter
+    # Filter out invalid data points
+    filter: true
+    # Magpie filter attributes
+    filter_type: all
+    filter_criteria:
+      input_quality: ["good", "excellent"]
+      sample_quality: ["4", "5"]
+    remove_duplicates: True
+    input_map:
+      question: magpie_input
+      answer: magpie_output
+      messages: magpie_mt_input
+      magpie_tags: field
+      id: id
