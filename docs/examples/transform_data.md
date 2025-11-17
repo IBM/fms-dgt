@@ -199,7 +199,8 @@ data:
 ```
 
 !!! warning
-You will need to have local copy of Grade School Math (GSM) dataset from OpenAI in `data/public/test/gsm8k_cot` directory. You can download it from OpenAI's Github respository with following command.
+
+    You will need to have local copy of Grade School Math (GSM) dataset from OpenAI in `data/public/test/gsm8k_cot` directory. You can download it from OpenAI's Github respository with following command.
 
     ```bash
     wget https://raw.githubusercontent.com/openai/grade-school-math/refs/heads/master/grade_school_math/data/train.jsonl

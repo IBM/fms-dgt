@@ -7,7 +7,7 @@ Tasks define the **intent** and **requirements** for synthetic data generation. 
 Each task includes:
 
 - The type of data to be generated
-- Required assets (e.g., schemas, seed data, models)
+- Required assets (e.g., schemas, seed data)
 - Stopping criteria (e.g., number of records, time limits, quality thresholds)
 
 Tasks are declarative and reusable. While there is generally a many-to-one relationship between tasks and databuilders, a task can theoretically be fulfilled by multiple databuilders, provided the generated data adheres to the constraints defined by the databuilder.
@@ -22,14 +22,17 @@ Parallelism is a core feature of DGT. It supports the execution of multiple task
 
 A typical run proceeds as follows:
 
-1. **Initialization**: All requested tasks are initialized, followed by their associated databuilders.
-2. **Iteration Loop**:
-   - Each databuilder receives a set of incomplete tasks.
-   - It generates synthetic data points for those tasks.
-3. **Stopping Criteria Check**:
-   - After each iteration, the framework checks whether stopping criteria (e.g., record count, stall limit, failure threshold) have been met for each task.
-4. **Completion**:
-   - The run ends when all tasks are either completed or exited.
+- **Initialization**: All requested tasks are initialized, followed by their associated databuilders.
+
+<!-- prettier-ignore-start -->
++ **Iteration Loop**:
+      - Each databuilder receives a set of incomplete tasks.
+      - It generates synthetic data points for those tasks.
+
+<!-- prettier-ignore-end -->
+
+- **Stopping Criteria Check**: After each iteration, the framework checks whether stopping criteria (e.g., record count, stall limit, failure threshold) have been met for each task.
+- **Completion**: The run ends when all tasks are either completed or exited.
 
 ## Additional Components
 

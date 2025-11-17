@@ -1,4 +1,4 @@
-# Creating a Validator
+# Creating a validator
 
 ### Recap of Blocks
 

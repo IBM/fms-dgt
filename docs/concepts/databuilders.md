@@ -1,47 +1,93 @@
 # Data Builders
 
-Data builders (see [here](https://github.ibm.com/DGT/fms-dgt/blob/main/fms_dgt/core/databuilders/simple/generate.py) for an example) contain the means by which our framework generates data. They consist of some number of _blocks_. Blocks are most often _generators_ or _validators_. Generators are, roughly speaking, things that take in inputs and generate some output (e.g., most often an LLM taking in a prompt and then returning a string). Correspondingly, validators are things that inspect an object and return True or False to signify whether that object is valid (e.g., validating the output of an LLM for well-formedness constraints in the case of code generation).
+[Tasks](./tasks.md) define what data to consume and produce, while Data Builders define how that data is produced. A Data Builder is a class responsible for implementing the logic that generates or transforms data. Each Data Builder exposes a **call** method, which operates on:
 
-Each data builder is defined with a \_\_call\_\_ function. Importantly, the call function takes as input a list of the dataclass instances described above. This leads to an inherent composability of data builders, where the outputs of one data builder can be fed as the inputs to another (ideally leading to more code reuse across the repository).
+- Input: Accepts a list of dataclass instances.
+- Output: Returns a list of dataclass instances.
 
-```python
-def __call__(
-    self,
-    request_idx: int,
-    instruction_data: List[ExampleSdgData],
-) -> Tuple[List[ExampleSdgData], int]:
+This design enables Data Builders to be reused across multiple tasks, as long as those tasks operate on the same type of dataclass. By decoupling data generation logic from task design, the framework promotes modularity and flexibility.
 
-    ... code goes here ...
+There is built-in support for two prominent patterns data processing patterns viz. 1) Generation and 2) Transformation
 
-    return outputs, discarded
+|                      | **Generation**                                                     | **Transformation**                               |
+| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------ |
+| **Purpose**          | Create new synthetic data instances from scratch or seed examples  | Modify or convert existing data into a new form  |
+| **Input**            | Often starts with empty list or minimal seed data                  | Requires existing data instances                 |
+| **Output**           | Newly generated synthetic data                                     | Transformed version of input data                |
+| **Typical Use Case** | Data augmentation, synthetic dataset creation                      | Translation, normalization, feature extraction   |
+| **Dependency**       | May rely on generative models or iterative refinement              | Depends on transformation logic or mapping rules |
+| **Processing Style** | **Iterative**: continues until target number of datapoints reached | **Single-pass**: processes each input once       |
+| **Example**          | Generate synthetic sentences from seed text                        | Translate English sentences to French            |
+
+### Effeciency via Blocks
+
+We designed the framework to be non-prescriptive, allowing flexible implementation of the `__call__` function. However, we strongly encourage the use of blocks for computationally intensive operations, such as batch processing with LLMs (predefined blocks for LLMs are available [here](https://github.com/IBM/fms-dgt/tree/main/fms_dgt/core/blocks/llm)).
+
+Adding a block to a data builder is straightforward. The framework automatically handles block initialization. To include a block, simply declare a class variable in the data builder class and configure it in the accompanying YAML file by adding an entry to the blocks list. For instance, the [GeographyQA data builder](https://github.com/IBM/fms-dgt/tree/main/fms_dgt/public/databuilders/examples/qa) uses a `generator` block:
+
+```{.python .no-copy title="fms_dgt/public/databuilders/examples/qa/generate.py" hl_lines="8"}
+@register_data_builder("public/examples/geography_qa")
+class GeographyQADataBuilder(GenerationDataBuilder):
+    """Geography QA data builder"""
+
+    TASK_TYPE: GeographyQATask = GeographyQATask
+
+    # NOTE: generator is the language model that we will use to produce the synthetic examples
+    generator: LMProvider
+
+    def __init__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ):
+        super().__init__(*args, **kwargs)
+
+    .
 ```
 
-As with task definitions, we aimed to be very non-prescriptive in how the \_\_call\_\_ functions are defined. That being said, we do encourage any computationally expensive calls that leverage batch processes (e.g., LLM calls) to go through blocks (with blocks for LLMs already being provided [here](https://github.ibm.com/DGT/fms-dgt/tree/main/fms_dgt/core/blocks/generators/llm)).
+And the corresponding YAML configuration:
 
-An important aspect to keep in mind when defining a new data builder is the notion of _task parallelism_. That is, to make things more efficient, all tasks that can be executed by the same data builder will be run simultaneously. Thus, the inputs to the \_\_call\_\_ function will be a mixed list of instruction data (i.e., elements of the list can come from one of _N_ tasks). When doing things like combining instructions together (e.g., to serve as an ICL example to produce a new output), one has to make sure to keep track the provenance of the data.
+```{.yaml .no-copy title="fms_dgt/public/databuilders/examples/qa/qa.yaml" hl_lines="10-15"}
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+name: public/examples/geography_qa
 
-Data builders are very configurable. An example of a configuration can be found [here](https://github.ibm.com/DGT/fms-dgt/blob/main/fms_dgt/core/databuilders/simple/simple.yaml) (see below for the relevant snippet).
-
-```yaml
-name: simple
+######################################################
+#                   RESERVED FIELDS
+######################################################
 blocks:
-  - name: llm1
-    type: rits
-    base_url: https://inference-3scale-apicast-production.apps.rits.fmaas.res.ibm.com/mixtral-8x7b-instruct-v01/v1
-    model_id_or_path: mistralai/mixtral-8x7B-instruct-v0.1
+  # Language model connector
+  - name: generator
+    type: ollama
+    model_id_or_path: mistral-small3.2
     temperature: 0.0
-    max_new_tokens: 512
-    min_new_tokens: 1
-  - name: val1
-    type: rouge_scorer
-    filter: true
-    threshold: 1.0
-metadata:
-  version: 1.0
+    max_tokens: 128
+  .
 ```
 
-In this, the `blocks` field shows the default settings for a generator and a validator, respectively. This allows for trivial substitution of parameters like model types, LLM backends (e.g., `rits`, `watsonx`, `vllm`, `openai`) without having to change the underlying code.
+??? warning
+Make sure the value specified for `model_id_or_path` field matches models available for the specified LLM backends.
 
-> **IMPORTANT**
->
-> Make sure the value specified for `model_id_or_path` field matches models available for the specified LLM backends (`rits`, `watsonx`, `vllm`, `openai`).
+### Effeciency via Parallelism
+
+Keep in mind that data builders can handle task parallelism, meaning multiple tasks can be processed simultaneously by the same data builder. This results in a mixed list of input data in the `__call__` function. When combining data from multiple tasks (e.g., for instruction following), ensure you track the origin of each data point.
+
+One can opt out of task parallelism by overriding the `call_with_task_list` method for `Generation` pattern, as shown below:
+
+```{.python}
+def call_with_task_list(self, tasks: List[Task], *args, **kwargs) -> Iterable[DataPoint]:
+  for task in tasks:
+    # Tracks number of attempts made
+    request_idx = 0
+
+    data_pool = task.get_batch_examples()
+    while data_pool:
+      yield self(*[request_idx, data_pool], **dict())
+
+      # Fetch next batch of examples
+      data_pool = task.get_batch_examples()
+
+      # Update request index
+      request_idx += 1
+```
