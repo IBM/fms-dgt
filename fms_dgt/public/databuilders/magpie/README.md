@@ -14,7 +14,8 @@ pip install -e ".[all]"
 
 ### Required in task.yaml [here](../../../../tasks/public/magpie/task.yaml)
 
-- `seed_datastore`:
+- data:
+  - `type`: default
   - `data_path`: input data file path in .jsonl format
 
 ## Databuilder specifications
