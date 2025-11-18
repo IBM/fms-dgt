@@ -1,0 +1,76 @@
+site_name: DiGiT
+site_url: https://ibm.github.io/fms-dgt/
+repo_name: ibm/fms-dgt
+repo_url: https://github.com/ibm/fms-dgt
+
+theme:
+  name: material
+  palette:
+    # Default dark mode
+    - scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+
+    # System preference (dark)
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to system preference
+
+  features:
+    - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.preview
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home:
+      - Welcome to DGT: index.md
+      - Installation: installation.md
+      - Usage: usage.md
+  - Concepts:
+      - concepts/architecture.md
+      - concepts/tasks.md
+      - concepts/databuilders.md
+      - concepts/blocks.md
+      - concepts/datastores.md
+      - concepts/dataloaders.md
+  - Tutorials:
+      - tutorials/changing_lm_engine.md
+      - tutorials/loading_seed_examples_from_file.md
+      - tutorials/creating_validator.md
+  - Examples:
+      - examples/generate_data.md
+      - examples/transform_data.md

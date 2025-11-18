@@ -64,11 +64,14 @@ dev-test = ["pytest", "pytest-cov"]
 dev-fmt = ["pre-commit", "ruff"]
 dev-build = ["setuptools>=60", "setuptools-scm>=8.0"]
 
+# Documentation dependencies
+dev-docs = ["mkdocs-material"]
+
 # Full install from end-user perspective
 all = ["fms_dgt[public]"]
 
 # Full install from developer perspective
-all-dev = ["fms_dgt[all, dev-test, dev-fmt, dev-build]"]
+all-dev = ["fms_dgt[all, dev-test, dev-fmt, dev-build, dev-docs]"]
 
 
 # -----------------------

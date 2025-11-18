@@ -57,7 +57,13 @@ class GeographyQADataBuilder(GenerationDataBuilder):
 
             # Build prompt
             # 1. From variable
-            prompt = f'{self._prompt_template}{"\n\n".join([f"Question: {icl_example.question}\nAnswer: {icl_example.answer}" for icl_example in icl_examples])}\n\nNow generate a different question-answer pair in the similar format.\n\nQuestion: '
+            encoded_icl_examples = "\n\n".join(
+                [
+                    f"Question: {icl_example.question}\nAnswer: {icl_example.answer}"
+                    for icl_example in icl_examples
+                ]
+            )
+            prompt = f"{self._prompt_template}{encoded_icl_examples}\n\nNow generate a different question-answer pair in the similar format.\n\nQuestion: "
 
             # OR
             # 2. Using PromptTemplate class
@@ -79,7 +85,6 @@ class GeographyQADataBuilder(GenerationDataBuilder):
             generator_inputs.append(
                 {
                     "input": prompt,
-                    "gen_kwargs": {"stop": ["Question:"]},
                     "reference": icl_examples,
                 }
             )
@@ -105,7 +110,10 @@ class GeographyQADataBuilder(GenerationDataBuilder):
                     GeographyQAData(
                         task_name=icl_examples[0].task_name,
                         is_seed=False,
-                        question=question_answer_pair[0].strip().rstrip("\n"),
+                        question=question_answer_pair[0]
+                        .split("Question:")[-1]
+                        .strip()
+                        .rstrip("\n"),
                         answer=question_answer_pair[1].strip().rstrip("\n"),
                     )
                 )
