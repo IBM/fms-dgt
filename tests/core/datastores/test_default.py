@@ -170,6 +170,50 @@ class TestDefault:
         items = datastore.load_data()
         assert len(items) == 10
 
+    def test_csv(self):
+        primary_cfg = {
+            "store_name": "test",
+            "data_path": "tests/data/core/datastores/multiple_item_1.csv",
+        }
+
+        datastore = DefaultDatastore(
+            type="default",
+            **primary_cfg,
+        )
+
+        iters = datastore.load_iterators()
+        assert len(iters) == 1
+
+        items = datastore.load_data()
+        assert len(items) == 3
+
+        assert ["1", ' "This is sample content 1"'] == items[0]
+        assert ["2", ' "This is sample content 2"'] == items[1]
+        assert ["3", ' "This is sample content 3"'] == items[2]
+
+    def test_csv_with_optional_arguments(self):
+        primary_cfg = {
+            "store_name": "test",
+            "data_path": "tests/data/core/datastores/multiple_item_2.csv",
+            "has_header": True,
+            "skipinitialspace": True,
+        }
+
+        datastore = DefaultDatastore(
+            type="default",
+            **primary_cfg,
+        )
+
+        iters = datastore.load_iterators()
+        assert len(iters) == 1
+
+        items = datastore.load_data()
+        assert len(items) == 3
+
+        assert {"id": "1", "content": "This is sample content 1"} == items[0]
+        assert {"id": "2", "content": "This is sample content 2"} == items[1]
+        assert {"id": "3", "content": "This is sample content 3"} == items[2]
+
     def test_multiple_data_formats(self):
         primary_cfg = {
             "store_name": "knowledge",
