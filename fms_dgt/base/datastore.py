@@ -21,6 +21,9 @@ class Datastore:
         self._store_name = store_name
         self._restart = restart
 
+        # Additional kwargs
+        self._addtl_kwargs = kwargs | {}
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================

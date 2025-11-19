@@ -44,6 +44,8 @@ def _read_file(data_format: str, data_path: str, **file_kwargs) -> Iterator:
             yield from [content]
     elif data_format == ".parquet":
         yield from utils.read_parquet(data_path, lazy=True, **file_kwargs)
+    elif data_format == ".csv":
+        yield from utils.read_csv(data_path, lazy=True, **file_kwargs)
     else:
         raise ValueError(f"Unhandled data format: {data_format}")
 
@@ -158,10 +160,19 @@ class DefaultDatastore(Datastore):
                     )
 
                 data_format = os.path.splitext(data_path)[-1]
+
                 # for local files
                 file_kwargs = {}
                 if data_format == ".parquet":
                     file_kwargs = {"buffer_size": self._buffer_size}
+                elif data_format == ".csv":
+                    file_kwargs = {
+                        "has_header": self._addtl_kwargs.get("has_header", False),
+                        "delimiter": self._addtl_kwargs.get("delimiter", ","),
+                        "quotechar": self._addtl_kwargs.get("quotechar", '"'),
+                        "lineterminator": self._addtl_kwargs.get("lineterminator", "\r\n"),
+                        "skipinitialspace": self._addtl_kwargs.get("skipinitialspace", False),
+                    }
 
                 return (item for item in _read_file(data_format, data_path, **file_kwargs))
 

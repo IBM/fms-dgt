@@ -14,6 +14,7 @@ from typing import (
 )
 import ast
 import copy
+import csv
 import fnmatch
 import glob
 import importlib.util
@@ -613,6 +614,40 @@ def read_parquet(
         return _yield(file_path=file_path)
     else:
         return pd.read_parquet(file_path, engine=engine).apply(dict, axis=1).to_list()
+
+
+def read_csv(
+    file_path: str,
+    encoding: str = "utf-8",
+    lazy: bool = False,
+    has_header: bool = False,
+    delimiter: str = ",",
+    quotechar: str = '"',
+    lineterminator: str = "\r\n",
+    skipinitialspace: bool = False,
+):
+    with open(file_path, mode="r", encoding=encoding) as fp:
+        if has_header:
+            reader = csv.DictReader(
+                fp,
+                delimiter=delimiter,
+                quotechar=quotechar,
+                lineterminator=lineterminator,
+                skipinitialspace=skipinitialspace,
+            )
+        else:
+            reader = csv.reader(
+                fp,
+                delimiter=delimiter,
+                quotechar=quotechar,
+                lineterminator=lineterminator,
+                skipinitialspace=skipinitialspace,
+            )
+
+        if lazy:
+            yield from reader
+        else:
+            return list(reader)
 
 
 def read_huggingface(dataset_args: List[str], split: str, lazy=False):
