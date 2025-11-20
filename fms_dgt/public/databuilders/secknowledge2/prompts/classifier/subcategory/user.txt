@@ -1,0 +1,11 @@
+User’s query is below:
+[User’s query start]
+{instruction}
+[User’s query end]
+
+Subtask category is:
+[User query category start]
+{category}
+[User query category end]
+
+Subtask name: 

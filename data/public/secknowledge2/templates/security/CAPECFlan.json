@@ -1,0 +1,111 @@
+[
+  {
+    "name": "CAPECFlan",
+    "subcategories": [
+      {
+        "name": "capec_description",
+        "description": "Describe an attack pattern that is docummented in the CAPEC framework",
+        "structure": "Task Introduction:  \nThe task is to provide a short and accurate description for a given attack pattern from the CAPEC framework, based on its name.\n\nResponse Structure: \n1. Analyze the attack pattern name and speculate on what it could mean.\n2. State the attack pattern ID, and give a short description of the attack pattern (exactly as described in the original answer the the CAPEC page).\n3. State its likelihood of the attack and typical severity.\n\n\nGeneral Instructions: \n- Use the official CAPEC page of the attack pattern to provide a grounded and comprehensive response.\n- Rely on the original answer, but also bring additional information to support arguments or for examples when needed.\n- Do not refer to any evidence as given.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_example_instances",
+        "description": "Give example instances of an attack pattern docummented in the MITRE CAPEC framework",
+        "structure": "Task Introduction:  \nGiven a question about demonstrations or example instances of an attack pattern documented in the CAPEC framework, produce a structured response that identifies and illustrates practical examples or implementations of the specified attack pattern.\n\nResponse Structure:  \n1. State the CAPEC id of the attack pattern mentioned in the question, and briefly describe it.\n2. Discuss potential scenarios where this attack pattern can be executed.  \n3. Enumerate concrete examples or instances that demonstrate how the attack pattern is implemented or observed in practice (bring the examples from the original answer in a bullet list format where each bullet is an example)\n4. Explain the potential impact or consequence of those examples.\n\nGeneral Instructions:  \n- Use the official CAPEC page of the attack pattern mentioned in the question to provide a grounded and comprehensive response. This document is available as grounding document and it should be your ground truth and the most reliable source of evidence.\n- Ensure each step logically follows from the previous one and supports an explicit, structured explanation.\n- Where relevant, connect the example back to the general attack pattern to reinforce understanding.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_execution_flow",
+        "description": "Provide a Step-by-step execution flow for a specified attack pattern",
+        "structure": "The core task is to describe the step-by-step execution flow for implementing a given attack pattern enumerated in the CAPEC framework by MITRE.\n\nResponse Structure:\n1. Clearly identify and **describe** the specified attack pattern.\n2. Describe the attack flow: group the implementation steps by their **attack phase**, and for each unique attack phase in the flow, list the various strategies in which an attacker can carry it out - for each listed strategy, give a name and describe it.\n3. Summarize the execution flow and why it implements the specified attack pattern attack pattern in 2-3 sentences.\n\nGeneral Instructions:  \n- Use the official CAPEC page given as grounding document to provide a comprehensive and grounded response.\n- Follow a logical, sequential order between the different attack phases, and relate to how they connect to each other.\n- Use clear language to promote structured reasoning.\n- **Clarification about the steps in the original answer** - in the original answer, there is a list of steps, but in reality they do not necessarily followed sequentially. The actual sequential logical steps are the different **attack phases**, and if 2 \"steps\" (in the original answer) have the same attack phase, they are 2 strategies in which this phase can be carried out (an attacker can choose only 1 strategy in 1 attack). **A strategy in the new answer is a step in the original answer.** Please keep this in mind while writing step 2 according to the response structure.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_indicators",
+        "description": "Questions about indicators of an attack pattern (that can help to detect it) that is enumerated in the MITRE CAPEC framework.",
+        "structure": "The core task is to identify indicators that can help detect specific attack patterns defined in the MITRE CAPEC framework.\n\nResponse Structure:  \n1. Identify the given attack pattern by its full name and/or CAPEC identifier and describe it.  \n2. Review the typical characteristics and behaviors associated with this attack pattern.  \n3. List the indicators from the original answer and/or the grounding document - describe each indicator and conclude how it indicates the attack pattern.\n4. If there is more then 1 indicator, give a general conclusion by finding the common charasteristics of the different indicators.\n\nGeneral Instructions:  \n- The official MITRE CAPEC page is given as grounding documnet, use it to ground the reformatted response.\n- Ensure reasoning is explicit at each step and connects characteristics of the attack to potential observable evidence.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_mitigations",
+        "description": "List the mitigations of a specified attack pattern docummented in the MITRE CAPEC framework, if any.",
+        "structure": "The task is to identify and list mitigations for a specified attack pattern as documented in the MITRE CAPEC framework.\n\n**Response Structure:**  \n1. Clearly identify the given attack pattern and briefly describe it.\n2. Discuss the potential obstacles the attacker might bump into while attempting to execute this attack pattern.\n3. Review the documentation given as grounding document to extract all mitigations associated with the attack pattern, if there are mitigations - describe how each mitigation targets a weak point in the attack. Otherwise - state that there are no known mitigations.\n4. Summarize the mitigation strategies, and give general guidelines on how to mitigate this attack.\n\n**General Instructions:**  \n- Make sure that you provide reasoning on how each mitigation adresses a weak point in the attack pattern.\n- Rely on the CAPEC docummentation provided as grounding document.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_prerequirements",
+        "description": "Given an attack pattern docummented in the MITRE CAPEC framework, list the prerequisits needed in order to execute this attack.",
+        "structure": "The core task is to identify and articulate the prerequisites required for a given attack pattern documented in the MITRE CAPEC framework.\n\n**Response Structure:**  \n1. Begin by clearly stating the name and ID of the attack pattern under consideration, and briefly describe it for context.\n2. Analyze the nature and mechanism of the attack pattern to understand how it operates.\n3. Determine all necessary conditions that must exist in the target environment for the attack to be feasible (take from the original answer and CAPEC docummentation)\n4. Give a conclusion.\n\n**General Instructions:**  \n- Ensure that all identified prerequisites are directly relevant and specific to enabling the attack pattern described.  \n- Use clear, unambiguous language when listing the conditions.  \n- Focus on conditions that must be true before the attack can be attempted, not consequences or mitigations.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_related_cwes",
+        "description": "Given an attack pattern docummented in the MITRE CAPEC framework, list the related weaknesses docummented in the MITRE CWE framework",
+        "structure": "Given an attack pattern from the MITRE CAPEC framework, the core task is to identify and list the related weaknesses as documented in the MITRE CWE framework.\n\n**Response Structure:**  \n1. Identify the given attack pattern by its ID and name, and provide a brief description to establish context.  \n2. Compile a list of CWEs that are explicitly linked to the attack pattern. For each CWE, provide its ID, name, a brief description of it, and reason in 1-3 sentences how the attack pattern exploits it.  \n3. Present the final list of related CWE identifiers and names, and give an overall general conclusion\n\n**General Instructions:**  \n- Ensure accuracy by using official MITRE CAPEC and CWE sources.\n- Each step should explicitly reference trusted mappings between CAPEC and CWE.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_relationships",
+        "description": "Given an attack pattern docummented in the MITRE CAPEC framework, list the related attack patterns which are also docummented in the MITRE CAPEC framework",
+        "structure": "Given an attack pattern from the MITRE CAPEC framework, the core task is to identify and list the related attack patterns which are also documented in the MITRE CAPEC framework.\n\n**Response Structure:**  \n1. Identify the given attack pattern by its ID and name, and provide a brief description to establish context.  \n2. Create a list of CAPECs that are related to the given attack pattern. For each such CAPEC, include its ID, name, a short description, and explain in 1\u20133 sentences the relationship between the listed CAPEC and the given CAPEC.\n3. Present the final list of related CAPECs identifiers and names, and give an overall general conclusion\n\n**General Instructions:**  \n- Ensure accuracy by using official MITRE CAPEC sources.\n- Each step should explicitly reference trusted mappings between CAPECs.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_resources_required",
+        "description": "Answer questions about resources required to carry an attack pattern docummented in the MITRE CAPEC framework",
+        "structure": "The task is to identify and list all resources an attacker would need to carry out a specified attack pattern documented in the MITRE CAPEC framework.\n\nResponse Structure:\n1. Identify the attack pattern described in the question - state its name and id, and provide a brief description of it for context.\n2. Analyze the typical methodology and prerequisites for executing this attack pattern.\n3. Identify the technical tools, software, or hardware an attacker would need to carry out the attack (based on the original answer). For each required resource, provide its name, a brief description, and explain in 1\u20133 sentences why this resource is necessary for executing the attack.\n4. Present a clear and organized summary of all required resources.\n\nGeneral Instructions:\n- Ensure that each step builds logically upon the previous one.\n- Use concise language and maintain a structured response for clarity.\n- Use the provided docummentation from mitre given as grounding document.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_skills_required",
+        "description": "Answer questions about the skills required to carry a specific attack pattern docummented in the MITRE CAPEC framework",
+        "structure": "The core task is to identify and articulate the technical skills required for an attacker to successfully execute a specified attack pattern described in the MITRE CAPEC framework.\n\n**Response Structure:**  \n1. Identify the attack pattern by its id and name, and provide a brief description of it for context.\n2. Analyze the technical elements and mechanisms involved in carrying out that attack pattern.  \n3. Identify and list the essential skills, expertise, or knowledge areas an attacker would require to successfully execute the attack (e.g., programming, understanding system internals, familiarity with network protocols, social engineering), based on the original answer. For each skill, provide a clear definition, explain why it is necessary for the attack, describe the difficulty level to master it, and discuss its impact on the accuracy and ease of carrying out the attack.\n4. Give a general conclusion.\n\n**General Instructions:**  \n- Base your reasoning on the technical requirements and typical methods associated with the attack pattern.\n- Be concise and precise in describing each required skill.\n- Only include skills that are directly necessary for executing the attack, avoiding generic or unrelated abilities.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_taxonomy_mapping",
+        "description": "Given an attack pattern docummented in the MITRE CAPEC framework, find similar entities in different frameworks such as MITRE ATT&CK, OWASP, and WASC",
+        "structure": "The task is to identify and map the equivalent entities of a given attack pattern in the CAPEC framework to corresponding attack categories or patterns in other security taxonomies such as MITRE ATT&CK, WASC, and OWASP.\n\nResponse Structure:\n1. Clearly identify the CAPEC attack pattern to be mapped, and provide a brief description of it.\n2. Search for and determine if there is a direct or closely related equivalent of the CAPEC attack pattern in the MITRE ATT&CK framework; if found, specify the corresponding technique(s) or tactic(s).\n3. Search for and determine if there is a direct or closely related equivalent of the CAPEC attack pattern in the WASC taxonomy; if found, specify the corresponding threat or attack type.\n4. Search for and determine if there is a direct or closely related equivalent of the CAPEC attack pattern in the OWASP taxonomy; if found, specify the corresponding attack or risk category.\n5. Summarize the mapping, noting where an equivalent is not found in a given framework.\n\nGeneral Instructions:\n- Rely on the mappings from the official CAPEC page. If there are no mappings to a framework, skip the framework step.\n- Ensure each mapping step is based on specific characteristics, goals, or methods shared between the CAPEC pattern and entities in other taxonomies.\n- For each mapping you find, describe the destination entity and reason on the similarities and differences between the CAPEC and the destination entity.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "reverse_capec_taxonomy_mapping",
+        "description": "Map entities from security frameworks such as MITRE ATT&CK, OWASP, and WASC to their corresponding entity in the CAPEC framework.",
+        "structure": "The core task is to map or link entities from security frameworks such as MITRE ATT&CK, OWASP, and WASC to their corresponding entity in the CAPEC framework.\n\nResponse Structure:  \n1. Identify the specific entity or attack pattern in the question from the given framework(s), including its name and ID if provided, also provide a short description of it and state its purpose.\n2.  Select the CAPEC entity that best matches the all original entities, state its ID and name, and provide a description of it.\n3.  Compare the selected CAPEC entity to each of the given entities from the various frameworks, list similarities and differences, and why the selected CAPEC corresponds to the provided entity.\n4. Summarize the comparison and give a final conclusion.\n\nGeneral Instructions:  \n- Justify your mapping by briefly summarizing the rationale, referencing defining features or behaviors as necessary.  \n- Maintain clear and logical reasoning at each step to ensure transparency of the mapping process.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "capec_summarization_of_description",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      }
+    ]
+  }
+]

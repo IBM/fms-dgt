@@ -52,9 +52,26 @@ Repository = "https://github.com/IBM/fms_dgt"
 [project.optional-dependencies]
 # Feature specific dependencies
 vllm = ["vllm", "more_itertools"]
+search = [
+    "ddgs", # duckduckgo search engine API
+    # document processing & website crawling
+    "docling",
+    "langchain-docling",
+    "firecrawl-py",
+    "markitdown[all]",
+    # document retrieval
+    "elasticsearch==8.2",
+    "langchain", 
+    "langchain-core",
+    "langchain-text-splitters",
+    "langchain-ibm",
+    "langchain-openai", 
+    "langchain-milvus"
+]
 
 # Pipeline specific dependencies
 time_series = ["statsmodels", "fastparquet>=2024.5.0", "torch>=2.3", "transformers>=4.1", "accelerate>=0.26.0", "matplotlib"]
+secknowledge2 = ["fms_dgt[search]", "pydantic"]
 
 # Namespace specific dependencies
 public = ["lingua-language-detector"]

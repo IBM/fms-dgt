@@ -1,0 +1,17 @@
+task_name: secknowledge2_cybersecurity
+created_by: IBM Research
+data_builder: secknowledge2
+task_description: Reformats the responses of the cybersecurity instruction dataset into a format that better aligns with pre-established criteria and collected evidence.
+retriever:
+  type: core/web/duckduckgo
+  limit: 2
+  process_webpages: True
+  deduplicate_sources: True
+  reorder_organic: True
+  webpage_processor: docling
+max_queries_per_instruction: 2
+summarize_web_results: False
+templates_dir: data/public/secknowledge2/templates/cybersecurity
+seed_datastore:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/secknowledge2/security_dataset_mc.json

@@ -1,0 +1,9 @@
+You will receive a user’s query and a category (topic) this query belongs to. Additionally, you are given more fine-grained subtasks below:
+
+[Existing subtasks start]
+{sub_categories}
+[Existing subtasks end]
+
+Your objective is to choose the most appropriate subtask that can reflect the high-level intention of this query. You should first clearly give out your choice. Your choice should exactly match one of the subtask names provided above, without any modification. Do not include the subtask description in your choice.
+
+Your output should be just the subtask name.

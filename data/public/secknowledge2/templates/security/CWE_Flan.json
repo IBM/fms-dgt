@@ -1,0 +1,71 @@
+[
+  {
+    "name": "CWE_Flan",
+    "subcategories": [
+      {
+        "name": "cwe_background",
+        "description": "maps context, historical or technical background for the weakness.",
+        "structure": "**Task Introduction:**  \nThe core task is to provide context, historical, or technical background information for a specified security weakness.\n\n**Response Structure:**  \n1. Identify and define the named weakness to establish clarity on the topic.  \n2. Describe the technical mechanism or context in which the weakness occurs.  \n3. Summarize, if available  relevant historical developments, notable incidents, or common scenarios involving the weakness.  \n4. Explain the significance or consequences of the weakness in security terms.\n\n**General Instructions:**  \nEnsure each step logically builds upon the previous, explicitly connecting ideas to offer comprehensive background. Use concise, factual statements throughout the reasoning process.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cwe_common_consequences",
+        "description": "States the consequences of a given CWE",
+        "structure": "The core task is to identify and explain the consequences associated with a specified CWE (Common Weakness Enumeration) instance.\n\nResponse Structure:  \n1. Analyze how the given weakness could impact the software or system security, functionality, or data integrity.  \n2. List the concrete and direct consequences that may result from exploiting or encountering this weakness.  \n3. Summarize the significance of these consequences for security or operational risk.\n\n**General Instructions**:  \n- Pay extra attention to the scope which identifies the application security area that is violated\n- Make sure to follow the original response. \n- Do not copy the grounding's structure, rather just take its content\n- Ensure each step is reasoned explicitly and sequentially, and consequences should be tied logically to the nature of the specific CWE provided.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cwe_define",
+        "description": "Provide a short definition of a given weakness",
+        "structure": "The task is to provide a concise definition for a given software or security weakness.\n\n**Response Structure:**  \n1. Identify the specific weakness presented in the question.  \n2. Analyze what the weakness typically entails, including its history, nature and technical aspects or context.  \n3. State the core problem or risk introduced by the weakness.  \n4. Summarize the consequences or vulnerabilities that can result from this weakness.\n\n**General Instructions:**  \n- Ensure that each step leads logically to the next, building a step-by-step explanation.  \n- Use clear and precise language suitable for technical audiences.  \n- Keep the definition brief, focused, and easy to understand.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cwe_description_summarization",
+        "description": "summarizes the description of a given CWE",
+        "structure": "The task involves reading a technical description of a specific CWE (Common Weakness Enumeration) and condensing it into a concise, clear summary that captures the core issue presented.\n\nResponse Structure:\n1. based on the CWE description,  Identify the main security problem highlighted  and  recognize key details or vulnerabilities that are emphasized as important consequences or risks.\n2. Final Summary Statement. , keep the essential information into a single, cohesive summary statement. \n\nGeneral Instructions:\n- Ensure the summary accurately reflects the primary weakness and its implications.\n- Maintain clarity and conciseness throughout the response.\n- Use precise language appropriate for technical audiences.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cwe_detection_methods",
+        "description": "Maps the relevant detection methods to a given weakness (CWE)",
+        "structure": "The core task is to identify and map relevant detection methods to a given software weakness (CWE).\n\nResponse Structure:\n1. Restate the specific weakness that needs detection methods.\n2. Analyze the characteristics and technical nature of the weaknesses.\n3. State known approaches, tools, or methodologies related to detecting such weaknesses.\n4. Map each identified detection method to the characteristics of the weakness.\n5. Summarize how these detection methods can reliably identify the weakness in practice.\n\nGeneral Instructions:\nEnsure each step builds logically on the previous one; use specific and concrete methods whenever possible. Stay focused on structured reasoning and technical relevance.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cwe_mitigate",
+        "description": "maps mitigatioin strategies for a given weakness",
+        "structure": "The task is to provide structured guidance on identifying and suggesting mitigation strategies for a specified security weakness, as defined by a Common Weakness Enumeration (CWE).\n\n**Response Structure:**  \n1. Briefly describe the nature of the weakness.\n2. Analyze the potential risks and attack vectors associated with the weakness.\n3. Take the mitigations from the original answers and explain them according to sources. \n4. Justify how each mitigation helps prevent or reduce the identified risks.\n\n**General Instructions:**  \n* Ensure that each step is addressed explicitly and in sequence. Use clear and concise language to facilitate understanding and applicability.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cwe_related_attack_patterns",
+        "description": "Maps related attack patterns to a given weakness (CWE)",
+        "structure": "Given a specific weakness (CWE), the goal is to identify and list the attack patterns (CAPEC) that are related to this weakness.\n\n**Response Structure:**  \n1. State the CWE ID and provide a brief, clear description of the weakness.\n2. Describe, in practical terms, how an attacker could exploit this weakness.\n3. Recognize if this behavior matches a well-known attack pattern, if yes, name the attack pattern and, if known, include its CAPEC ID and title.\n4. For each attack pattern, explain why and how it exploits this specific weakness and describe which aspect of the weakness enables the attack.\n\n**General Instructions:**  \n\u2022 Ensure that each step is followed in order to maintain clear and logical reasoning.  \n\u2022 Clearly label the weakness and the corresponding attack patterns in the response.  \n\u2022 The process should be explicit and transparent to demonstrate the connection between the weakness and its related attack patterns.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cwe_related_cves",
+        "description": "maps related CVEs to the given CWE",
+        "structure": "The task is to identify and fetch the Common Vulnerabilities and Exposures (CVEs) that are related to a specified Common Weakness Enumeration (CWE) or weakness description.\n\n**Response Structure (Logical Steps):**  \n1. Clearly identify and restate the given CWE or weakness description.  \n2. Retrieve and list all relevant CVEs linked to the CWE or weakness.  \n3. Present the findings in a clear, summarized and organized manner.\n\n**General Instructions:**  \nEnsure the mapping between the CWE/weakness and CVEs is accurate and up to date, using reputable sources for verification.",
+        "requires_search": false,
+        "requires_grounding_doc": true,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

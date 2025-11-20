@@ -1,0 +1,15 @@
+[
+  {
+    "name": "QradarTtpMappingFlan",
+    "subcategories": [
+      {
+        "name": "qradar_ttp_mapping",
+        "description": "Mapping between QRadar detection rule (name and description) to its corresponding MITRE ATT&CK tactic",
+        "structure": "Given a QRadar detection rule, identify the most relevant MITRE ATT&CK tactic and provide an explanation of that tactic.\n\n**Steps:**  \n1. Mention the key action or behavior described by analyzing the rule's purpose and context\n2. Identify and explain the specific MITRE ATT&CK tactics and techniques that best aligns with the described behavior. \n3. Write a brief explanation of the concrete tactic and its relevance to the rule.\n4. Conclude the points above into a concrete conclusion  \n\n\n**General Instructions, do not include in the output:**  \nDo not write the tactic at the start of the output, make sure the flow has logical sense. \nMake sure you comply with the gold response. \nEnsure all information provided is clear and directly related to the rule and tactic. Avoid extraneous details.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

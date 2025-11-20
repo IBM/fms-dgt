@@ -1,0 +1,102 @@
+[
+  {
+    "name": "BronFlan",
+    "subcategories": [
+      {
+        "name": "bron_direct_dm_open",
+        "description": "Explain how to detect or mitigate attack technique / attack pattern / cwe",
+        "structure": "Task Introduction:  \nThe task is to analyze how to detect or mitigate a specific cyber attack entity such as a technique, attack pattern, or weakness (e.g., TTP, CAPEC, or CWE).\n\nResponse Structure:\n1. Provide an overview on the cyber attack entity and its characteristics.\n2. Analyze the methods or vectors through which the attack entity operates or manifests.\n3. List various mitigation or detection (depending on the question) strategies, **including the ones from the original response**. For each strategy, provide a concise explanation for why it helps to mitigate or detect the cyber attack entity.\n4. Assess the effectiveness and practicality of the most relevant proposed detection or mitigation measure.\n\nGeneral Instructions:\n- Ensure each step logically follows from the previous one for a clear chain-of-thought.\n- Apply your reasoning to the specific characteristics and context of the attack entity in question.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_direct_explanations_open",
+        "description": "The student is presented with 2 cybersecurity entities (taken from standard libraries like mitre att&ck/capce/cwe/cve/cpe/...) and is also presented with 2 explanations: one that explains why the two are connected and the second explains why the two are not connected. The student must choose the correct explanation and explain why the other is incorrect.",
+        "structure": "**Task Introduction:**  \nGiven two cybersecurity entities (such as a CVE and a CPE, or malware and an ATT&CK technique), along with two provided explanations (one explaining why the entities are related and one why they are not), determine which explanation is correct and justify your choice, while also explaining why the alternate explanation is incorrect.\n\n**Response Structure:**  \n1. Clearly identify the two cybersecurity entities and briefly summarize what each describes.  \n2. Carefully compare the factual details of each entity\u2019s description with the assertions made in both explanations.  \n3. Evaluate which explanation accurately reflects the documented relationship (or lack thereof) between the two entities.  \n4. Choose the correct explanation.  \n5. Justify why the chosen explanation is correct with explicit reference to evidence from the entity descriptions.  \n6. Identify and explain the flaw or inaccuracy in the incorrect explanation.\n\n**General Instructions:**  \nAlways base your reasoning on the given factual descriptions and avoid assumptions beyond the provided information. Present each step of your reasoning process in a clear and logical order.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_direct_open",
+        "description": "Questions that explore whether two security entities are related or not, typically involving entities of types where one encompasses the other. For example, a weakness may encompass a vulnerability (or may not), an attack pattern may encompass a weakness (or not), and so forth.",
+        "structure": "**Task Introduction:**  \nThe core task is to analyze whether two security entities are related, typically involving an assessment of how one entity may encompass, enable, or be associated with the other based on their descriptions.\n\n**Response Structure:**\n1. Clearly summarize the descriptions and core characteristics of both entities provided.\n2. Identify any conceptual or functional overlaps, dependencies, or associations between the two entities.\n3. Analyze whether one entity could logically encompass, enable, exploit, or be a prerequisite for the other or not. This part should start taking the answer towards the final answer in the original response, but not yet reveal it.\n4. Explain your reasoning, referencing specific details to support your analysis. Here you should base the hypothesis from step 3.\n5. Conclude whether a relationship exists and briefly summarize the nature of that relationship (or explain why there could not be a relationship), if any.\n\n**General Instructions:**  \n- Always reference factual details from the provided descriptions. Avoid assumptions not grounded in the given information.\n- Ensure reasoning follows an explicit, step-by-step chain-of-thought that builds logically to your conclusion.\n- Do not refer to the security entities in the question as \"security entities\" simply refer them by name.\n- **The final conclusion must be the same as the final conclusion in the original response.**",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_layer_to_node_CoT",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "bron_layer_to_layer_CoT",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "bron_direct_dm_multiple_choice",
+        "description": "Given a security entity name and id, select the approach that best mitigates or detects the technique",
+        "structure": "The core task is to answer a multi-choice question, by explaining the reasoning process, and end with choosing the correct answer at the end.\n\n**Response Structure:**  \n1. Carefully read and understand the multi-choice question. \n2. Choices Analysis - Analyze **each** option separately, explaining the reasoning behind choosing or not choosing it **based on the original response**.\n3. Summarize the reasoning from step 2 by providing a short sentence for each option that concludes the rationale for its correctness or incorrectness.\n4. End with a new line, that includes only the correct option, in the following format: \\nFinal answer: <answer letter>\n\n**General Instructions:**  \nAlways ensure each step logically builds upon the previous one, and support conclusions with clear rationale.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_direct_multiple_choice",
+        "description": "Given a security entity, select the other security entity that is related to the given one",
+        "structure": "The core task is to answer a multi-choice question, by explaining the reasoning process, and end with choosing the correct answer at the end.\n\n**Response Structure:**  \n1. Carefully read and understand the multi-choice question. \n2. Choices Analysis - Analyze **each** option separately, explaining the reasoning behind choosing or not choosing it **based on the original response**.\n3. Summarize the reasoning from step 2 by providing a short sentence for each option that concludes the rationale for its correctness or incorrectness.\n4. End with a new line, that includes only the correct option, in the following format: \\nFinal answer: <answer letter>\n\n**General Instructions:**  \nAlways ensure each step logically builds upon the previous one, and support conclusions with clear rationale.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_direct_explanations_a_b_classification",
+        "description": "Given two security entities and two explanations\u2014one explaining their relation and the other explaining why they are not related\u2014your task is to determine which explanation correctly describes their relationship.\n\n### Response Structure:\n1. Summarize the description of each entity to identify their fundamental characteristics and purposes.\n2. Analyze the first explanation and try to find potential logical flaws.\n3. Analyze the second explanation and try to find potential logical flaws.\n4. Determine which explanation aligns better with the characteristics and potential interactions between the two entities.\n5. Conclude by choosing the explanation (A or B) that presumably shows the correct relationship. Simply output A or B without unnesecary explanations (should be done in your previous steps)\n\n### General Instructions:\n- **Focus on Clarity:** Ensure that each step is clear and concise.\n- **Brevity:** Keep the steps brief and to the point.\n- **Logical Consistency:** Make sure the reasoning follows a logical sequence from understanding the entities to evaluating the explanations.\n- **No Extra Explanations:**  Avoid any extra explanations or comments that are not part of the task introduction, response structure, or general instructions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_direct_yes_no",
+        "description": "Given two security entities, determine whether they are related to each other or not.",
+        "structure": "Given two security entities, analyze their descriptions to determine if they are related.\n\n### Response Structure:\n1. **Understand the Core Descriptions:** Carefully read and summarize the main descriptions of both security entities.\n2. **Identify Key Characteristics:** Extract and list the key characteristics or keywords from each entity's description.\n3. **Compare and Contrast:** Analyze the similarities and differences between the two entities based on their descriptions.\n4. **Determine Relationship:** Decide whether the two entities are related or not based on your analysis.\n5. **Final answer:** Finally output 'yes' if they are related, or 'no' if they are not.\n\n### General Instructions:\n- Focus on extracting and comparing key characteristics to ensure accurate matching.\n- Be thorough in your analysis to avoid superficial or incorrect matches.\n- Use clear and concise language in your reasoning to maintain clarity.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_direct_dm_yes_no",
+        "description": "Given a security entity name and id, and the description of a mitigation / detection strategy, determine whether or not the strategy detects / mitigates the given security entity.",
+        "structure": "Given a security entity name and id, and the description of a mitigation / detection strategy, determine whether or not the strategy detects or mitigates the given security entity.\n\n**Response Structure:**\n1. Understand the security entity: Familiarize yourself with the nature, behavior, and impact of the given security entity.\n2. Analyze the strategy: Examine the proposed mitigation or detection strategy to understand its mechanisms and targets.\n3. Compare and contrast: Evaluate the relationship between the security entity's characteristics and the strategy's approach.\n4. Determine effectiveness: Based on the analysis, assess whether the strategy effectively detects or mitigates the security entity.\n5. Conclude with a Yes/No answer: Clearly state the final answer based on the analysis and justification.\n\n**General Instructions:**\n- Focus solely on the information provided to make an unbiased assessment.\n- Ensure a thorough and logical analysis in each step.\n- Maintain clarity and brevity in justifications and conclusions.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "bron_node_to_node_CoT",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "bron_2_step_mitigation_detection_CoT",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      }
+    ]
+  }
+]

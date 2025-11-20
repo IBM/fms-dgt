@@ -1,0 +1,13 @@
+Here are the question and two possible answers:
+
+[The Start of The User's Question]
+{question}
+[The End of The User's Question]
+
+[The Start of Assistant A's Answer]
+{answer_a}
+[The End of Assistant A's Answer]
+
+[The Start of Assistant B's Answer]
+{answer_b}
+[The End of Assistant B's Answer]

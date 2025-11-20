@@ -1,0 +1,13 @@
+Below is a user's question, the AI assistant's response, and the provided format. 
+
+[Question start]
+{question}
+[Question end]
+
+[Response start]
+{response}
+[Response end]
+
+[Format start]
+{structure}
+[Format end]

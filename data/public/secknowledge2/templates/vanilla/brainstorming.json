@@ -1,0 +1,39 @@
+[
+    {
+    "name": "Brainstorming",
+    "subcategories": [
+      {
+        "name": "advice giving",
+        "description": "Respond well to users when they seek advice.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "recommendations",
+        "description": "Give recommendations to users.",
+        "structure": "This is a task for giving recommendations. The first sentence should identify the intended purpose of the individual you are recommending. Afterward, give the recommendations to meet these objectives. Then, use a list to give the explanations. Last, give a conclusion.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "how-to generation",
+        "description": "Give relevant and complete answer when users ask 'how to do' something.",
+        "structure": "This is a how-to question. First, analyze the question. Then, give the answer. Next, give the corresponding explanations. Last, give a conclusion.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "planning",
+        "description": "Write a plan for an event or activity.",
+        "structure": "This is a plan-writing task. First, give the planning goals in the initial sentence. Afterward, Use a list to outline the plan by timeline. Then, give the explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

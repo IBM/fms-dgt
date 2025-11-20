@@ -1,0 +1,9 @@
+You will receive a user’s query. Additionally, you are given some pre-defined tasks below:
+
+[Existing tasks start]
+{categories}
+[Existing tasks end]
+
+Your objective is to choose the most appropriate task that can reflect the high-level intention of this query. You should first clearly give out your choice. Your choice should exactly match one of the task names provided above, without any modification. Do not include the task description in your choice.
+
+Your output should be just the task name.

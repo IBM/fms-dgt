@@ -1,0 +1,31 @@
+[
+    {
+    "name": "Summarization",
+    "subcategories": [
+      {
+        "name": "title generation",
+        "description": "Generate a title for the given text or based on a description of the work.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "text summarization",
+        "description": "Write a summary for a piece of text.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "note summarization",
+        "description": "Write a note to summarize a piece of text.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      }
+    ]
+  }
+]

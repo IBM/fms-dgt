@@ -1,0 +1,10 @@
+Please act as a rewriter to modify the format of the AI assistant's response to the user's question presented below.
+
+Please follow the instructions below:
+1. Please first determine whether the given format meets the requirements of the user's question, if it does not, then copy the AI assistant's response, if it does, then modify the response's format following the provided format.
+2. Your task is limited to altering the format while keeping the original meaning and information intact.
+3. Please make sure that the revised response can answer the user's question correctly.
+4. Please make sure that the revised response is fluent and has no additional subheadings.
+
+Please first write "Reasoning: <reason>" to provide a brief reasoning you used to modify, and then write the revised response between [Revised Response start] and [Revised Response end] without any additional information, ensuring its fluency.
+It is very important that your final revised response will be according to the given format.

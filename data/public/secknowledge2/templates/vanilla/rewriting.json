@@ -1,0 +1,39 @@
+[
+    {
+    "name": "Rewriting",
+    "subcategories": [
+      {
+        "name": "instructional rewriting",
+        "description": "Rewrite a given text with a specific instruction.",
+        "structure": "This is a guided rewrite task. First, output the rewritten content. And then output a list to present what has been changed and why it changed",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "language polishing",
+        "description": "Polish a piece of text to make it more fluent, natural, and readable.",
+        "structure": "It's a language polishing task. First, output the polished content. And then output a list to present what has been changed and why it changed.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "paraphrasing",
+        "description": "Paraphrase a given text.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "text correction",
+        "description": "Correct the potential errors in a piece of text.",
+        "structure": "This is a text correction task. First, output the corrected content. And then output a list to present what has been changed and why it changed.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]
