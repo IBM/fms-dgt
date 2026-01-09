@@ -119,7 +119,7 @@ def generate_data(
                 }
                 task_inits.append(task_init)
         else:
-            raise FileExistsError(f"Error: task path ({task_path}) does not exist.")
+            raise FileNotFoundError(f"Error: task path ({task_path}) does not exist.")
 
     # capture tasks specified only in config overrides
     for task_name, task_override in task_overrides.items():
