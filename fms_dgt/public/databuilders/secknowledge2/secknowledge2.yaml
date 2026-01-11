@@ -1,0 +1,31 @@
+name: secknowledge2
+blocks:
+  - name: classifier
+    type: watsonx
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0
+    top_k: 1
+    max_tokens: 1024
+  - name: query_builder
+    type: watsonx
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0.7
+    top_p: 0.95
+    max_tokens: 1024
+  - name: rewriter
+    type: watsonx
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0.7
+    top_p: 0.95
+    max_tokens: 4096
+  - name: judge
+    type: watsonx
+    model_id_or_path: openai/gpt-oss-120b
+    temperature: 0
+    top_k: 1
+    max_tokens: 1024
+specifications:
+  adaptive: false
+  search_method: llm
+metadata:
+  version: 1.0

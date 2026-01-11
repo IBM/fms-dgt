@@ -1,0 +1,10 @@
+[Question]
+{question}
+
+[The Start of Reference Answer]
+{ref_answer}
+[The End of Reference Answer]
+
+[The Start of Assistant's Answer]
+{answer}
+[The End of Assistant's Answer]
