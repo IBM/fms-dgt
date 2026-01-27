@@ -165,7 +165,6 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
     """Class for the implementation of the SecKnowledge2 pipeline as a data builder."""
 
     TASK_TYPE: GenerationTask = SecKnowledge2Task  # type: ignore
-
     # classifier is the LLM that will classify a given instruction to its corresponding task and subtask (if not given)
     classifier: LMProvider
 
@@ -186,6 +185,10 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
         prompts_dict = build_dir_tree(Path(__file__).resolve().parent / "prompts")
         self._prompts = PromptsSchema(**prompts_dict)  # type: ignore
 
+        templates_path = Path(
+            specifications.get("templates_path", "data/research/secknowledge2/templates/")
+        )
+        self._template_data = TemplateData.from_auto(templates_path)
         self._adaptive = specifications.get("adaptive", False)
         self._search_method = SearchMethod(specifications.get("search_method", "llm"))
         if file_path := specifications.get("search_queries_cache", None):
@@ -193,7 +196,7 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
         else:
             self._search_queries_cache = None
 
-    def _category_classification(self, instruction_data: List[InputRow], template_data: TemplateData) -> List[InputRow]:
+    def _category_classification(self, instruction_data: List[InputRow]) -> List[InputRow]:
         replace_indices: List[int] = []
         llm_inputs: List[Dict] = []
 
@@ -202,8 +205,8 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
         # Find rows with missing or invalid categories
         for i, row in enumerate(instruction_data):
             if (
-                row.subcategory in template_data.subcategories_names()
-                or row.category in template_data.categories_names()
+                row.subcategory in self._template_data.subcategories_names()
+                or row.category in self._template_data.categories_names()
             ):
                 # no classification needed
                 continue
@@ -216,7 +219,7 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
                             {
                                 "role": "system",
                                 "content": prompt.system.format(
-                                    categories=template_data.categories_str()
+                                    categories=self._template_data.categories_str()
                                 ),
                             },
                             {
@@ -228,7 +231,7 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
                 )
 
         # classify categories
-        category_names = template_data.categories_names()
+        category_names = self._template_data.categories_names()
 
         def parse_output(x):
             if not isinstance(x, str):
@@ -251,9 +254,9 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
 
         return updated_rows
 
-    def classify(self, instruction_data: List[InputRow], template_data: TemplateData) -> List[IntermediateRow]:
+    def classify(self, instruction_data: List[InputRow]) -> List[IntermediateRow]:
         # Ensure that all categories are filled
-        rows_with_categories = self._category_classification(instruction_data, template_data)
+        rows_with_categories = self._category_classification(instruction_data)
 
         replace_indices: List[int] = []
         llm_inputs: List[Dict] = []
@@ -262,11 +265,11 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
 
         # Find rows with missing or invalid subcategories
         for i, row in enumerate(rows_with_categories):
-            if row.subcategory not in template_data.subcategories_names():
+            if row.subcategory not in self._template_data.subcategories_names():
                 # given the category, need to find subcategory
                 replace_indices.append(i)
 
-                category = template_data.get_category_by_name(row.category)  # type: ignore
+                category = self._template_data.get_category_by_name(row.category)  # type: ignore
                 llm_inputs.append(
                     {
                         "input": [
@@ -287,7 +290,7 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
                 )
 
         # classify subcategories
-        subcategories_names = template_data.subcategories_names()
+        subcategories_names = self._template_data.subcategories_names()
 
         def parse_output(x):
             if not isinstance(x, str):
@@ -318,8 +321,8 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
                     is_seed=row.is_seed,
                     instruction=row.instruction,
                     original_answer=row.answer,
-                    category=template_data.get_category_by_name(row.category),  # type: ignore
-                    subcategory=template_data.get_subcategory_by_name(
+                    category=self._template_data.get_category_by_name(row.category),  # type: ignore
+                    subcategory=self._template_data.get_subcategory_by_name(
                         name=row.subcategory  # type: ignore
                     ),
                     search_results=None,
@@ -827,11 +830,10 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
             output.extend(
                 self(
                     request_idx,
-                    templates_dir=task.templates_dir,
-                    instruction_data=data_pool,
-                    retriever=retriever,
-                    max_queries_per_instruction=max_queries_per_instruction,
-                    summarize_web_results=summarize_web_results,
+                    data_pool,
+                    retriever,
+                    max_queries_per_instruction,
+                    summarize_web_results,
                 )
             )
         return output
@@ -839,17 +841,15 @@ class SecKnowledge2DataBuilder(GenerationDataBuilder):
     def __call__(
         self,
         request_idx: int,
-        templates_dir: str,
         instruction_data: List[InputRow],
         retriever: UnstructuredTextRetriever,
         max_queries_per_instruction: int,
         summarize_web_results: bool,
     ) -> List[OutputRow]:
         inputs = [data for data in instruction_data if isinstance(data, InputRow)]
-        template_data = TemplateData.from_auto(Path(templates_dir))
 
         # Step 1. Classification to subcategories (where needed)
-        classified_rows = self.classify(inputs, template_data)
+        classified_rows = self.classify(inputs)
 
         # Step 2. Retrieving evidence
         retrieved_rows = self.evidence_retrieval(

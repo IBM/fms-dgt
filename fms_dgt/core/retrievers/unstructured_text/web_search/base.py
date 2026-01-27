@@ -8,6 +8,7 @@ import json
 import logging
 
 # Third Party
+from crawl4ai import AsyncWebCrawler, CrawlResult
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions, PipelineOptions
@@ -49,6 +50,8 @@ class SearchResult(UnstructuredTextDocument):
 class WebpageProcessor(StrEnum):
     DOCLING = "docling"
     FIRECRAWL = "firecrawl"
+    MARKITDOWN = "markitdown"
+    CRAWL4AI = "crawl4ai"
 
 
 logging.getLogger("docling").setLevel(logging.WARNING)
@@ -148,7 +151,6 @@ class SearchEngineRetriever(UnstructuredTextRetriever):
         else:
             self._search_results_cache = {}
 
-        # settings.perf.doc_batch_concurrency = 2
         settings.perf.doc_batch_size = 4
 
     async def __parallel_searches(
@@ -221,13 +223,6 @@ class SearchEngineRetriever(UnstructuredTextRetriever):
             raises_on_error=False,
         )
 
-        # class TimeoutException(Exception):
-        #     pass
-
-        # # 1) Install a SIGALRM handler
-        # def _timeout_handler(signum, frame):
-        #     raise TimeoutException(f"Operation timed out after {timeout_secs} seconds")
-
         i = 0
         success_indices = []
         while True:
@@ -240,9 +235,6 @@ class SearchEngineRetriever(UnstructuredTextRetriever):
                 continue
 
             try:
-                # signal.signal(signal.SIGALRM, _timeout_handler)
-                # timeout_secs = 5
-                # signal.alarm(timeout_secs)
                 # Some sources can throw forbidden errors or other errors
                 processed_html = next(processed_htmls_iter)
                 page_content = processed_html.document.export_to_markdown()
@@ -252,20 +244,16 @@ class SearchEngineRetriever(UnstructuredTextRetriever):
                     success_indices.append(i)
             except StopIteration:
                 break
-            # except TimeoutException:
-            #     dgt_logger.warning(
-            #         f"Timeout occurred while processing source: {search_results[i].metadata['source']}"
-            #     )
-            #     continue
             except Exception as e:
                 src = search_results[i].metadata["source"]
                 dgt_logger.warning(f'Failed to access source "{src}": {e}')
                 continue
             finally:
-                # signal.alarm(0)
-                # signal.signal(signal.SIGALRM, signal.SIG_DFL)
                 i += 1
-                torch.cuda.empty_cache()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                elif torch.mps.is_available():
+                    torch.mps.empty_cache()
 
         # change the list such that the indices in success_indices are first
         search_results[:] = [search_results[i] for i in success_indices] + [
@@ -342,6 +330,49 @@ class SearchEngineRetriever(UnstructuredTextRetriever):
         search_results[:] = [search_results[i] for i in success_indices] + [
             search_results[i] for i in range(len(search_results)) if i not in success_indices
         ]
+
+    async def _process_webpages_crawl4ai(
+        self, search_results: List[SearchResult], fallback=True
+    ) -> None:
+        success_indices = []
+
+        async with AsyncWebCrawler() as crawler:
+
+            async def dummy_crawl():
+                return None
+
+            tasks = [
+                (
+                    crawler.arun(url=webpage.metadata["source"])
+                    if webpage.metadata["source"]
+                    else dummy_crawl()
+                )
+                for webpage in search_results
+            ]
+            results: list[CrawlResult] = await asyncio.gather(*tasks)
+
+            for i, (webpage, result) in enumerate(zip(search_results, results)):
+                if not webpage.metadata["source"]:
+                    continue
+                if len(success_indices) >= self.limit:
+                    break
+                try:
+                    if not result.success or (page_content := result.markdown) is None:
+                        raise RuntimeError(result.error_message)
+                    # some webpages are not parsable when initially accessed and might return an empty string
+                    if len(page_content) > len(webpage.text):
+                        webpage.text = page_content
+                        success_indices.append(i)
+                except Exception as e:
+                    dgt_logger.warning(
+                        f'Failed to access source "{webpage.metadata["source"]}": {e}'
+                    )
+                    continue
+
+            # change the list such that the indices in success_indices are first
+            search_results[:] = [search_results[i] for i in success_indices] + [
+                search_results[i] for i in range(len(search_results)) if i not in success_indices
+            ]
 
     async def _process_webpages(self, search_results: List[SearchResult]) -> None:
         """
