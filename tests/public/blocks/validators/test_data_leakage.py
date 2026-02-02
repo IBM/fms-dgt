@@ -2,7 +2,7 @@
 import pytest
 
 # Local
-from fms_dgt.public.blocks.validators.privacy.data_leakage import (
+from fms_dgt.public.blocks.validators.data_leakage.data_leakage import (
     DataLeakageValidator,
 )
 

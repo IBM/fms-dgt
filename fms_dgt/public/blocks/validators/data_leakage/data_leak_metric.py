@@ -1,15 +1,15 @@
 # Standard
 
 # Local
-from fms_dgt.public.blocks.validators.privacy.metrics.data_leakage.rougelmod_score_handler import (
+from fms_dgt.public.blocks.validators.data_leakage.rougelmod_score_handler import (
     RougeLmodScoreHandler,
 )
-from fms_dgt.public.blocks.validators.privacy.metrics.data_leakage.score_handler import (
+from fms_dgt.public.blocks.validators.data_leakage.score_handler import (
     AbstractScoreHandler,
     AbstractStemmer,
     TextMatchScoreResult,
 )
-from fms_dgt.public.blocks.validators.privacy.metrics.text import (
+from fms_dgt.public.blocks.validators.data_leakage.text_utils import (
     IDentiText,
     TextIdentity,
 )

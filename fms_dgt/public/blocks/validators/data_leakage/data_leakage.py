@@ -8,7 +8,7 @@ from fms_dgt.base.block import ValidatorBlock
 # from fms_dgt.constants import DATASET_TYPE
 from fms_dgt.base.data_objects import ValidatorBlockData
 from fms_dgt.base.registry import register_block
-from fms_dgt.public.blocks.validators.privacy.metrics.data_leakage.rougelmod_score_handler import (
+from fms_dgt.public.blocks.validators.data_leakage.rougelmod_score_handler import (
     RougeLmodScoreHandler,
     RougeLmodScoreHandlerConfig,
 )

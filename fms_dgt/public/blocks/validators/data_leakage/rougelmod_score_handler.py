@@ -7,34 +7,33 @@ import math
 import numpy as np
 
 # Local
-from fms_dgt.public.blocks.validators.privacy.metrics.data_leakage.metric_msgs import (
-    ERR_POSITIVE,
-    ERR_SIZE,
-)
-from fms_dgt.public.blocks.validators.privacy.metrics.data_leakage.score_handler import (
+from fms_dgt.public.blocks.validators.data_leakage.score_handler import (
     AbstractScoreHandler,
     AbstractStemmer,
     MatchScoreResult,
     TextMatchScoreResult,
 )
-from fms_dgt.public.blocks.validators.privacy.metrics.text import (
+from fms_dgt.public.blocks.validators.data_leakage.text_utils import (
     IDentiText,
     TextIdentity,
 )
-from fms_dgt.public.blocks.validators.privacy.metrics.text_util import (
+from fms_dgt.public.blocks.validators.data_leakage.text_utils import (
     find_common_non_overlapping_ngrams,
     is_stop_word,
     normalize_text,
     remove_ending_punc,
     sent_tokenize,
 )
-from fms_dgt.public.blocks.validators.privacy.metrics.util import (
+from fms_dgt.public.blocks.validators.data_leakage.utils import (
     calculate_aggregated_score,
     is_positive,
     is_range_correct,
     type_check,
     value_check,
 )
+
+ERR_SIZE = "Invalid range. Please provide {} in the following range: {}."
+ERR_POSITIVE = "Please provide a positive count: {}."
 
 M_A_S_K_R_E_F = "maskref"
 M_A_S_K_P_R_E_D = "maskpred"

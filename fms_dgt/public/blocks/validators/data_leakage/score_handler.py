@@ -7,11 +7,11 @@ from typing import List
 from nltk import PorterStemmer
 
 # Local
-from fms_dgt.public.blocks.validators.privacy.metrics.text import (
+from fms_dgt.public.blocks.validators.data_leakage.text_utils import (
     IDentiText,
     TextIdentity,
 )
-from fms_dgt.public.blocks.validators.privacy.metrics.util import (
+from fms_dgt.public.blocks.validators.data_leakage.utils import (
     calculate_aggregated_score,
     select_highest_scores_from_group,
 )
