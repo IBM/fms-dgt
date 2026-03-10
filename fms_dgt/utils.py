@@ -34,7 +34,7 @@ import pyarrow.parquet as pq
 import yaml
 
 # Local
-from fms_dgt.constants import NAME_KEY
+from fms_dgt.constants import BASE_LOGGER_NAME, NAME_KEY
 
 # ===========================================================================
 #                       LOGGER CONFIGURATION
@@ -43,12 +43,12 @@ from fms_dgt.constants import NAME_KEY
 
 # Step 1: Create default log formatter
 DGT_LOG_FORMATTER = logging.Formatter(
-    fmt="%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
+    fmt="%(asctime)s,%(msecs)03d %(levelname)-8s [%(name)s:%(lineno)d] %(message)s",
     datefmt="%Y-%m-%d:%H:%M:%S",
 )
 
 # Step 2: Initialize logger
-dgt_logger = logging.getLogger("fms_dgt")
+dgt_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 # Step 3: Set up logging level
 dgt_logger.setLevel(level=getattr(logging, os.getenv("LOG_LEVEL", "info").upper()))

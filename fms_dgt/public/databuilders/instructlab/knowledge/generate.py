@@ -16,7 +16,6 @@ from fms_dgt.public.databuilders.instructlab.knowledge.data_objects import (
 from fms_dgt.public.databuilders.instructlab.knowledge.task import (
     KnowledgeTask,
 )
-from fms_dgt.utils import dgt_logger
 import fms_dgt.public.databuilders.instructlab.knowledge.utils as utils
 
 
@@ -43,9 +42,9 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         _ = request_idx
         outputs: List[KnowledgeData] = []
         for task in tasks:
-            dgt_logger.info("=" * 99)
-            dgt_logger.info('\t\tTask: "%s"', task.name)
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
+            self.logger.info('\t\tTask: "%s"', task.name)
+            self.logger.info("=" * 99)
 
             outputs.extend(
                 self(
@@ -60,7 +59,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
             )
             task.save_knowledge_dataloader_state()
 
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
 
         return outputs
 
@@ -75,7 +74,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         criteria: List[str] | None = None,
     ) -> List[KnowledgeData]:
         # Generation
-        dgt_logger.info("Generating question-answer pairs for the domain %s ...", domain)
+        self.logger.info("Generating question-answer pairs for the domain %s ...", domain)
         generated_question_answer_pairs = self._generate_question_answer_pairs(
             seed_data=seed_data,
             domain=domain,
@@ -86,7 +85,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         )
 
         # Verification
-        dgt_logger.info("Validating generated question-answer pairs...")
+        self.logger.info("Validating generated question-answer pairs...")
         validated_question_answer_pairs = self._validate_question_answer_pairs(
             question_answer_pairs=generated_question_answer_pairs,
             prompt_templates=prompt_templates,

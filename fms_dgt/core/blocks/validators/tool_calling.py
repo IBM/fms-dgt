@@ -21,7 +21,7 @@ from fms_dgt.core.tools import (
     PARAMETERS,
     PROPERTIES,
 )
-from fms_dgt.utils import dgt_logger, try_parse_json_string
+from fms_dgt.utils import try_parse_json_string
 
 
 @dataclass(kw_only=True)
@@ -61,7 +61,7 @@ class ToolCallValidator(ValidatorBlock):
         if not isinstance(tool_calls_to_validate, list) or any(
             [not isinstance(tc, dict) for tc in tool_calls_to_validate]
         ):
-            dgt_logger.debug(
+            self.logger.debug(
                 'Malformed tool calls "%s" for text "%s"',
                 inp.answer,
                 inp.question,
@@ -82,7 +82,7 @@ class ToolCallValidator(ValidatorBlock):
         if (len(set([str(x) for x in tool_calls_to_validate])) != len(tool_calls_to_validate)) or (
             len(set(tc_ids)) != len(tc_ids)
         ):
-            dgt_logger.debug(
+            self.logger.debug(
                 'Duplicate tool calls in "%s" for text "%s"',
                 inp.answer,
                 inp.question,
@@ -102,7 +102,7 @@ class ToolCallValidator(ValidatorBlock):
                 or ("{" in inp.question and 'name": ' in inp.question)
                 or ("{" in inp.question and available_tool_name + '": ' in inp.question)
             ):
-                dgt_logger.debug(
+                self.logger.debug(
                     'Text "%s" contains tool name or tool format',
                     inp.answer,
                 )
@@ -115,7 +115,7 @@ class ToolCallValidator(ValidatorBlock):
 
         # Check multiple unique tool calls, if `multi_output` == True
         if inp.multi_output and len(set([str(tc) for tc in tool_calls_to_validate])) <= 1:
-            dgt_logger.debug(
+            self.logger.debug(
                 'Expected multiple tool calls for text "%s" but received "%s"',
                 inp.answer,
                 inp.question,
@@ -129,7 +129,7 @@ class ToolCallValidator(ValidatorBlock):
 
         # Check only all or subset of available tools are used
         if not tc_names.issubset(available_tool_names):
-            dgt_logger.debug(
+            self.logger.debug(
                 'Unrecognized/unavailable tool[s] "%s" for text "%s"',
                 inp.answer,
                 inp.question,
@@ -148,7 +148,7 @@ class ToolCallValidator(ValidatorBlock):
         for idx, tool_call_to_validate in enumerate(tool_calls_to_validate):
             # Malformedness check
             if not set(tool_call_to_validate.keys()).issubset(set([NAME, ARGS, CALL_ID])):
-                dgt_logger.debug(
+                self.logger.debug(
                     'Malformed tool call "%s" with additional keys for text "%s"',
                     json.dumps(tool_call_to_validate),
                     inp.question,
@@ -163,7 +163,7 @@ class ToolCallValidator(ValidatorBlock):
 
             # Mandatory fields check
             if NAME not in tool_call_to_validate or ARGS not in tool_call_to_validate:
-                dgt_logger.debug(
+                self.logger.debug(
                     'Missing mandatory field[s] ("name", "arguments") from tool call "%s" for text "%s"',
                     json.dumps(tool_call_to_validate),
                     inp.question,
@@ -195,7 +195,7 @@ class ToolCallValidator(ValidatorBlock):
                 if not (
                     allow_nested and any([str(err).startswith(f"'{tc_id}") for tc_id in tc_ids])
                 ):
-                    dgt_logger.debug(
+                    self.logger.debug(
                         '"%s" tool call for text "%s" has following parameter validation error:\n%s',
                         json.dumps(tool_call_to_validate),
                         inp.question,
@@ -211,7 +211,7 @@ class ToolCallValidator(ValidatorBlock):
 
             # Check for argument's type
             if not isinstance(tc_args, dict):
-                dgt_logger.debug(
+                self.logger.debug(
                     '"%s" tool call for text "%s" has malformed arguments',
                     json.dumps(tool_call_to_validate),
                     inp.question,
@@ -230,7 +230,7 @@ class ToolCallValidator(ValidatorBlock):
 
                 # Check for argument name hallucinations
                 if arg_name not in matching_tool_args:
-                    dgt_logger.debug(
+                    self.logger.debug(
                         'Hallucinated argument name "%s" for tool call "%s" for text "%s"',
                         arg_name,
                         json.dumps(tool_call_to_validate),
@@ -250,7 +250,7 @@ class ToolCallValidator(ValidatorBlock):
                     arg_value, tool_calls_to_validate[idx:], inp.tools
                 )
                 if is_future_nested:
-                    dgt_logger.debug(
+                    self.logger.debug(
                         'Future variable reference in "%s" for text "%s"',
                         inp.answer,
                         inp.question,
@@ -276,7 +276,7 @@ class ToolCallValidator(ValidatorBlock):
                     and not ("date" in inp.ignore_types and _is_date_time(arg_value))
                     and not is_valid_tc_arg_overlap(arg_value, inp.question)
                 ):
-                    dgt_logger.debug(
+                    self.logger.debug(
                         'Hallucinated argument value "%s" for tool call "%s" for text "%s"',
                         arg_value,
                         json.dumps(tool_call_to_validate),
@@ -296,7 +296,7 @@ class ToolCallValidator(ValidatorBlock):
                     arg_value, tool_calls=tool_calls_to_validate, tools=inp.tools
                 )
                 if indirect_nested_call:
-                    dgt_logger.debug(
+                    self.logger.debug(
                         'Indirect variable reference "%s" in "%s" for text "%s"',
                         arg_value,
                         inp.answer,
@@ -311,7 +311,7 @@ class ToolCallValidator(ValidatorBlock):
         is_valid = (not has_nested and not inp.require_nested) or (has_nested and allow_nested)
 
         if not is_valid:
-            dgt_logger.debug(
+            self.logger.debug(
                 'Nested tool call validation failed for "%s" for text "%s"',
                 inp.answer,
                 inp.question,

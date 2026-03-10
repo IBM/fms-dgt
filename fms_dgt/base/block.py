@@ -4,6 +4,7 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Dict, Iterable, List, Tuple
 import dataclasses
 import inspect
+import logging
 import os
 import time
 import tracemalloc
@@ -23,7 +24,6 @@ from fms_dgt.constants import (
     STORE_NAME_KEY,
     TYPE_KEY,
 )
-from fms_dgt.utils import dgt_logger
 
 # ===========================================================================
 #                       CONSTATNTS
@@ -67,6 +67,7 @@ class Block:
         build_id: str | None = None,
         builder_name: str | None = None,
         datastores: List[Dict] | Dict = None,
+        fanout_handler: logging.Handler | None = None,
         **kwargs: Any,
     ) -> None:
         """A block is a unit of computation that takes in some inputs and produces an
@@ -83,6 +84,8 @@ class Block:
             build_id (str, optional): ID to identify a particular SDG run.
             builder_name (str, optional): Name of the calling databuilder
             datastores (List[Dict] | Dict, optional): Dictionaries containing the configuration for the datastores.
+            fanout_handler (logging.Handler, optional): Shared FanOutHandler from the DataBuilder. When provided,
+                block log records are routed to all currently-active task log files.
 
         Raises:
             TypeError: If any of the arguments are not of the correct type.
@@ -126,6 +129,14 @@ class Block:
 
         # Initialize profiler data
         self.profiler_data = {"executions": []}
+
+        # Initialize block-scoped logger. Attach the shared FanOutHandler so
+        # records are routed to all currently-active task log files alongside
+        # the builder's own records. Falls back to stdout-only via propagation
+        # to dgt_logger if no FanOutHandler is provided (e.g. standalone tests).
+        self._logger = logging.getLogger(f"fms_dgt.block.{self._name}")
+        if fanout_handler is not None:
+            self._logger.addHandler(fanout_handler)
 
     # ===========================================================================
     #                       PROPERTIES
@@ -181,6 +192,19 @@ class Block:
     def blocks(self) -> List["Block"]:
         return self._blocks
 
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the block-scoped logger.
+
+        Records are routed to all currently-active task log files via the
+        shared FanOutHandler, and propagate to the root dgt_logger for
+        terminal output.
+
+        Returns:
+            logging.Logger: Block-scoped logger
+        """
+        return self._logger
+
     # ===========================================================================
     #                       HELPER FUNCTIONS
     # ===========================================================================
@@ -227,7 +251,7 @@ class Block:
                 try:
                     self._datastores[store_name].save_data([to_serializable(x) for x in datapoints])
                 except KeyError:
-                    dgt_logger.warning(
+                    self.logger.warning(
                         'Unable to save instances due to missing datastore with "%s" name.',
                         store_name,
                     )

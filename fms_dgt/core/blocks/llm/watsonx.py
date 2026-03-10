@@ -16,7 +16,6 @@ from fms_dgt.core.blocks.llm import (
     ToolChoice,
 )
 from fms_dgt.core.resources.watsonx import WatsonXResource
-from fms_dgt.utils import dgt_logger
 import fms_dgt.core.blocks.llm.utils as generator_utils
 
 try:
@@ -47,10 +46,8 @@ class WatsonXAI(LMProvider):
 
     def __init__(self, *args: Any, call_limit: int = 10, **kwargs: Any):
         # Adjust call limit, if necessary
-        if call_limit is not None and not (call_limit > 0 and call_limit <= 10):
-            dgt_logger.warning(
-                'Number of simultaneous calls ("call_limit") cannot exceed 10 as per WatsonX.AI terms of conditions. Thus, restricting "call_limit" to 10.',
-            )
+        _call_limit_clamped = call_limit is not None and not (call_limit > 0 and call_limit <= 10)
+        if _call_limit_clamped:
             call_limit = 10
 
         # Load WatsonX Resource
@@ -58,6 +55,12 @@ class WatsonXAI(LMProvider):
 
         # Intialize parent
         super().__init__(*args, **kwargs)
+
+        # Warn if call_limit was clamped (self.logger available after super().__init__())
+        if _call_limit_clamped:
+            self.logger.warning(
+                'Number of simultaneous calls ("call_limit") cannot exceed 10 as per WatsonX.AI terms of conditions. Thus, restricting "call_limit" to 10.',
+            )
 
         # Set batch size, if not defined
         if not self._batch_size:
@@ -77,7 +80,7 @@ class WatsonXAI(LMProvider):
         if (
             "temperature" in self._chat_parameters and self._chat_parameters["temperature"] == 0.0
         ) and ("n" in self._chat_parameters and self._chat_parameters["n"] > 1):
-            dgt_logger.warning(
+            self.logger.warning(
                 'Defaulting "n=1" as per WatsonX.AI\'s chat completion API guidance when using greedy sampling (temperature=0)'
             )
             self._chat_parameters["n"] = 1
@@ -201,7 +204,7 @@ class WatsonXAI(LMProvider):
             # Step 2.a.i: Record warning, if necessary
             warning_msg = 'Defaulting "n=1" as per WatsonX.AI\'s chat completion API guidance when using greedy sampling (temperature=0)'
             if warning_msg not in raised:
-                dgt_logger.warning(warning_msg)
+                self.logger.warning(warning_msg)
                 raised.add(warning_msg)
 
             # Step 2.a.ii: Reset 'n' to 1

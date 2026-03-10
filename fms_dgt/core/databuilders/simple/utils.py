@@ -3,6 +3,7 @@
 # Standard
 from datetime import datetime
 from typing import List
+import logging
 import random
 import re
 import string
@@ -11,8 +12,10 @@ import string
 from jinja2 import Template
 
 # Local
+from fms_dgt.constants import BASE_LOGGER_NAME
 from fms_dgt.core.databuilders.simple.task import SimpleData
-from fms_dgt.utils import dgt_logger
+
+_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 DEFAULT_PROMPT_TEMPLATE_MERLINITE = """\
 You are asked to come up with a set of 5 diverse task instructions under {{taxonomy}}{{" for the task \\"%s\\""|format(task_description)  if task_description}}. These task instructions will be given to a GPT model and we will evaluate the GPT model for completing the instructions.
@@ -100,13 +103,13 @@ _WORD_DENYLIST = [
 ]
 
 
-def check_prompt_file(prompt_file_path, model_id_or_path):
+def check_prompt_file(prompt_file_path, model_id_or_path, logger=None):
     """Check for prompt file."""
     try:
         with open(prompt_file_path, encoding="utf=8") as file:
             prompt_template = file.read()
     except FileNotFoundError as exc:
-        dgt_logger.info(
+        (logger or _logger).info(
             "Cannot find %s. Using default prompt depending on model-family.",
             prompt_file_path,
         )
@@ -167,7 +170,7 @@ def writeline2file(logfile, line):
         fp.write(f"{t} - {line}\n")
 
 
-def post_process_gpt3_response(num_prompt_instructions, response):
+def post_process_gpt3_response(num_prompt_instructions, response, logger=None):
     if response is None:
         return [], 0
     raw_instructions = f"* Task {num_prompt_instructions + 1}\n" + response
@@ -180,7 +183,9 @@ def post_process_gpt3_response(num_prompt_instructions, response):
 
         splitted_data = re.split(r"\*\*\s+(Instruction|Input|Output):?", inst)
         if len(splitted_data) != 7:
-            dgt_logger.info("Discarded instruction (didn't match expected format): %s", repr(inst))
+            (logger or _logger).info(
+                "Discarded instruction (didn't match expected format): %s", repr(inst)
+            )
             discarded += 1
             continue
         inst = splitted_data[2].strip()
@@ -189,14 +194,14 @@ def post_process_gpt3_response(num_prompt_instructions, response):
         prompt_output = splitted_data[6].strip()
         # filter out too short or too long instructions
         if len(inst.split()) <= 3 or len(inst.split()) > 150:
-            dgt_logger.info(
+            (logger or _logger).info(
                 "Discarded instruction (wrong number of words): %s", repr(splitted_data)
             )
             discarded += 1
             continue
         # filter based on keywords that are not suitable for language models.
         if any(find_word_in_string(word, inst) for word in _WORD_DENYLIST):
-            dgt_logger.info(
+            (logger or _logger).info(
                 "Discarded instruction (contained a word from the denylist): %s",
                 repr(splitted_data),
             )
@@ -207,7 +212,7 @@ def post_process_gpt3_response(num_prompt_instructions, response):
         # to write a program or directly output the result, so here we filter them out.
         # NOTE: this is not a comprehensive filtering for all programming instructions.
         if inst.startswith("Write a program"):
-            dgt_logger.info(
+            (logger or _logger).info(
                 "Discarded instruction (began with 'Write a program'): %s",
                 repr(splitted_data),
             )
@@ -215,7 +220,7 @@ def post_process_gpt3_response(num_prompt_instructions, response):
             continue
         # filter those starting with punctuation
         if inst[0] in string.punctuation:
-            dgt_logger.info(
+            (logger or _logger).info(
                 "Discarded instruction (began with punctuation): %s",
                 repr(splitted_data),
             )
@@ -223,7 +228,9 @@ def post_process_gpt3_response(num_prompt_instructions, response):
             continue
         # filter those starting with non-english character
         if not inst[0].isascii():
-            dgt_logger.info("Discarded instruction(began with non-ascii): %s", repr(splitted_data))
+            (logger or _logger).info(
+                "Discarded instruction(began with non-ascii): %s", repr(splitted_data)
+            )
             discarded += 1
             continue
         instructions.append({"instruction": inst, "input": prompt_input, "output": prompt_output})

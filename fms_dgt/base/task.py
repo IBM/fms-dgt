@@ -1,8 +1,7 @@
 # Standard
 from abc import abstractmethod
-from logging import FileHandler
-from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, TypeVar, Union
+import logging
 import os
 import random
 
@@ -20,10 +19,13 @@ from fms_dgt.base.task_card import TaskRunCard
 from fms_dgt.constants import TYPE_KEY
 from fms_dgt.utils import (
     DGT_LOG_FORMATTER,
-    dgt_logger,
     group_data_by_attribute,
     init_dataclass_from_dict,
 )
+
+# Logger name prefix for all task-scoped loggers; child of dgt_logger so records
+# propagate to its stdout handler automatically.
+_TASK_LOGGER_PREFIX = "fms_dgt"
 
 # ===========================================================================
 #                       HELPER FUNCTIONS
@@ -249,6 +251,28 @@ class Task:
     def formatter(self) -> Formatter | None:
         return self._formatter
 
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the task-scoped logger.
+
+        Returns:
+            logging.Logger: Logger scoped to this task
+        """
+        return self._logger
+
+    @property
+    def log_handler(self) -> logging.Handler | None:
+        """Returns the file handler attached to this task's logger, or None
+        if no file-based logging is configured (e.g. non-default datastore).
+
+        The DataBuilder registers this handler with its FanOutHandler so that
+        run-level log records are duplicated into this task's log file.
+
+        Returns:
+            logging.Handler | None: The task's file handler, or None
+        """
+        return self._log_handler
+
     # ===========================================================================
     #                       HELPER FUNCTIONS
     # ===========================================================================
@@ -319,10 +343,15 @@ class Task:
         )
 
     def _init_logger(self):
-        # Initialize logger only when default datastore is used
-        if self._datastore_cfg.get(TYPE_KEY) == "default":
+        # Create a task-scoped child logger. It inherits the log level from the
+        # root dgt_logger and propagates records up to it (reaching the stdout
+        # handler) without adding handlers to the global logger.
+        self._logger = logging.getLogger(f"{_TASK_LOGGER_PREFIX}.{self._name}")
+        self._log_handler: logging.Handler | None = None
 
-            # Create logs directory in output_dir
+        # Add a file handler only when the default datastore is in use (i.e. we
+        # have a local output_dir to write to).
+        if self._datastore_cfg.get(TYPE_KEY, "default") == "default":
             logs_dir = os.path.join(
                 self._datastore_cfg.get("output_dir", "output"),
                 self._store_name,
@@ -330,17 +359,24 @@ class Task:
             )
             os.makedirs(logs_dir, exist_ok=True)
 
-            # Clean up previous logs, if restart requested
+            # On a clean restart, remove all existing log files so the logs
+            # directory stays consistent with the wiped datastores.
             if self._restart_generation:
-                for existing_log_file in Path(logs_dir).glob("*.log"):
-                    os.remove(existing_log_file)
+                for f in os.listdir(logs_dir):
+                    if f.endswith(".log"):
+                        os.remove(os.path.join(logs_dir, f))
 
-            # Set up a new log file
-            log_file_handler = FileHandler(
-                filename=os.path.join(logs_dir, f"{os.getpid()}.log"),
-            )
-            log_file_handler.setFormatter(DGT_LOG_FORMATTER)
-            dgt_logger.addHandler(log_file_handler)
+            # Name the log file with both the human-readable build_id (for quick
+            # identification) and the unique run_id (for guaranteed uniqueness).
+            # Example: exp_3f7a1c2b-....log
+            build_id = self._task_card.build_id
+            run_id = self._task_card.run_id
+            log_filename = os.path.join(logs_dir, f"{build_id}_{run_id}.log")
+
+            file_handler = logging.FileHandler(filename=log_filename)
+            file_handler.setFormatter(DGT_LOG_FORMATTER)
+            self._logger.addHandler(file_handler)
+            self._log_handler = file_handler
 
     def set_new_postprocessing_datastore(self):
         """Sets default datastore (which is used to gather data for final_datastore)
@@ -415,7 +451,7 @@ class Task:
         iterators = self._intermediate_data_datastore.load_iterators() or []
         if iterators:
             iterator = iterators[0]  # since there is only one data.jsonl
-            dgt_logger.info("Saving final data to %s", self.final_datastore.output_path)
+            self._logger.info("Saving final data to %s", self.final_datastore.output_path)
             self.final_datastore.save_data(iterator)
 
     def apply_formatting(self, data: OUTPUT_DATA_TYPE) -> Dict:  # type: ignore
@@ -442,7 +478,9 @@ class Task:
                 formatted_iterator = (
                     self.apply_formatting(self.instantiate_output_example(**d)) for d in iterator
                 )
-                dgt_logger.info("Saving formatted data to %s", self.formatted_datastore.output_path)
+                self._logger.info(
+                    "Saving formatted data to %s", self.formatted_datastore.output_path
+                )
                 self.formatted_datastore.save_data(formatted_iterator)
 
     def finish(self) -> None:
@@ -457,6 +495,12 @@ class Task:
         # close
         self.final_datastore.close()
         self.formatted_datastore.close()
+
+        # close and remove all handlers on the task-scoped logger to release
+        # file handles and prevent handler accumulation across tasks
+        for handler in self._logger.handlers[:]:
+            handler.close()
+            self._logger.removeHandler(handler)
 
     def record_task_results(self, intermediate_data: List[DataPoint]) -> Dict[str, Any]:
         """Creates a json object that captures all relevant information describing the results of the SDG task. The json

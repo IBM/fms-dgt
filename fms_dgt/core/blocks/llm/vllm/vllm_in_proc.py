@@ -16,7 +16,6 @@ from fms_dgt.base.registry import register_block
 from fms_dgt.constants import NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters
 from fms_dgt.core.blocks.llm.utils import Grouper, chunks, remap
-from fms_dgt.utils import dgt_logger
 
 try:
     # Third Party
@@ -173,12 +172,12 @@ class vLLM(LMProvider):
         try:
             return AutoTokenizer.from_pretrained(model_id_or_path or self.model_id_or_path)
         except (OSError, ValueError) as err:
-            dgt_logger.warning(
+            self.logger.warning(
                 'Failed to initialize tokenizer for "%s" due to %s',
                 model_id_or_path or self.model_id_or_path,
                 err.args[0],
             )
-            dgt_logger.warning(
+            self.logger.warning(
                 'Certain capabilites like "apply_chat_template", "truncation" will be unavailable.'
             )
             return None

@@ -14,7 +14,6 @@ from fms_dgt.public.databuilders.instructlab.skills.data_objects import SkillsDa
 from fms_dgt.public.databuilders.instructlab.skills.task import (
     SkillsTask,
 )
-from fms_dgt.utils import dgt_logger
 import fms_dgt.public.databuilders.instructlab.skills.utils as utils
 
 
@@ -47,9 +46,9 @@ class SkillsDataBuilder(GenerationDataBuilder):
         """
         outputs = []
         for task in tasks:
-            dgt_logger.info("=" * 99)
-            dgt_logger.info('\t\tTask: "%s"', task.name)
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
+            self.logger.info('\t\tTask: "%s"', task.name)
+            self.logger.info("=" * 99)
 
             outputs.extend(
                 self(
@@ -60,7 +59,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 )
             )
 
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
 
         return outputs
 
@@ -135,13 +134,13 @@ class SkillsDataBuilder(GenerationDataBuilder):
         random.shuffle(shuffled_data)
 
         # Generate contexts
-        dgt_logger.info("Generating contexts..")
+        self.logger.info("Generating contexts..")
         generated_contexts = self._generate_contexts(
             shuffled_data, prompt_template=prompt_templates["context_generation"]
         )
 
         # Generate questions based on the generated context
-        dgt_logger.info("Generating context based questions..")
+        self.logger.info("Generating context based questions..")
         context_based_questions = self._generate_context_based_questions(
             data_points=generated_contexts,
             seed_data=data_points,
@@ -150,14 +149,14 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Validate generated questions
-        dgt_logger.info("Validating questions..")
+        self.logger.info("Validating questions..")
         valid_questions = self._validate_context_based_questions(
             context_based_questions,
             prompt_template=prompt_templates["context_based_question_validation"],
         )
 
         # Generate responses
-        dgt_logger.info("Generating answers..")
+        self.logger.info("Generating answers..")
         context_based_question_answer_pairs = self._generate_responses_for_context_based_questions(
             data_points=valid_questions,
             seed_data=data_points,
@@ -165,7 +164,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Step 5: Validate final QA pairs
-        dgt_logger.info("Validating context based question-answer pairs..")
+        self.logger.info("Validating context based question-answer pairs..")
         validated_context_based_question_answer_pairs = (
             self._validate_responses_for_context_based_questions(
                 data_points=context_based_question_answer_pairs,
@@ -372,7 +371,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
         random.shuffle(shuffled_data)
 
         # Generate freeform questions
-        dgt_logger.info("Generating freefrom questions..")
+        self.logger.info("Generating freefrom questions..")
         generated_freeform_questions = self._generate_freeform_questions(
             seed_data=shuffled_data,
             prompt_template=prompt_templates["freeform_question_generation"],
@@ -381,14 +380,14 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Validate generated freeform questions
-        dgt_logger.info("Validating questions..")
+        self.logger.info("Validating questions..")
         validated_questions = self._validate_freeform_questions(
             data_points=generated_freeform_questions,
             prompt_template=prompt_templates["freeform_question_validation"],
         )
 
         # Generate responses for valid freeform questions
-        dgt_logger.info("Generating answers..")
+        self.logger.info("Generating answers..")
         freeform_questions_with_responses = self._generate_responses_to_freeform_questions(
             data_points=validated_questions,
             seed_data=seed_data,
@@ -396,7 +395,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Validate final QA pairs
-        dgt_logger.info("Validating final QA pairs..")
+        self.logger.info("Validating final QA pairs..")
         valid_freeform_question_answers = self._validate_responses_to_freeform_questions(
             data_points=freeform_questions_with_responses,
             prompt_template=prompt_templates["answer_validation"],

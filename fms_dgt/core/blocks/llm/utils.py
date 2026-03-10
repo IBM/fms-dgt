@@ -1,14 +1,16 @@
 # Standard
-from copy import deepcopy
 from functools import wraps
 from inspect import iscoroutinefunction
 from typing import Any, Callable, Optional, Set, Tuple, Type
 import collections
 import itertools
+import logging
 import time
 
 # Local
-from fms_dgt.utils import dgt_logger
+from fms_dgt.constants import BASE_LOGGER_NAME
+
+_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 
 def retry(
@@ -234,8 +236,8 @@ def remap(
     Returns:
         (dict): Remapped dictionary
     """
-    # Step 1: Create deep copy of dictionary to remap
-    remapped_dictionary = deepcopy(dictionary)
+    # Step 1: Shallow copy — remap only adds/removes/renames top-level keys and never mutates values
+    remapped_dictionary = dict(dictionary)
 
     # Step 2: Iterate over mappings
     for to_field, from_fields in mapping.items():
@@ -243,7 +245,7 @@ def remap(
         if remapped_dictionary.get(to_field) and not override:
             warning_msg = f"Retaining detected value for {to_field}"
             if warning_msg not in raised:
-                dgt_logger.warning(warning_msg)
+                _logger.warning(warning_msg)
                 raised.add(warning_msg)
             continue
 

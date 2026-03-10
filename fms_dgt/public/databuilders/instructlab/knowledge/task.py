@@ -21,7 +21,6 @@ from fms_dgt.public.databuilders.instructlab.knowledge.utils import (
     extract_docs,
     prepare_documents_for_generation,
 )
-from fms_dgt.utils import dgt_logger
 
 
 class KnowledgeTask(GenerationTask):
@@ -102,7 +101,7 @@ class KnowledgeTask(GenerationTask):
             prompt_templates_dir = os.path.expandvars(prompt_templates_dir)
 
             if not os.path.exists(prompt_templates_dir):
-                dgt_logger.warning(
+                self.logger.warning(
                     'Failed to locate prompt templates directory at "%s". Loading default templates from "%s"',
                     prompt_templates_dir,
                     Path(Path(__file__).parent, "prompt_templates"),
@@ -118,7 +117,7 @@ class KnowledgeTask(GenerationTask):
             )
 
     def _get_knowledge_ds(self, knowledge_datastore: Dict):
-        dgt_logger.info(
+        self.logger.info(
             "Initializing knowledge datastore with parameters %s",
             knowledge_datastore,
         )

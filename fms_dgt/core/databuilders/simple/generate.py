@@ -12,7 +12,6 @@ from fms_dgt.base.task import GenerationTask, group_data_by_task
 from fms_dgt.core.blocks.llm import LMProvider
 from fms_dgt.core.databuilders.simple.data_objects import SimpleData
 from fms_dgt.core.databuilders.simple.task import SimpleTask
-from fms_dgt.utils import dgt_logger
 import fms_dgt.core.databuilders.simple.utils as utils
 
 
@@ -37,7 +36,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
         super().__init__(*args, **kwargs)
 
         self._prompt_template = utils.check_prompt_file(
-            prompt_file_path, self.generator.model_id_or_path
+            prompt_file_path, self.generator.model_id_or_path, logger=self.logger
         )
         self._num_prompt_instructions = num_prompt_instructions
         self._request_batch_size = request_batch_size
@@ -79,6 +78,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
             new_instruction_dicts, discarded = utils.post_process_gpt3_response(
                 len(prompt_instructions),
                 gen_inp["output"],
+                logger=self.logger,
             )
             # make sure the generated instruction carried over extra fields
             for new_ins_dict, orig_ins in zip(new_instruction_dicts, prompt_instructions):
@@ -89,7 +89,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
                 llm_data.append(new_ins)
 
         post_process_duration = time.time() - post_process_start
-        dgt_logger.info(
+        self.logger.info(
             "Request %s took %.2fs, post-processing took %.2fs",
             request_idx,
             request_duration,
@@ -114,7 +114,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
         discarded += len(llm_data) - len(outputs)
 
         assess_duration = time.time() - assess_start
-        dgt_logger.info(
+        self.logger.info(
             "Assessing generated samples took %.2fs, discarded %s instances",
             assess_duration,
             discarded,

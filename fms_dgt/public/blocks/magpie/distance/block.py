@@ -13,7 +13,6 @@ import torch
 # Local
 from fms_dgt.base.block import Block, BlockData
 from fms_dgt.base.registry import register_block
-from fms_dgt.utils import dgt_logger
 
 
 @dataclass(kw_only=True)
@@ -112,7 +111,7 @@ class MagpieDistance(Block):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._model.to(device=device, dtype=torch.float32)
 
-        dgt_logger.info("The model is loaded on device: %s", self._model.device)
+        self.logger.info("The model is loaded on device: %s", self._model.device)
 
     def index(self, dataset: Dataset):
         inputs = dataset["text"]

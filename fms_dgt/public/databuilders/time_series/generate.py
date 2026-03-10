@@ -32,7 +32,7 @@ from fms_dgt.public.databuilders.time_series.utils import (
     get_feature_distribution,
     preprocess_train_data,
 )
-from fms_dgt.utils import dgt_logger, init_dataclass_from_dict
+from fms_dgt.utils import init_dataclass_from_dict
 
 
 # ===========================================================================
@@ -78,9 +78,9 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
         """
         outputs = []
         for task in tasks:
-            dgt_logger.info("=" * 99)
-            dgt_logger.info('\t\tTask: "%s"', task.name)
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
+            self.logger.info('\t\tTask: "%s"', task.name)
+            self.logger.info("=" * 99)
 
             outputs.extend(
                 self(
@@ -91,7 +91,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                 )
             )
 
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
 
         return outputs
 
@@ -115,9 +115,9 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
         train_params = sdforger_params | self.trainer.training_args
 
         # Preprocess training data
-        dgt_logger.info("-" * 64)
-        dgt_logger.info("\t\tPREPROCESS CHANNELS")
-        dgt_logger.info("-" * 64)
+        self.logger.info("-" * 64)
+        self.logger.info("\t\tPREPROCESS CHANNELS")
+        self.logger.info("-" * 64)
 
         preprocessed_data, original_data, list_fitted_scaler = preprocess_train_data(
             train_data,
@@ -127,9 +127,9 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
         )
 
         # Transform time-series data to structured tabular data
-        dgt_logger.info("-" * 64)
-        dgt_logger.info("\t\tFROM PREPROCESSED DATA TO TABULAR DATA")
-        dgt_logger.info("-" * 64)
+        self.logger.info("-" * 64)
+        self.logger.info("\t\tFROM PREPROCESSED DATA TO TABULAR DATA")
+        self.logger.info("-" * 64)
 
         if train_params["embedding_type"] in ("fpc", "fpc-filled"):
             (
@@ -161,12 +161,12 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                 f"embedding_type {train_params['embedding_type']} unknown. Please use one of ['fpc', 'fpc-filled', 'fica']."
             )
 
-        dgt_logger.debug("\n%s", embedded_data)
+        self.logger.debug("\n%s", embedded_data)
 
         # Finetune LLM with embedded data
-        dgt_logger.info("-" * 64)
-        dgt_logger.info("\t\tFINETUNING LLM")
-        dgt_logger.info("-" * 64)
+        self.logger.info("-" * 64)
+        self.logger.info("\t\tFINETUNING LLM")
+        self.logger.info("-" * 64)
 
         # But first, record original training dataset and its properties
         original_dataset = embedded_data.copy(deep=True)
@@ -180,9 +180,9 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
         )
 
         # Generate new embedding rows using the fine-tuned LLM
-        dgt_logger.info("-" * 64)
-        dgt_logger.info("\t\tGENERATING DATA USING FINE TUNED LLM")
-        dgt_logger.info("-" * 64)
+        self.logger.info("-" * 64)
+        self.logger.info("\t\tGENERATING DATA USING FINE TUNED LLM")
+        self.logger.info("-" * 64)
 
         # Initialize target LLM generator using the tuned model path
         target_llm_args[MODEL_ID_OR_PATH] = tuned_model_id_or_path
@@ -454,7 +454,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                 )
 
                 generated_samples_count = generated_df.shape[0]
-                dgt_logger.info("No. of samples generated: %d", generated_samples_count)
+                self.logger.info("No. of samples generated: %d", generated_samples_count)
 
                 # Remove rows where we have not generated anything
                 generated_df = generated_df[~(generated_df == "NaN").any(axis=1)]
@@ -463,7 +463,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                 # Remove rows where all values are NaN
                 generated_df = generated_df.dropna(how="all")
 
-                dgt_logger.info(
+                self.logger.info(
                     "No. of samples after dropping NaN: %d -> %d",
                     generated_samples_count,
                     generated_df.shape[0],
@@ -482,7 +482,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                 data = pd.concat(dfs).round(3).drop_duplicates()
                 dedup_samples_count = data[total_samples_generated:].shape[0]
 
-                dgt_logger.info(
+                self.logger.info(
                     "No. of samples after dropping duplicates: %d -> %d",
                     generated_df.shape[0],
                     dedup_samples_count,
@@ -523,7 +523,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
 
                         # Print details for discarded norms, if any
                         if np.any(discard_mask):
-                            dgt_logger.info(
+                            self.logger.info(
                                 "Var %d Discarded Norms: %s", i + 1, norms[discard_mask]
                             )
 
@@ -537,7 +537,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                         old_l2_norms_splits[i].extend(norms[accepted_mask])
 
                 if check_distribution:
-                    dgt_logger.info(
+                    self.logger.info(
                         "No. of samples after norm-check drop: %d -> %d",
                         dedup_samples_count,
                         sum(accepted_mask),
@@ -546,7 +546,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                 # update lists
                 delta = data.shape[0] - total_samples_generated
 
-                dgt_logger.info(
+                self.logger.info(
                     "Samples generated (%d) in attempt %d. [Total samples generated: %d]",
                     delta,
                     attempt + 1,
@@ -561,7 +561,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                     diversity_score = unique_norms / len(subset_norms)
                     norms_diversity[i].append(diversity_score)  # Proportion of unique rounded norms
 
-                dgt_logger.info("Norms diversity: %s", norms_diversity)
+                self.logger.info("Norms diversity: %s", norms_diversity)
 
                 # important, update already generated
                 total_samples_generated = data.shape[0]
@@ -574,7 +574,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                     attempt + 1 if delta < 1 else 0
                 )  # Increment if no new generations, reset otherwise
                 if attempt > 9:
-                    dgt_logger.info(
+                    self.logger.info(
                         "No new samples have been generated in the last 10 iterations. We halt the generation process"
                     )
                     break
@@ -584,21 +584,21 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                 if max_element < sdforger_params["norms_diversity_threshold"]:
                     stop_criterion_satisfied = True
                     if total_samples_generated > min_outputs_to_generate:
-                        dgt_logger.info(
+                        self.logger.info(
                             "The generation process has been halted due to the stopping criterion. - norms_diversity_threshold: %s",
                             sdforger_params["norms_diversity_threshold"],
                         )
                         break
                     else:
-                        dgt_logger.info(
+                        self.logger.info(
                             "The stopping criterion - {sdforger_params['norms_diversity_threshold']} - has been met but generation process is continuing as not enough samples generated yet!"
                         )
 
         except Exception as e:
-            dgt_logger.error("Error occurred during token generation: %s", str(e))
+            self.logger.error("Error occurred during token generation: %s", str(e))
 
         if not stop_criterion_satisfied:
-            dgt_logger.info(
+            self.logger.info(
                 "Stopping criterion not satisfied. Reached max generations. Samples generated: %d vs Samples requested: %d",
                 total_samples_generated,
                 max_outputs_to_generate,

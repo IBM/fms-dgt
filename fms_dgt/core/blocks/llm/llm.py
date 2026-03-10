@@ -14,7 +14,6 @@ from transformers import AutoTokenizer, PreTrainedTokenizer
 # Local
 from fms_dgt.base.block import DATASET_TYPE, Block, BlockData
 from fms_dgt.constants import NOT_GIVEN, NotGiven
-from fms_dgt.utils import dgt_logger
 
 MODEL_ID_OR_PATH = "model_id_or_path"
 
@@ -154,12 +153,12 @@ class LMProvider(Block):
         try:
             return AutoTokenizer.from_pretrained(model_id_or_path or self.model_id_or_path)
         except (OSError, ValueError) as err:
-            dgt_logger.warning(
+            self.logger.warning(
                 'Failed to initialize tokenizer for "%s" due to %s',
                 model_id_or_path or self.model_id_or_path,
                 err.args[0],
             )
-            dgt_logger.warning(
+            self.logger.warning(
                 'Certain capabilites like "apply_chat_template", "truncation" will be unavailable.'
             )
             return None
@@ -303,10 +302,10 @@ class LMProvider(Block):
                 prompt_tokens.append(entry.addtl.get("prompt_tokens", 0))
             else:
                 num_failed_inputs += 1
-                dgt_logger.debug("Failed to generate valid output for input: %s ", entry.input)
+                self.logger.debug("Failed to generate valid output for input: %s ", entry.input)
 
         if num_failed_inputs:
-            dgt_logger.warning(
+            self.logger.warning(
                 "Prompt token usage count maybe incorrect due to %d failed instances",
                 num_failed_inputs,
             )
@@ -417,7 +416,7 @@ class CachingLM:
             res = []
             remaining_reqs: List[LMBlockData] = []
             # figure out which ones are cached and which ones are new
-            dgt_logger.info(
+            self._lm.logger.info(
                 "Loading '%s' responses from cache '%s' where possible...",
                 method,
                 self._cache_db,
@@ -433,7 +432,7 @@ class CachingLM:
                     res.append(None)
                     remaining_reqs.append(req)
 
-            dgt_logger.info(
+            self._lm.logger.info(
                 "Cached requests: %s, Requests remaining: %s",
                 len(requests) - len(remaining_reqs),
                 len(remaining_reqs),
