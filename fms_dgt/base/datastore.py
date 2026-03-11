@@ -1,6 +1,7 @@
 # Standard
 from abc import abstractmethod
 from typing import Any, Iterator, List, Optional
+import logging
 
 # Local
 from fms_dgt.constants import DATASET_TYPE
@@ -16,10 +17,18 @@ class Datastore:
         self,
         store_name: str,
         restart: Optional[bool] = False,
+        fanout_handler: logging.Handler | None = None,
         **kwargs: Any,
     ) -> None:
         self._store_name = store_name
         self._restart = restart
+
+        # Initialize datastore-scoped logger. Attach the shared FanOutHandler so
+        # records are routed to all currently-active task log files. Falls back
+        # to stdout-only via propagation to dgt_logger if no handler is provided.
+        self._logger = logging.getLogger(f"fms_dgt.datastore.{store_name}")
+        if fanout_handler is not None:
+            self._logger.addHandler(fanout_handler)
 
         # Additional kwargs
         self._addtl_kwargs = kwargs | {}
@@ -30,6 +39,18 @@ class Datastore:
     @property
     def store_name(self):
         return self._store_name
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the datastore-scoped logger.
+
+        Records propagate to the root dgt_logger for terminal output and, when
+        a FanOutHandler is attached, are also routed to all active task log files.
+
+        Returns:
+            logging.Logger: Datastore-scoped logger
+        """
+        return self._logger
 
     # ===========================================================================
     #                       FUNCTIONS

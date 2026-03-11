@@ -17,8 +17,8 @@ from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
 from fms_dgt.constants import TYPE_KEY
+from fms_dgt.log import LogDatastoreHandler, RunContextFilter
 from fms_dgt.utils import (
-    DGT_LOG_FORMATTER,
     group_data_by_attribute,
     init_dataclass_from_dict,
 )
@@ -261,15 +261,14 @@ class Task:
         return self._logger
 
     @property
-    def log_handler(self) -> logging.Handler | None:
-        """Returns the file handler attached to this task's logger, or None
-        if no file-based logging is configured (e.g. non-default datastore).
+    def log_handler(self) -> LogDatastoreHandler | None:
+        """Returns the LogDatastoreHandler attached to this task's logger.
 
         The DataBuilder registers this handler with its FanOutHandler so that
-        run-level log records are duplicated into this task's log file.
+        run-level log records are duplicated into this task's log store.
 
         Returns:
-            logging.Handler | None: The task's file handler, or None
+            LogDatastoreHandler | None: The task's log handler, or None
         """
         return self._log_handler
 
@@ -347,36 +346,50 @@ class Task:
         # root dgt_logger and propagates records up to it (reaching the stdout
         # handler) without adding handlers to the global logger.
         self._logger = logging.getLogger(f"{_TASK_LOGGER_PREFIX}.{self._name}")
-        self._log_handler: logging.Handler | None = None
+        self._log_handler: LogDatastoreHandler | None = None
 
-        # Add a file handler only when the default datastore is in use (i.e. we
-        # have a local output_dir to write to).
-        if self._datastore_cfg.get(TYPE_KEY, "default") == "default":
-            logs_dir = os.path.join(
-                self._datastore_cfg.get("output_dir", "output"),
-                self._store_name,
-                "logs",
+        # Attach a filter that injects build_id and run_id onto every record
+        # emitted through this logger. This ensures all structured log events
+        # (Tier 1 and beyond) carry run provenance without per-call-site repetition.
+        self._logger.addFilter(
+            RunContextFilter(
+                build_id=self._task_card.build_id,
+                run_id=self._task_card.run_id,
             )
-            os.makedirs(logs_dir, exist_ok=True)
+        )
 
-            # On a clean restart, remove all existing log files so the logs
-            # directory stays consistent with the wiped datastores.
-            if self._restart_generation:
-                for f in os.listdir(logs_dir):
-                    if f.endswith(".log"):
-                        os.remove(os.path.join(logs_dir, f))
+        # Initialize the log datastore using the same type and config as all
+        # other task artifact stores. The store_name path follows the convention
+        # of every other store: <task_store_name>/logs. On restart, the datastore
+        # is recreated from scratch (restart=True wipes the existing store file).
+        log_datastore = get_datastore(
+            self._datastore_cfg.get(TYPE_KEY),
+            **{
+                "store_name": os.path.join(self._store_name, "logs"),
+                **self._datastore_cfg,
+                "restart": self._restart_generation,
+            },
+        )
 
-            # Name the log file with both the human-readable build_id (for quick
-            # identification) and the unique run_id (for guaranteed uniqueness).
-            # Example: exp_3f7a1c2b-....log
-            build_id = self._task_card.build_id
-            run_id = self._task_card.run_id
-            log_filename = os.path.join(logs_dir, f"{build_id}_{run_id}.log")
+        log_handler = LogDatastoreHandler(log_datastore)
+        self._logger.addHandler(log_handler)
+        self._log_handler = log_handler
 
-            file_handler = logging.FileHandler(filename=log_filename)
-            file_handler.setFormatter(DGT_LOG_FORMATTER)
-            self._logger.addHandler(file_handler)
-            self._log_handler = file_handler
+        # On resume, emit a structured marker so the log file records exactly
+        # where this process invocation picked up. run_id is the same as the
+        # previous run (set by _save_task_card when resuming) so no linking is
+        # needed — the marker is purely a process boundary indicator.
+        if not self._restart_generation:
+            self._logger.info(
+                "run_resumed",
+                extra={
+                    "event": "run_resumed",
+                    "build_id": self._task_card.build_id,
+                    "run_id": self._task_card.run_id,
+                    "task_name": self._name,
+                    "pid": os.getpid(),
+                },
+            )
 
     def set_new_postprocessing_datastore(self):
         """Sets default datastore (which is used to gather data for final_datastore)
@@ -496,11 +509,27 @@ class Task:
         self.final_datastore.close()
         self.formatted_datastore.close()
 
-        # close and remove all handlers on the task-scoped logger to release
-        # file handles and prevent handler accumulation across tasks
+        # Remove all handlers except _log_handler from the task-scoped logger.
+        # _log_handler (LogDatastoreHandler) is intentionally left open so that
+        # run-level events emitted after execute_tasks() returns (run_finished,
+        # run_errored) can still reach this task's log file via the FanOutHandler.
+        # DataBuilder.close() calls close_log_handler() after those events fire.
         for handler in self._logger.handlers[:]:
+            if handler is self._log_handler:
+                continue
             handler.close()
             self._logger.removeHandler(handler)
+
+    def close_log_handler(self) -> None:
+        """Close and remove the log handler after all run-level events have been written.
+
+        Called by DataBuilder.close() after run_finished / run_errored has been
+        emitted, so the final events are guaranteed to land in the log file.
+        """
+        if self._log_handler is not None:
+            self._log_handler.close()
+            self._logger.removeHandler(self._log_handler)
+            self._log_handler = None
 
     def record_task_results(self, intermediate_data: List[DataPoint]) -> Dict[str, Any]:
         """Creates a json object that captures all relevant information describing the results of the SDG task. The json

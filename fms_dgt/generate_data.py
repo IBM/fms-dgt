@@ -233,6 +233,23 @@ def generate_data(
                 "end_time": None,
             }
         )
+        _resumed = not data_builder.tasks[0].restart_generation if data_builder.tasks else False
+        data_builder.logger.info(
+            "Run started%s for builder '%s' [build_id=%s, run_id=%s]",
+            " (resumed)" if _resumed else "",
+            data_builder.name,
+            data_builder.build_id,
+            data_builder.run_id,
+            extra={
+                "event": "run_started",
+                "build_id": data_builder.build_id,
+                "run_id": data_builder.run_id,
+                "builder_name": data_builder.name,
+                "task_names": [t.name for t in data_builder.tasks],
+                "pid": os.getpid(),
+                "resumed": _resumed,
+            },
+        )
         try:
             data_builder.execute_tasks()
         # pylint: disable=broad-exception-caught
@@ -244,13 +261,37 @@ def generate_data(
                     "message": str(e),
                 }
             )
-
-            # Raise exception
-            raise e
-
-        # Step 8.f: Cleanup databuilder
-        data_builder.close()
-        del data_builder
+            data_builder.logger.info(
+                "Run errored for builder '%s': %s",
+                data_builder.name,
+                str(e),
+                extra={
+                    "event": "run_errored",
+                    "build_id": data_builder.build_id,
+                    "run_id": data_builder.run_id,
+                    "builder_name": data_builder.name,
+                    "status": "errored",
+                    "exception": str(e),
+                },
+            )
+            raise
+        else:
+            data_builder.logger.info(
+                "Run finished for builder '%s'",
+                data_builder.name,
+                extra={
+                    "event": "run_finished",
+                    "build_id": data_builder.build_id,
+                    "run_id": data_builder.run_id,
+                    "builder_name": data_builder.name,
+                    "status": "completed",
+                },
+            )
+        finally:
+            # Step 8.f: Cleanup databuilder — always runs, even on exception,
+            # so log handlers and file resources are never leaked.
+            data_builder.close()
+            del data_builder
 
         # Step 8.g: Cleanup ray
         if ray_initialized:

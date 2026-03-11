@@ -13,7 +13,6 @@ import time
 # Local
 from fms_dgt.base.block import Block, get_row_name
 from fms_dgt.base.data_objects import DataBuilderConfig, DataPoint
-from fms_dgt.base.fanout_handler import FanOutHandler
 from fms_dgt.base.registry import get_block, get_block_class
 from fms_dgt.base.task import GenerationTask, Task, TransformationTask
 from fms_dgt.constants import (
@@ -25,6 +24,7 @@ from fms_dgt.constants import (
     TASK_NAME_KEY,
     TYPE_KEY,
 )
+from fms_dgt.log import FanOutHandler, RunContextFilter
 from fms_dgt.utils import (
     all_annotations,
     convert_byte_size,
@@ -121,6 +121,24 @@ class DataBuilder:
             List[SdgTask]: List of tasks to be used in this data builder
         """
         return self._tasks
+
+    @property
+    def build_id(self) -> str:
+        """Returns the build ID for this run.
+
+        Returns:
+            str: Build ID
+        """
+        return self._build_id
+
+    @property
+    def run_id(self) -> str:
+        """Returns the run ID for this execution (from the first task card).
+
+        Returns:
+            str: Run ID
+        """
+        return self._tasks[0].task_card.run_id if self._tasks else None
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -244,14 +262,32 @@ class DataBuilder:
     def _init_logger(self) -> None:
         """Initialize a builder-scoped logger backed by a FanOutHandler.
 
-        The FanOutHandler holds no task handlers initially. Task file handlers
-        are registered as tasks become active and unregistered when they finish.
+        All task file handlers are pre-registered here so that run-level
+        events emitted before execute_tasks() (run_started, etc.) are captured
+        in the task log files. execute_tasks() calls _register_task_log_handler
+        again for active tasks, which is a no-op thanks to idempotent register().
         The builder logger is a child of dgt_logger so records also propagate
         to the root stdout handler.
         """
         self._logger = logging.getLogger(f"fms_dgt.builder.{self.name}")
         self._fanout_handler = FanOutHandler()
         self._logger.addHandler(self._fanout_handler)
+
+        # Attach RunContextFilter so all builder-level records (epoch banners,
+        # profiling summaries, run events) carry build_id and run_id. Without
+        # this, records emitted on the builder logger bypass the task-scoped
+        # logger and its filter, reaching the log file with no provenance.
+        self._logger.addFilter(
+            RunContextFilter(
+                build_id=self._build_id,
+                run_id=self._tasks[0].task_card.run_id,
+            )
+        )
+
+        # Pre-register all task handlers so pre-execute_tasks log records
+        # (run_started, etc.) are written to every task log file.
+        for task in self._tasks:
+            self._register_task_log_handler(task)
 
     @property
     def logger(self) -> logging.Logger:
@@ -362,6 +398,15 @@ class DataBuilder:
         self.record_run_results(
             update={"status": "completed", "end_time": int(datetime.now().timestamp())}
         )
+
+        # Step 4: Unregister and close task log handlers now that all run-level
+        # events (run_finished / run_errored) have been written by the caller.
+        # _unregister_task_log_handler is NOT called inside execute_tasks() so
+        # that the FanOutHandler can still route those final events to each
+        # task's log file.
+        for task in self._tasks:
+            self._unregister_task_log_handler(task)
+            task.close_log_handler()
 
     def execute_postprocessing(self, completed_tasks: List[Task]):
         """Executes any postprocessing required after tasks have completed.
@@ -568,10 +613,33 @@ class GenerationDataBuilder(DataBuilder):
         active_tasks = []
         for task in self._tasks:
             if task.is_complete():
-                # Run task cleanup for completed tasks
+                # Task was already complete before this run started (resume path).
+                # Emit task_finished immediately — no task_started because the work
+                # happened in a prior run.
+                self.logger.info(
+                    "Task '%s' finished.",
+                    task.name,
+                    extra={
+                        "event": "task_finished",
+                        "build_id": self.build_id,
+                        "run_id": self.run_id,
+                        "task_name": task.name,
+                        "reason": "already_complete",
+                    },
+                )
                 task.finish()
             else:
                 self._register_task_log_handler(task)
+                self.logger.info(
+                    "Task '%s' started.",
+                    task.name,
+                    extra={
+                        "event": "task_started",
+                        "build_id": self.build_id,
+                        "run_id": self.run_id,
+                        "task_name": task.name,
+                    },
+                )
                 active_tasks.append(task)
 
         # Initialize necessary variables
@@ -594,6 +662,18 @@ class GenerationDataBuilder(DataBuilder):
             self.logger.info("*" * 99)
             self.logger.info("\t\t\t\tEPOCH: %s", self._epoch)
             self.logger.info("*" * 99)
+            self.logger.info(
+                "Epoch %s started with %s active task(s): %s",
+                self._epoch,
+                len(active_tasks),
+                ", ".join(t.name for t in active_tasks),
+                extra={
+                    "event": "epoch_started",
+                    "epoch": self._epoch,
+                    "active_task_names": [t.name for t in active_tasks],
+                    "active_task_count": len(active_tasks),
+                },
+            )
 
             # Reset tasks in postprocessing
             tasks_in_postprocessing_phase: List[GenerationTask] = (
@@ -708,8 +788,28 @@ class GenerationDataBuilder(DataBuilder):
                             self._max_stalled_attempts,
                         )
 
-                    # Unregister before finish() closes the handler
-                    self._unregister_task_log_handler(task)
+                    # Determine finish reason for the structured event.
+                    if task.is_complete():
+                        _reason = "complete"
+                    elif remaining_unstalled_generation_attempts_per_task[task.name] <= 0:
+                        _reason = "stalled_generation"
+                    else:
+                        _reason = "stalled_postprocessing"
+                    self.logger.info(
+                        "Task '%s' finished.",
+                        task.name,
+                        extra={
+                            "event": "task_finished",
+                            "build_id": self.build_id,
+                            "run_id": self.run_id,
+                            "task_name": task.name,
+                            "reason": _reason,
+                        },
+                    )
+                    # Do NOT unregister here — _log_handler must stay in the
+                    # FanOutHandler so run_finished (emitted after execute_tasks
+                    # returns) reaches this task's log file.  DataBuilder.close()
+                    # handles both unregister and close_log_handler().
                     task.finish()
                 else:
                     tasks_in_generation_phase.append(task)
@@ -786,6 +886,16 @@ class TransformationDataBuilder(DataBuilder):
 
             task.load_dataloader_state()
             self._register_task_log_handler(task)
+            self.logger.info(
+                "Task '%s' started.",
+                task.name,
+                extra={
+                    "event": "task_started",
+                    "build_id": self.build_id,
+                    "run_id": self.run_id,
+                    "task_name": task.name,
+                },
+            )
 
         # Initialize necessary variables
         start_time = time.time()
@@ -818,7 +928,18 @@ class TransformationDataBuilder(DataBuilder):
 
         # Terminate completed tasks
         for task in tasks:
-            self._unregister_task_log_handler(task)
+            self.logger.info(
+                "Task '%s' finished.",
+                task.name,
+                extra={
+                    "event": "task_finished",
+                    "build_id": self.build_id,
+                    "run_id": self.run_id,
+                    "task_name": task.name,
+                    "reason": "complete",
+                },
+            )
+            # Do NOT unregister here — see generation execute_tasks() note above.
             task.finish()
 
         # Report transformation duration

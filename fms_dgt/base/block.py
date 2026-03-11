@@ -505,6 +505,17 @@ class ValidatorBlock(Block):
                 retained_instances.append(x)
             elif not x.is_valid:
                 filtered_instances.append(x)
+                self.logger.info(
+                    "Data point rejected by block '%s'",
+                    self.name,
+                    extra={
+                        "event": "data_point_rejected",
+                        "block_name": self.name,
+                        "block_type": self.block_type,
+                        "task_name": get_row_name(x),
+                        "reason": getattr(x, "metadata", None),
+                    },
+                )
 
         # Save filtered instances for record keeping
         self.save_data(filtered_instances)
