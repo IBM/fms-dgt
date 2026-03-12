@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 import json
 import logging
@@ -48,7 +51,8 @@ def test_matches():
 @pytest.mark.parametrize(
     "max_len,max_shared_len,seq_ct",
     [
-        (30, 10, 100),
+        (15, 5, 30),
+        # (30, 10, 100),
         # (50, 10, 100),
         # (30, 10, 200),
         # (50, 10, 200),

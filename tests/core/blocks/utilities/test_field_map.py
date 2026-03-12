@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import dataclass
 from typing import Any
@@ -7,7 +10,7 @@ from fms_dgt.core.blocks.utilities.field_map import FieldMapBlock
 
 
 @dataclass
-class TestDataClass:
+class SampleDataClass:
     field1: Any = None
     field2: Any = None
     field3: Any = None
@@ -19,7 +22,7 @@ def test_field_map_single():
         name="test_field_map",
         field_map={"field1": "field2", "field3": "field4", "field2": "field3"},
     )
-    test_data = [TestDataClass(field1=1, field2=2, field3=3, field4=4)]
+    test_data = [SampleDataClass(field1=1, field2=2, field3=3, field4=4)]
     block(test_data)
     assert (
         test_data[0].field1 == 1
@@ -31,7 +34,7 @@ def test_field_map_single():
 
 def test_field_map_multi():
     block = FieldMapBlock(name="test_field_map", field_map={"field1": "field2"})
-    test_data = [TestDataClass(field1=1, field2=2, field3=3, field4=4)]
+    test_data = [SampleDataClass(field1=1, field2=2, field3=3, field4=4)]
     block(test_data)
     block = FieldMapBlock(name="test_field_map", field_map={"field2": "field3"})
     block(test_data)

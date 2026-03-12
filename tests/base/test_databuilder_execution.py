@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 import gc
 import multiprocessing
@@ -28,6 +31,7 @@ to_execute = [
 ]
 
 
+@pytest.mark.live
 @pytest.mark.parametrize("namespace,data_builder_name,cmd_line_args,timeout", to_execute)
 def test_data_builders(namespace: str, data_builder_name: str, cmd_line_args: str, timeout: int):
     """This file contains execution tests for each data builder (in the same way it

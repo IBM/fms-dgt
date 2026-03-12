@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import asdict, fields
 from typing import Any, Callable, Dict, List, Set, Tuple

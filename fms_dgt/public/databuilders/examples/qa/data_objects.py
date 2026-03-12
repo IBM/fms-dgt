@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 """
 In DiGiT, operating over dataclasses in databuilders is beneficial since it facilitate stricter type checks and data consistenty.
 We strongly recommend databuilder developers to define a `*Data` class extending from `DataPoint` which captures necessary fields in generated synthethic data and/or seed data.

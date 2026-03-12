@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 """fms_dgt.log — central home for all DGT logging infrastructure.
 
 Named 'log' rather than 'logging' to avoid shadowing the Python stdlib

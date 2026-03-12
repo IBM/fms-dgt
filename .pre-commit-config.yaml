@@ -1,4 +1,19 @@
 repos:
+  # addlicense: ensures all first-party Python files carry the copyright header
+  - repo: https://github.com/google/addlicense
+    rev: v1.2.0
+    hooks:
+      - id: addlicense
+        args:
+          - "-f"
+          - ".addlicense-header.txt"
+        exclude: |
+          (?x)^(
+            fms_dgt/core/blocks/llm/vllm/vllm_serve\.py|
+            fms_dgt/core/blocks/validators/rouge\.py
+          )$
+        types: [python]
+
   # isort: sorts imports
   - repo: https://github.com/PyCQA/isort
     rev: 6.0.1

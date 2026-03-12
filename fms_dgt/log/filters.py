@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Re-export the contextvars-based RunContextFilter from context.py.
 #
 # The fixed-value implementation (build_id/run_id set at construction time)

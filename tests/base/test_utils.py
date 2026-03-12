@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Local
 from fms_dgt.utils import from_dict, sanitize_path, to_dict
 

@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Third Party
 import pytest
 
@@ -18,13 +21,13 @@ LM_OLLAMA_CFG = {
 }
 
 
-@pytest.mark.skipif(True, "requires hardware support to run models")
+@pytest.mark.live
 @pytest.mark.parametrize("model_cfg", [LM_OLLAMA_CFG])
 def test_completion(model_cfg):
     execute_completion_flow(model_cfg)
 
 
-@pytest.mark.skipif(True, "requires hardware support to run models")
+@pytest.mark.live
 @pytest.mark.parametrize("model_cfg", [LM_OLLAMA_CFG])
 def test_chat_completion(model_cfg):
     execute_chat_completion_flow(model_cfg)
