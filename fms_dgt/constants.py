@@ -31,7 +31,12 @@ DGT_DIR = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
 BASE_LOGGER_NAME = "fms_dgt"
 
 # environment variables that should be known to DGT
-DGT_ENV_VARS = {"DGT_DATA_DIR": "data", "DGT_OUTPUT_DIR": "output"}
+DGT_ENV_VARS = {
+    "DGT_DATA_DIR": "data",
+    "DGT_OUTPUT_DIR": "output",
+    "DGT_TELEMETRY_DIR": "telemetry",
+    "DGT_TELEMETRY_DISABLE": "",
+}
 
 
 # general types

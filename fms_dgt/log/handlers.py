@@ -6,6 +6,7 @@ import threading
 
 # Local
 from fms_dgt.base.datastore import Datastore
+from fms_dgt.log.context import _run_ctx
 
 # Derive the set of built-in LogRecord keys from an actual instance so this
 # stays correct across Python versions (e.g. taskName was added in 3.12).
@@ -102,6 +103,15 @@ class LogDatastoreHandler(logging.Handler):
         for key, val in record.__dict__.items():
             if key not in _LOGRECORD_BUILTIN_KEYS and not key.startswith("_") and key not in entry:
                 entry[key] = val
+        # Auto-inject build_id/run_id from the active run context if the
+        # record does not already carry them.  This covers log records emitted
+        # on child loggers (task, block) before RunContextFilter on dgt_logger
+        # has had a chance to stamp them.
+        if not entry.get("build_id") or not entry.get("run_id"):
+            ctx = _run_ctx.get()
+            if ctx:
+                entry.setdefault("build_id", ctx["build_id"])
+                entry.setdefault("run_id", ctx["run_id"])
         try:
             self._log_datastore.save_data([entry])
         except Exception:

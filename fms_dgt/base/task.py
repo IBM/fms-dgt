@@ -17,7 +17,7 @@ from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
 from fms_dgt.constants import TYPE_KEY
-from fms_dgt.log import LogDatastoreHandler, RunContextFilter
+from fms_dgt.log import LogDatastoreHandler
 from fms_dgt.utils import (
     group_data_by_attribute,
     init_dataclass_from_dict,
@@ -348,16 +348,6 @@ class Task:
         self._logger = logging.getLogger(f"{_TASK_LOGGER_PREFIX}.{self._name}")
         self._log_handler: LogDatastoreHandler | None = None
 
-        # Attach a filter that injects build_id and run_id onto every record
-        # emitted through this logger. This ensures all structured log events
-        # (Tier 1 and beyond) carry run provenance without per-call-site repetition.
-        self._logger.addFilter(
-            RunContextFilter(
-                build_id=self._task_card.build_id,
-                run_id=self._task_card.run_id,
-            )
-        )
-
         # Initialize the log datastore using the same type and config as all
         # other task artifact stores. The store_name path follows the convention
         # of every other store: <task_store_name>/logs. On restart, the datastore
@@ -384,8 +374,6 @@ class Task:
                 "run_resumed",
                 extra={
                     "event": "run_resumed",
-                    "build_id": self._task_card.build_id,
-                    "run_id": self._task_card.run_id,
                     "task_name": self._name,
                     "pid": os.getpid(),
                 },

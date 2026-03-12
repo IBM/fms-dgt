@@ -17,6 +17,7 @@ import pandas as pd
 from fms_dgt.base.data_objects import BlockData, ValidatorBlockData
 from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.registry import get_datastore
+from fms_dgt.base.telemetry import Span, _NoOpSpanWriter
 from fms_dgt.constants import (
     DATASET_ROW_TYPE,
     DATASET_TYPE,
@@ -64,7 +65,6 @@ class Block:
         type: str | None = None,
         input_map: List | Dict | None = None,
         output_map: List | Dict | None = None,
-        build_id: str | None = None,
         builder_name: str | None = None,
         datastores: List[Dict] | Dict = None,
         fanout_handler: logging.Handler | None = None,
@@ -81,7 +81,6 @@ class Block:
         Kwargs:
             input_map (List | Dict, optional): A mapping of field names from input objects to internal objects.
             output_map (List | Dict, optional): A mapping of field names from internal objects to output objects.
-            build_id (str, optional): ID to identify a particular SDG run.
             builder_name (str, optional): Name of the calling databuilder
             datastores (List[Dict] | Dict, optional): Dictionaries containing the configuration for the datastores.
             fanout_handler (logging.Handler, optional): Shared FanOutHandler from the DataBuilder. When provided,
@@ -138,6 +137,11 @@ class Block:
         if fanout_handler is not None:
             self._logger.addHandler(fanout_handler)
 
+        # SpanWriter set by DataBuilder.span_writer setter when telemetry is
+        # configured. Defaults to no-op so __call__ is safe before wiring.
+        self._span_writer = _NoOpSpanWriter()
+        self._builder_name = builder_name or ""
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
@@ -158,6 +162,15 @@ class Block:
             str: The type of the block
         """
         return self._block_type
+
+    @property
+    def span_writer(self):
+        """Returns the SpanWriter for telemetry (set by DataBuilder)."""
+        return self._span_writer
+
+    @span_writer.setter
+    def span_writer(self, writer) -> None:
+        self._span_writer = writer
 
     @property
     def input_map(self) -> List | Dict:
@@ -397,9 +410,22 @@ class Block:
                     }
                 )
 
+        input_count = len(inputs) if isinstance(inputs, (list, tuple)) else None
+
         start_time = time.monotonic()
         tracemalloc.start()
-        outputs = self.execute(transformed_inputs, *args, **kwargs)
+        with Span(
+            "dgt.block",
+            self._span_writer,
+            parent_span_name="dgt.epoch",
+            block_name=self._name,
+            block_type=self._block_type,
+            builder_name=self._builder_name,
+            input_count=input_count,
+        ) as _span:
+            outputs = self.execute(transformed_inputs, *args, **kwargs)
+            if isinstance(outputs, (list, tuple)):
+                _span.set_attribute("output_count", len(outputs))
         memory = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         self.profiler_data["executions"].append(

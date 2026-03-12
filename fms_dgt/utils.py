@@ -24,6 +24,7 @@ import math
 import os
 import signal
 import socket
+import threading
 
 # Third Party
 import datasets
@@ -58,6 +59,16 @@ _stream_handler = logging.StreamHandler()
 _stream_handler.setFormatter(DGT_LOG_FORMATTER)
 dgt_logger.propagate = False
 dgt_logger.addHandler(_stream_handler)
+
+# Local
+# Step 5: Attach the contextvars-based RunContextFilter so that ALL records
+# emitted on any fms_dgt logger — including module-level loggers in LLM
+# connectors and utilities — carry build_id and run_id automatically when a
+# run_context() is active.  Import is deferred here to avoid a circular
+# import (fms_dgt.log.context imports nothing from utils).
+from fms_dgt.log.context import RunContextFilter as _RunContextFilter  # noqa: E402
+
+dgt_logger.addFilter(_RunContextFilter())
 
 
 # ===========================================================================
@@ -726,6 +737,89 @@ def write_parquet(
 
         if writer:
             writer.close()
+
+
+# ===========================================================================
+#                       ROTATING JSONL WRITER
+# ===========================================================================
+class RotatingJsonlWriter:
+    """Append-only JSONL writer with size-based rotation and age-based retention.
+
+    Rotation: when the active file exceeds ``max_bytes``, it is renamed to
+    ``{stem}.1.jsonl``, existing numbered files are shifted up by one, and a
+    fresh ``{stem}.jsonl`` is opened.
+
+    Retention: on each rotation and at construction time, any rotated file
+    whose mtime is older than ``max_age_days`` is deleted.  The active file is
+    never deleted by retention.
+
+    Thread safety: all writes and rotations are serialized by a single lock.
+
+    Args:
+        path: Full path to the active file (e.g. ``telemetry/traces.jsonl``).
+        max_bytes: Rotate when the active file reaches this size in bytes.
+        max_age_days: Delete rotated files older than this many days.
+            Set to 0 to disable age-based retention entirely.
+
+    Example::
+
+        writer = RotatingJsonlWriter("telemetry/traces.jsonl",
+                                     max_bytes=100 * 1024 * 1024,
+                                     max_age_days=14)
+        writer.write('{"span": "dgt.block", "duration_ms": 42}')
+    """
+
+    def __init__(self, path: str, max_bytes: int, max_age_days: int) -> None:
+        self._path = path
+        self._max_bytes = max_bytes
+        self._max_age_days = max_age_days
+        self._lock = threading.Lock()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        self._purge_old_files()
+
+    def write(self, line: str) -> None:
+        """Append ``line`` (without trailing newline) to the active file,
+        rotating first if the file is at or above ``max_bytes``."""
+        with self._lock:
+            if self._should_rotate():
+                self._rotate()
+            with open(self._path, "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+
+    def _should_rotate(self) -> bool:
+        try:
+            return os.path.getsize(self._path) >= self._max_bytes
+        except FileNotFoundError:
+            return False
+
+    def _rotate(self) -> None:
+        stem, _ = os.path.splitext(self._path)
+        existing = sorted(
+            glob.glob(f"{stem}.*.jsonl"),
+            key=lambda p: int(p[len(stem) + 1 : -len(".jsonl")]),
+            reverse=True,
+        )
+        for fpath in existing:
+            n = int(fpath[len(stem) + 1 : -len(".jsonl")])
+            os.rename(fpath, f"{stem}.{n + 1}.jsonl")
+        if os.path.exists(self._path):
+            os.rename(self._path, f"{stem}.1.jsonl")
+        self._purge_old_files()
+
+    def _purge_old_files(self) -> None:
+        if self._max_age_days <= 0:
+            return
+        # Standard
+        from datetime import datetime, timezone
+
+        stem, _ = os.path.splitext(self._path)
+        cutoff = datetime.now(tz=timezone.utc).timestamp() - (self._max_age_days * 86400)
+        for fpath in glob.glob(f"{stem}.*.jsonl"):
+            try:
+                if os.path.getmtime(fpath) < cutoff:
+                    os.remove(fpath)
+            except OSError:
+                pass
 
 
 # ===========================================================================

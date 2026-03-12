@@ -15,6 +15,7 @@ from fms_dgt.base.block import Block, get_row_name
 from fms_dgt.base.data_objects import DataBuilderConfig, DataPoint
 from fms_dgt.base.registry import get_block, get_block_class
 from fms_dgt.base.task import GenerationTask, Task, TransformationTask
+from fms_dgt.base.telemetry import Span, _NoOpSpanWriter
 from fms_dgt.constants import (
     BLOCKS_KEY,
     DATASET_TYPE,
@@ -24,7 +25,7 @@ from fms_dgt.constants import (
     TASK_NAME_KEY,
     TYPE_KEY,
 )
-from fms_dgt.log import FanOutHandler, RunContextFilter
+from fms_dgt.log import FanOutHandler
 from fms_dgt.utils import (
     all_annotations,
     convert_byte_size,
@@ -83,6 +84,12 @@ class DataBuilder:
         # Initialize epoch counter (always start with 1)
         self._epoch = 1
 
+        # SpanWriter set by configure_telemetry() in generate_data.py before
+        # execute_tasks() is called. Defaults to a no-op so execute_tasks()
+        # can reference it safely even if telemetry is disabled or not yet wired.
+
+        self._span_writer = _NoOpSpanWriter()
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
@@ -139,6 +146,18 @@ class DataBuilder:
             str: Run ID
         """
         return self._tasks[0].task_card.run_id if self._tasks else None
+
+    @property
+    def span_writer(self):
+        """Returns the SpanWriter for this run (set by configure_telemetry)."""
+        return self._span_writer
+
+    @span_writer.setter
+    def span_writer(self, writer) -> None:
+        """Set the SpanWriter and propagate it to all blocks."""
+        self._span_writer = writer
+        for block in self._blocks:
+            block.span_writer = writer
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -202,11 +221,10 @@ class DataBuilder:
                 # Add to found annotation list
                 found_annotations.append(block_name)
 
-            # Extend block configuration to include build ID, databuilder name,
-            # and the shared FanOutHandler so block log records route to the
-            # same task log files as builder records.
+            # Extend block configuration to include databuilder name and the
+            # shared FanOutHandler so block log records route to the same task
+            # log files as builder records.
             block_configuration = {
-                "build_id": self._build_id,
                 "builder_name": self.name,
                 "fanout_handler": self._fanout_handler,
                 **block_configuration,
@@ -272,17 +290,6 @@ class DataBuilder:
         self._logger = logging.getLogger(f"fms_dgt.builder.{self.name}")
         self._fanout_handler = FanOutHandler()
         self._logger.addHandler(self._fanout_handler)
-
-        # Attach RunContextFilter so all builder-level records (epoch banners,
-        # profiling summaries, run events) carry build_id and run_id. Without
-        # this, records emitted on the builder logger bypass the task-scoped
-        # logger and its filter, reaching the log file with no provenance.
-        self._logger.addFilter(
-            RunContextFilter(
-                build_id=self._build_id,
-                run_id=self._tasks[0].task_card.run_id,
-            )
-        )
 
         # Pre-register all task handlers so pre-execute_tasks log records
         # (run_started, etc.) are written to every task log file.
@@ -621,8 +628,6 @@ class GenerationDataBuilder(DataBuilder):
                     task.name,
                     extra={
                         "event": "task_finished",
-                        "build_id": self.build_id,
-                        "run_id": self.run_id,
                         "task_name": task.name,
                         "reason": "already_complete",
                     },
@@ -635,8 +640,6 @@ class GenerationDataBuilder(DataBuilder):
                     task.name,
                     extra={
                         "event": "task_started",
-                        "build_id": self.build_id,
-                        "run_id": self.run_id,
                         "task_name": task.name,
                     },
                 )
@@ -659,6 +662,15 @@ class GenerationDataBuilder(DataBuilder):
         # - All tasks finished generating and postprocessing requested number of datapoints OR
         # - Maximum number of attempts to complete tasks is reached
         while active_tasks and attempt <= self._num_attempts_to_complete:
+            _epoch_span = Span(
+                "dgt.epoch",
+                self._span_writer,
+                parent_span_name="dgt.run",
+                epoch=self._epoch,
+                active_task_names=",".join(t.name for t in active_tasks),
+                active_task_count=len(active_tasks),
+            )
+            _epoch_span.__enter__()
             self.logger.info("*" * 99)
             self.logger.info("\t\t\t\tEPOCH: %s", self._epoch)
             self.logger.info("*" * 99)
@@ -800,8 +812,6 @@ class GenerationDataBuilder(DataBuilder):
                         task.name,
                         extra={
                             "event": "task_finished",
-                            "build_id": self.build_id,
-                            "run_id": self.run_id,
                             "task_name": task.name,
                             "reason": _reason,
                         },
@@ -823,6 +833,7 @@ class GenerationDataBuilder(DataBuilder):
                 self.logger.info(report_str)
                 self._epoch += 1
 
+            _epoch_span.__exit__(None, None, None)
             self.logger.info("*" * 99)
 
         # Report generation duration
@@ -891,8 +902,6 @@ class TransformationDataBuilder(DataBuilder):
                 task.name,
                 extra={
                     "event": "task_started",
-                    "build_id": self.build_id,
-                    "run_id": self.run_id,
                     "task_name": task.name,
                 },
             )
@@ -933,8 +942,6 @@ class TransformationDataBuilder(DataBuilder):
                 task.name,
                 extra={
                     "event": "task_finished",
-                    "build_id": self.build_id,
-                    "run_id": self.run_id,
                     "task_name": task.name,
                     "reason": "complete",
                 },

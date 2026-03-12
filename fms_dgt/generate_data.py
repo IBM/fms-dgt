@@ -13,6 +13,7 @@ from fms_dgt import SRC_DGT_DIR
 from fms_dgt.base.databuilder import DataBuilder
 from fms_dgt.base.registry import add_namespace_to_searchable_dirs, get_data_builder
 from fms_dgt.base.task_card import TaskRunCard
+from fms_dgt.base.telemetry import Span, configure_telemetry
 from fms_dgt.constants import (
     BLOCKS_KEY,
     DGT_ENV_VARS,
@@ -21,6 +22,7 @@ from fms_dgt.constants import (
     TASK_NAME_KEY,
 )
 from fms_dgt.index import DataBuilderIndex
+from fms_dgt.log import run_context
 from fms_dgt.utils import dgt_logger
 import fms_dgt.utils as utils
 
@@ -224,6 +226,15 @@ def generate_data(
             utils.import_builder(builder_dir)
             data_builder = get_data_builder(builder_name, **all_builder_kwargs)
 
+        # Step 8.d.iii: Activate run context so all log records from this
+        # point forward (including LLM connectors and utilities) carry
+        # build_id and run_id automatically via the root RunContextFilter.
+        _run_ctx_mgr = run_context(
+            build_id=data_builder.build_id,
+            run_id=data_builder.run_id,
+        )
+        _run_ctx_mgr.__enter__()
+
         # Step 8.e: Trigger tasks execution for the current databuilder
         data_builder.record_run_results(
             update={
@@ -233,6 +244,18 @@ def generate_data(
                 "end_time": None,
             }
         )
+
+        # Initialize telemetry for this run. configure_telemetry() attaches
+        # TelemetryEventHandler to the builder logger and returns a SpanWriter
+        # for instrumentation sites. Both are no-ops when DGT_TELEMETRY_DISABLE
+        # is set.
+        _span_writer = configure_telemetry(
+            builder_logger=data_builder.logger,
+            build_id=data_builder.build_id,
+            run_id=data_builder.run_id,
+        )
+        data_builder.span_writer = _span_writer
+
         _resumed = not data_builder.tasks[0].restart_generation if data_builder.tasks else False
         data_builder.logger.info(
             "Run started%s for builder '%s' [build_id=%s, run_id=%s]",
@@ -242,18 +265,25 @@ def generate_data(
             data_builder.run_id,
             extra={
                 "event": "run_started",
-                "build_id": data_builder.build_id,
-                "run_id": data_builder.run_id,
                 "builder_name": data_builder.name,
                 "task_names": [t.name for t in data_builder.tasks],
                 "pid": os.getpid(),
                 "resumed": _resumed,
             },
         )
+        _run_span = Span(
+            "dgt.run",
+            _span_writer,
+            builder_name=data_builder.name,
+            task_names=",".join(t.name for t in data_builder.tasks),
+            resumed=_resumed,
+        )
+        _run_span.__enter__()
         try:
             data_builder.execute_tasks()
         # pylint: disable=broad-exception-caught
         except Exception as e:
+            _run_span.set_error(e)
             data_builder.record_run_results(
                 update={
                     "status": "errored",
@@ -267,8 +297,6 @@ def generate_data(
                 str(e),
                 extra={
                     "event": "run_errored",
-                    "build_id": data_builder.build_id,
-                    "run_id": data_builder.run_id,
                     "builder_name": data_builder.name,
                     "status": "errored",
                     "exception": str(e),
@@ -281,17 +309,17 @@ def generate_data(
                 data_builder.name,
                 extra={
                     "event": "run_finished",
-                    "build_id": data_builder.build_id,
-                    "run_id": data_builder.run_id,
                     "builder_name": data_builder.name,
                     "status": "completed",
                 },
             )
         finally:
+            _run_span.__exit__(None, None, None)
             # Step 8.f: Cleanup databuilder — always runs, even on exception,
             # so log handlers and file resources are never leaked.
             data_builder.close()
             del data_builder
+            _run_ctx_mgr.__exit__(None, None, None)
 
         # Step 8.g: Cleanup ray
         if ray_initialized:
