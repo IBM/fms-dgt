@@ -71,7 +71,7 @@ To test whether you have been successful, run the following operation that refer
 > ```
 
 ```bash
-python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal --restart-generation
+python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal --restart
 ```
 
 - Using [IBM watsonx](https://www.ibm.com/products/watsonx)
@@ -80,7 +80,7 @@ python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal
 > you must set up a `WATSONX_API_KEY` and `WATSONX_PROJECT_ID` before using watsonx API service
 
 ```bash
-python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal --restart-generation --config-path configs/core/watsonx_simple.yaml
+python -m fms_dgt.core --task-paths ./tasks/core/simple/logical_reasoning/causal --restart --config-path configs/core/watsonx_simple.yaml
 ```
 
 If successful, you should see the outputs of the command in the `./output` directory

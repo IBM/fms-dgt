@@ -97,12 +97,10 @@ class TaskRunnerConfig:
     Attributes:
         output_dir (Optional[str]): The directory where the generated outputs will be saved.
         save_formatted_output (Optional[bool]): A boolean indicating whether to save outputs that have been reformatted
-        restart_generation (Optional[bool]): A boolean indicating whether to restart generation from scratch.
     """
 
     output_dir: str | None = None
     save_formatted_output: bool | None = False
-    restart_generation: bool | None = False
 
     def __post_init__(self):
         if self.output_dir is None:
@@ -114,11 +112,14 @@ class GenerationTaskRunnerConfig(TaskRunnerConfig):
     """Configuration for a generation task
 
     Attributes:
+        restart_generation (Optional[bool]): Wipe all intermediate data and restart generation from scratch.
+            Not applicable to transformation tasks, which always do a full pass over their input.
         seed_batch_size (Optional[int]): The batch size used for seed examples.
         machine_batch_size (Optional[int]): The batch size used for machine examples.
         num_outputs_to_generate (Optional[int]): The number of outputs to generate.
     """
 
+    restart_generation: bool | None = False
     seed_batch_size: int | None = None
     machine_batch_size: int | None = None
     num_outputs_to_generate: int | None = None

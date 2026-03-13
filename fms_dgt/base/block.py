@@ -5,6 +5,7 @@
 from abc import abstractmethod
 from dataclasses import asdict, is_dataclass
 from typing import Any, Dict, Iterable, List, Tuple
+import asyncio
 import dataclasses
 import inspect
 import logging
@@ -38,19 +39,48 @@ _SRC_DATA = "SRC_DATA"
 # ===========================================================================
 #                       HELPER FUNCTIONS
 # ===========================================================================
-def get_row_name(gen_inst: DATASET_ROW_TYPE) -> str:
+_warned_missing_task_name: set = set()
+
+
+def get_row_name(gen_inst: DATASET_ROW_TYPE) -> str | None:
     """Gets the task name associated with the particular input instance.
+
+    Lookup order:
+    1. ``task_name`` directly on the object (covers ``DataPoint`` and dicts).
+    2. ``SRC_DATA`` recursion (covers ``BlockData`` / ``ValidatorBlockData``
+       whose original row is a ``DataPoint`` carrying ``task_name``).
+    3. Returns ``None`` and emits a one-time warning per type so developers
+       know that structured logs and lifecycle events will be degraded.
 
     Args:
         gen_inst (DATASET_ROW_TYPE): The input to get the task name from.
 
     Returns:
-        str: Name of task
+        str | None: Name of task, or None if not found.
     """
     if isinstance(gen_inst, dict):
-        return gen_inst.get("task_name")
+        if "task_name" in gen_inst:
+            return gen_inst["task_name"]
+        src = gen_inst.get("SRC_DATA")
+        if src is not None:
+            return get_row_name(src)
     else:
-        return getattr(gen_inst, "task_name")
+        task_name = getattr(gen_inst, "task_name", None)
+        if task_name is not None:
+            return task_name
+        src = getattr(gen_inst, "SRC_DATA", None)
+        if src is not None:
+            return get_row_name(src)
+
+    type_name = type(gen_inst).__qualname__
+    if type_name not in _warned_missing_task_name:
+        _warned_missing_task_name.add(type_name)
+        logging.getLogger(__name__).warning(
+            "get_row_name: could not find 'task_name' on '%s' or its SRC_DATA; "
+            "task_name will be missing from structured logs and lifecycle events.",
+            type_name,
+        )
+    return None
 
 
 # ===========================================================================
@@ -444,6 +474,72 @@ class Block:
             transformed_outputs = type(inputs)(transformed_outputs)
 
         return transformed_outputs
+
+    async def acall(
+        self,
+        inputs: DATASET_TYPE,
+        *args,
+        input_map: List | Dict | None = None,
+        output_map: List | Dict | None = None,
+        **kwargs,
+    ) -> DATASET_TYPE:
+        """Async variant of ``__call__``.
+
+        Applies the same input/output mapping as ``__call__`` but runs
+        ``execute`` in a thread pool via ``asyncio.to_thread`` so the event
+        loop is not blocked.  Subclasses with native async implementations
+        (e.g. ``LMProvider``) may override ``aexecute`` to avoid the thread
+        hop entirely.
+
+        Args:
+            inputs (DATASET_TYPE): Dataset to be processed.
+            input_map (Optional[Union[List, Dict]]): Override for instance-level input map.
+            output_map (Optional[Union[List, Dict]]): Override for instance-level output map.
+
+        Returns:
+            DATASET_TYPE: Dataset resulting from processing in ``execute``.
+        """
+        input_map = input_map or self._input_map
+        output_map = output_map or self._output_map
+
+        transformed_inputs = list(map(lambda x: self.transform_input(x, input_map), inputs))
+
+        outputs = await self.aexecute(transformed_inputs, *args, **kwargs)
+
+        transformed_outputs = map(lambda x: self.transform_output(x, output_map), outputs)
+        if isinstance(inputs, (list, tuple)):
+            transformed_outputs = type(inputs)(transformed_outputs)
+
+        return transformed_outputs
+
+    async def aexecute(
+        self,
+        inputs: DATASET_TYPE,
+        *args,
+        **kwargs,
+    ) -> DATASET_TYPE:
+        """Async variant of ``execute``.
+
+        The default implementation offloads the synchronous ``execute`` to a
+        thread pool via ``asyncio.to_thread``, which is safe for any subclass
+        whose ``execute`` does not itself schedule work on the running event
+        loop.  Subclasses with a native async implementation may override this
+        method directly.
+
+        Args:
+            inputs (DATASET_TYPE): Pre-transformed inputs (output of ``transform_input``).
+
+        Returns:
+            DATASET_TYPE: Results as returned by ``execute``.
+
+        TODO: Override ``aexecute`` in ``LMProvider`` to drive
+        ``_execute_requests`` directly on the caller's event loop, eliminating
+        the ``asyncio.to_thread`` hop and the internal ``run_async`` /
+        ``run_coroutine_threadsafe`` round-trip.  Requires refactoring
+        ``completion`` / ``chat_completion`` in each provider so the async
+        path is callable without going through the sync wrapper.
+        """
+        return await asyncio.to_thread(self.execute, inputs, *args, **kwargs)
 
     @abstractmethod
     def execute(

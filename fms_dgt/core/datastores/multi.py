@@ -61,6 +61,15 @@ class MultiTargetDatastore(Datastore):
     # ===========================================================================
     #                       HELPER FUNCTIONS
     # ===========================================================================
+    def exists(self) -> bool:
+        """Return True if the primary backing datastore exists."""
+        return self._primary_datastore.exists()
+
+    def clear(self) -> None:
+        """Clear all backing datastores."""
+        for datastore in self._datastores:
+            datastore.clear()
+
     def save_data(self, *args, **kwargs) -> None:
         """Saves generated data to specified location"""
 

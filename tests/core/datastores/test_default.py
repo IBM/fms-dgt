@@ -1,6 +1,9 @@
 # Copyright The DiGiT Authors
 # SPDX-License-Identifier: Apache-2.0
 
+# Standard
+import os
+
 # Third Party
 from dotenv import load_dotenv
 
@@ -234,3 +237,51 @@ class TestDefault:
 
         items = datastore.load_data()
         assert len(items) == 3
+
+
+class TestDefaultExistsClear:
+    """Tests for DefaultDatastore.exists() and clear()."""
+
+    def _ds(self, tmp_path, **kwargs):
+        """Helper: create a DefaultDatastore whose output goes to tmp_path."""
+        return DefaultDatastore(
+            type="default",
+            store_name="data",
+            output_dir=str(tmp_path),
+            **kwargs,
+        )
+
+    def test_exists_false_when_no_output_dir(self):
+        ds = DefaultDatastore(type="default", store_name="test")
+        assert ds.exists() is False
+
+    def test_exists_false_before_any_write(self, tmp_path):
+        ds = self._ds(tmp_path)
+        assert ds.exists() is False
+
+    def test_exists_true_after_write(self, tmp_path):
+        ds = self._ds(tmp_path)
+        ds.save_data([{"key": "value"}])
+        assert ds.exists() is True
+
+    def test_clear_removes_output_file(self, tmp_path):
+        ds = self._ds(tmp_path)
+        ds.save_data([{"key": "value"}])
+        assert os.path.exists(ds.output_path)
+        ds.clear()
+        assert not os.path.exists(ds.output_path)
+
+    def test_clear_is_idempotent(self, tmp_path):
+        ds = self._ds(tmp_path)
+        ds.clear()  # file never existed — must not raise
+        ds.clear()  # second call also must not raise
+
+    def test_restart_clears_existing_file(self, tmp_path):
+        # First run: write some data
+        ds = self._ds(tmp_path)
+        ds.save_data([{"key": "first_run"}])
+        output = ds.output_path
+        assert os.path.exists(output)
+        # Second run with restart=True: file should be cleared on init
+        self._ds(tmp_path, restart=True)
+        assert not os.path.exists(output)

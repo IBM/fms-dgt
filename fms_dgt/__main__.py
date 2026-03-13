@@ -113,7 +113,9 @@ def add_task_args(parser: argparse.ArgumentParser):
         help="Number of machine generated examples to pass from data loader to data builder.",
     )
     group.add_argument(
+        "--restart",
         "--restart-generation",
+        dest="restart_generation",
         action="store_true",
         help="Entirely restart instruction generation.",
     )
