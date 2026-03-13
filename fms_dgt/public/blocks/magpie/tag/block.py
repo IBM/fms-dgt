@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
@@ -13,7 +16,6 @@ from fms_dgt.base.registry import get_block, register_block
 from fms_dgt.constants import TYPE_KEY
 from fms_dgt.core.blocks.llm import LMProvider
 from fms_dgt.public.blocks.magpie.tag.prompts import MagpieTransformPrompt
-from fms_dgt.utils import dgt_logger
 
 # ===========================================================================
 #                       CONSTANTS
@@ -587,23 +589,23 @@ class MagpieTagger(Block):
         instances = []
 
         # Warning about roles and content not supported
-        dgt_logger.warning(
+        self.logger.warning(
             "In the case of multi-turn only messages with the field 'content'/'text'/'value' are supported by Magpie. Others will be skipped "
         )
-        dgt_logger.warning(
+        self.logger.warning(
             "In the case of multi-turn only 'user' and 'assistant' messages are supported by Magpie. Others will be skipped "
         )
 
         for item_idx, item in enumerate(inputs):
             # Step 1: Validate necessary fields are provided
             if (item.magpie_input is None) and (item.magpie_mt_input is None):
-                dgt_logger.warning(
+                self.logger.warning(
                     "Failed to tag synthetic data due to missing 'magpie_input' & 'magpie_output' OR 'magpie_mt_input' field. Make sure to update input_map field in the databuilder yaml under magpie_tagger block.",
                 )
                 continue
             else:
                 if item.magpie_input is not None and item.magpie_output is None:
-                    dgt_logger.warning(
+                    self.logger.warning(
                         "magpie_output is missing. Make sure to update input_map field in the databuilder yaml under magpie_tagger block.",
                     )
 
@@ -661,13 +663,13 @@ class MagpieTagger(Block):
                                         continue
 
                                 if len(user_utterance_texts) < 1:
-                                    dgt_logger.warning("Missing user utterances")
+                                    self.logger.warning("Missing user utterances")
                                     continue
 
                                 if (
                                     len(user_utterance_texts) != len(assistant_utterance_texts)
                                 ) and len(user_utterance_texts) > 1:
-                                    dgt_logger.warning(
+                                    self.logger.warning(
                                         "Mismatch in number of user (%d) and assistant (%d) utterances",
                                         len(user_utterance_texts),
                                         len(assistant_utterance_texts),
@@ -683,7 +685,7 @@ class MagpieTagger(Block):
                                     output_text=assistant_utterance_texts[0],
                                 )
                         except KeyError as err:
-                            dgt_logger.warning(
+                            self.logger.warning(
                                 f"Failed to tag multi-turn synthetic data due to missing {err.args[0]} field."
                             )
                     else:
@@ -702,7 +704,7 @@ class MagpieTagger(Block):
                         }
                     )
 
-        dgt_logger.info(
+        self.logger.info(
             "The total number of samples in the progress bar is no. of tasks (%d) x total no. of inputs (%d) ",
             len(self.tasks),
             len(inputs),

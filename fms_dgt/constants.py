@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Any, Dict, Iterable, Literal
 import os
@@ -27,8 +30,16 @@ RAY_CONFIG_KEY = "ray_config"
 
 DGT_DIR = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
 
+# Logger name for the root fms-dgt logger; all child loggers use this as a prefix
+BASE_LOGGER_NAME = "fms_dgt"
+
 # environment variables that should be known to DGT
-DGT_ENV_VARS = {"DGT_DATA_DIR": "data", "DGT_OUTPUT_DIR": "output"}
+DGT_ENV_VARS = {
+    "DGT_DATA_DIR": "data",
+    "DGT_OUTPUT_DIR": "output",
+    "DGT_TELEMETRY_DIR": "telemetry",
+    "DGT_TELEMETRY_DISABLE": "",
+}
 
 
 # general types

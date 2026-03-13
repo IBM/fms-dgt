@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Any, Dict, List, Optional, TypeVar
 
@@ -5,7 +8,6 @@ from typing import Any, Dict, List, Optional, TypeVar
 from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.registry import get_datastore, register_datastore
 from fms_dgt.constants import TYPE_KEY
-from fms_dgt.utils import dgt_logger
 
 # ===========================================================================
 #                       CONSTANTS
@@ -31,6 +33,12 @@ class MultiTargetDatastore(Datastore):
         _ = type
         if additional is None:
             additional = []
+
+        # MultiTargetDatastore has no top-level store_name; derive one from the
+        # primary config so the base class logger name is meaningful.
+        if "store_name" not in kwargs:
+            kwargs = {**kwargs, "store_name": primary.get("store_name", "multi_target")}
+        super().__init__(**kwargs)
 
         self._datastores: List[Datastore] = []
         for datastore_cfg in [primary] + additional:
@@ -64,7 +72,7 @@ class MultiTargetDatastore(Datastore):
             try:
                 datastore.save_data(*args, **kwargs)
             except Exception as e:
-                dgt_logger.debug(
+                self.logger.debug(
                     "Error encountered while uploading to secondary datastore:\n%s",
                     str(e),
                 )

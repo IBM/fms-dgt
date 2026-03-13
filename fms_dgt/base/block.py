@@ -1,9 +1,13 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from abc import abstractmethod
 from dataclasses import asdict, is_dataclass
 from typing import Any, Dict, Iterable, List, Tuple
 import dataclasses
 import inspect
+import logging
 import os
 import time
 import tracemalloc
@@ -16,6 +20,7 @@ import pandas as pd
 from fms_dgt.base.data_objects import BlockData, ValidatorBlockData
 from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.registry import get_datastore
+from fms_dgt.base.telemetry import Span, _NoOpSpanWriter
 from fms_dgt.constants import (
     DATASET_ROW_TYPE,
     DATASET_TYPE,
@@ -23,7 +28,6 @@ from fms_dgt.constants import (
     STORE_NAME_KEY,
     TYPE_KEY,
 )
-from fms_dgt.utils import dgt_logger
 
 # ===========================================================================
 #                       CONSTATNTS
@@ -64,9 +68,9 @@ class Block:
         type: str | None = None,
         input_map: List | Dict | None = None,
         output_map: List | Dict | None = None,
-        build_id: str | None = None,
         builder_name: str | None = None,
         datastores: List[Dict] | Dict = None,
+        fanout_handler: logging.Handler | None = None,
         **kwargs: Any,
     ) -> None:
         """A block is a unit of computation that takes in some inputs and produces an
@@ -80,9 +84,10 @@ class Block:
         Kwargs:
             input_map (List | Dict, optional): A mapping of field names from input objects to internal objects.
             output_map (List | Dict, optional): A mapping of field names from internal objects to output objects.
-            build_id (str, optional): ID to identify a particular SDG run.
             builder_name (str, optional): Name of the calling databuilder
             datastores (List[Dict] | Dict, optional): Dictionaries containing the configuration for the datastores.
+            fanout_handler (logging.Handler, optional): Shared FanOutHandler from the DataBuilder. When provided,
+                block log records are routed to all currently-active task log files.
 
         Raises:
             TypeError: If any of the arguments are not of the correct type.
@@ -127,6 +132,19 @@ class Block:
         # Initialize profiler data
         self.profiler_data = {"executions": []}
 
+        # Initialize block-scoped logger. Attach the shared FanOutHandler so
+        # records are routed to all currently-active task log files alongside
+        # the builder's own records. Falls back to stdout-only via propagation
+        # to dgt_logger if no FanOutHandler is provided (e.g. standalone tests).
+        self._logger = logging.getLogger(f"fms_dgt.block.{self._name}")
+        if fanout_handler is not None:
+            self._logger.addHandler(fanout_handler)
+
+        # SpanWriter set by DataBuilder.span_writer setter when telemetry is
+        # configured. Defaults to no-op so __call__ is safe before wiring.
+        self._span_writer = _NoOpSpanWriter()
+        self._builder_name = builder_name or ""
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
@@ -147,6 +165,15 @@ class Block:
             str: The type of the block
         """
         return self._block_type
+
+    @property
+    def span_writer(self):
+        """Returns the SpanWriter for telemetry (set by DataBuilder)."""
+        return self._span_writer
+
+    @span_writer.setter
+    def span_writer(self, writer) -> None:
+        self._span_writer = writer
 
     @property
     def input_map(self) -> List | Dict:
@@ -180,6 +207,19 @@ class Block:
     @property
     def blocks(self) -> List["Block"]:
         return self._blocks
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the block-scoped logger.
+
+        Records are routed to all currently-active task log files via the
+        shared FanOutHandler, and propagate to the root dgt_logger for
+        terminal output.
+
+        Returns:
+            logging.Logger: Block-scoped logger
+        """
+        return self._logger
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -227,7 +267,7 @@ class Block:
                 try:
                     self._datastores[store_name].save_data([to_serializable(x) for x in datapoints])
                 except KeyError:
-                    dgt_logger.warning(
+                    self.logger.warning(
                         'Unable to save instances due to missing datastore with "%s" name.',
                         store_name,
                     )
@@ -373,9 +413,22 @@ class Block:
                     }
                 )
 
+        input_count = len(inputs) if isinstance(inputs, (list, tuple)) else None
+
         start_time = time.monotonic()
         tracemalloc.start()
-        outputs = self.execute(transformed_inputs, *args, **kwargs)
+        with Span(
+            "dgt.block",
+            self._span_writer,
+            parent_span_name="dgt.epoch",
+            block_name=self._name,
+            block_type=self._block_type,
+            builder_name=self._builder_name,
+            input_count=input_count,
+        ) as _span:
+            outputs = self.execute(transformed_inputs, *args, **kwargs)
+            if isinstance(outputs, (list, tuple)):
+                _span.set_attribute("output_count", len(outputs))
         memory = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         self.profiler_data["executions"].append(
@@ -481,6 +534,17 @@ class ValidatorBlock(Block):
                 retained_instances.append(x)
             elif not x.is_valid:
                 filtered_instances.append(x)
+                self.logger.info(
+                    "Data point rejected by block '%s'",
+                    self.name,
+                    extra={
+                        "event": "data_point_rejected",
+                        "block_name": self.name,
+                        "block_type": self.block_type,
+                        "task_name": get_row_name(x),
+                        "reason": getattr(x, "metadata", None),
+                    },
+                )
 
         # Save filtered instances for record keeping
         self.save_data(filtered_instances)

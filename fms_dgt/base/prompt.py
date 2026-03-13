@@ -1,14 +1,20 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List
+import logging
 import re
 
 # Third Party
 import jinja2
 
 # Local
-from fms_dgt.utils import dgt_logger
+from fms_dgt.constants import BASE_LOGGER_NAME
+
+_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 
 class PromptTemplate(ABC):
@@ -37,9 +43,7 @@ class JinjaPromptTemplate(PromptTemplate):
 
         self.environment = jinja2.Environment()
         if template and template_path:
-            dgt_logger.warning(
-                'Both "template" and "template_path" are provided. Using "template".'
-            )
+            _logger.warning('Both "template" and "template_path" are provided. Using "template".')
             self._prompt_template = self.environment.from_string(template, globals=globals)
         elif template:
             self._prompt_template = self.environment.from_string(template, globals=jinja_globals)

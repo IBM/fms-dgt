@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Iterable, Optional
 
@@ -11,7 +14,6 @@ from fms_dgt.public.databuilders.magpie.task import (
     MagpieTransformData,
     MagpieTransformTask,
 )
-from fms_dgt.utils import dgt_logger
 
 # ===========================================================================
 #                       CONSTANTS
@@ -43,7 +45,7 @@ class MagpieTransformDataBuilder(TransformationDataBuilder):
 
         # Step 2: Invoke magpie tagger, if requested
         if hasattr(self, "tagger"):
-            dgt_logger.info(
+            self.logger.info(
                 'Tagging %d data points with "%s"...',
                 len(outputs),
                 ".".join([self.tagger.__module__, self.tagger.__class__.__name__]),
@@ -64,7 +66,7 @@ class MagpieTransformDataBuilder(TransformationDataBuilder):
 
         # Step 3: Invoke magpie deduplicator, if requested
         if hasattr(self, "dedup"):
-            dgt_logger.info(
+            self.logger.info(
                 'Deduping %d data points with "%s"...',
                 len(outputs),
                 ".".join([self.dedup.__module__, self.dedup.__class__.__name__]),
@@ -86,7 +88,7 @@ class MagpieTransformDataBuilder(TransformationDataBuilder):
 
         # Step 4: Invoke magpie filteration, if requested
         if hasattr(self, "filter"):
-            dgt_logger.info(
+            self.logger.info(
                 'Filtering %d data points with "%s"...',
                 len(outputs),
                 ".".join([self.filter.__module__, self.filter.__class__.__name__]),

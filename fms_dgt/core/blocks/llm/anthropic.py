@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import dataclass, fields
 from typing import Any, Callable, Dict, List, Literal, Tuple
@@ -10,11 +13,12 @@ import anthropic
 
 # Local
 from fms_dgt.base.registry import get_resource, register_block
-from fms_dgt.constants import NOT_GIVEN, NotGiven
+from fms_dgt.constants import BASE_LOGGER_NAME, NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters, ToolChoice
 from fms_dgt.core.blocks.llm.utils import remap, retry
 from fms_dgt.core.resources.api import ApiKeyResource
-from fms_dgt.utils import dgt_logger
+
+_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 # Disable third party logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -87,7 +91,7 @@ class AnthropicChatCompletionParameters(Parameters):
 @retry(
     on_exceptions=(anthropic.AnthropicError,),
     max_retries=3,
-    on_exception_callback=lambda e, sleep_timer: dgt_logger.warning(
+    on_exception_callback=lambda e, sleep_timer: _logger.warning(
         "Retrying in %d seconds due to %s: %s", sleep_timer, type(e).__name__, e.args[0]
     ),
 )
@@ -116,7 +120,7 @@ async def invoke_completion(
 @retry(
     on_exceptions=(anthropic.AnthropicError,),
     max_retries=3,
-    on_exception_callback=lambda e, sleep_timer: dgt_logger.warning(
+    on_exception_callback=lambda e, sleep_timer: _logger.warning(
         "Retrying in %d seconds due to %s: %s", sleep_timer, type(e).__name__, e.args[0]
     ),
 )

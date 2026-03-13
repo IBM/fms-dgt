@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from abc import abstractmethod
 from collections import defaultdict
@@ -6,6 +9,7 @@ from datetime import datetime
 from statistics import mean, stdev
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Union
 import json
+import logging
 import os
 import time
 
@@ -14,6 +18,7 @@ from fms_dgt.base.block import Block, get_row_name
 from fms_dgt.base.data_objects import DataBuilderConfig, DataPoint
 from fms_dgt.base.registry import get_block, get_block_class
 from fms_dgt.base.task import GenerationTask, Task, TransformationTask
+from fms_dgt.base.telemetry import Span, _NoOpSpanWriter
 from fms_dgt.constants import (
     BLOCKS_KEY,
     DATASET_TYPE,
@@ -23,10 +28,10 @@ from fms_dgt.constants import (
     TASK_NAME_KEY,
     TYPE_KEY,
 )
+from fms_dgt.log import FanOutHandler
 from fms_dgt.utils import (
     all_annotations,
     convert_byte_size,
-    dgt_logger,
     init_dataclass_from_dict,
     merge_dictionaries,
 )
@@ -70,12 +75,23 @@ class DataBuilder:
         # just grab first task's build_id
         self._build_id = self._tasks[0].task_card.build_id
 
+        # Initialize builder-scoped logger with fan-out to active task logs.
+        # Must come before _init_blocks() so the FanOutHandler is available
+        # to inject into each block's configuration.
+        self._init_logger()
+
         # Initialize blocks
         self._block_datastores_per_task = {}
         self._blocks: List[Block] = self._init_blocks(verify_block_type=verify_block_type)
 
         # Initialize epoch counter (always start with 1)
         self._epoch = 1
+
+        # SpanWriter set by configure_telemetry() in generate_data.py before
+        # execute_tasks() is called. Defaults to a no-op so execute_tasks()
+        # can reference it safely even if telemetry is disabled or not yet wired.
+
+        self._span_writer = _NoOpSpanWriter()
 
     # ===========================================================================
     #                       PROPERTIES
@@ -115,6 +131,36 @@ class DataBuilder:
             List[SdgTask]: List of tasks to be used in this data builder
         """
         return self._tasks
+
+    @property
+    def build_id(self) -> str:
+        """Returns the build ID for this run.
+
+        Returns:
+            str: Build ID
+        """
+        return self._build_id
+
+    @property
+    def run_id(self) -> str:
+        """Returns the run ID for this execution (from the first task card).
+
+        Returns:
+            str: Run ID
+        """
+        return self._tasks[0].task_card.run_id if self._tasks else None
+
+    @property
+    def span_writer(self):
+        """Returns the SpanWriter for this run (set by configure_telemetry)."""
+        return self._span_writer
+
+    @span_writer.setter
+    def span_writer(self, writer) -> None:
+        """Set the SpanWriter and propagate it to all blocks."""
+        self._span_writer = writer
+        for block in self._blocks:
+            block.span_writer = writer
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -167,7 +213,7 @@ class DataBuilder:
                         f"Retrieved block type ({block_class}) != retrieved block type ({requested_block_type}) for {block_name} in DataBuilder {self.__class__}"
                     )
                 elif not is_same_type:
-                    dgt_logger.warning(
+                    self.logger.warning(
                         "Retrieved block type (%s) for %s does not match type (%s) specified in DataBuilder %s",
                         block_class,
                         block_name,
@@ -178,10 +224,12 @@ class DataBuilder:
                 # Add to found annotation list
                 found_annotations.append(block_name)
 
-            # Extend block configuration to include build ID and databuilder name
+            # Extend block configuration to include databuilder name and the
+            # shared FanOutHandler so block log records route to the same task
+            # log files as builder records.
             block_configuration = {
-                "build_id": self._build_id,
                 "builder_name": self.name,
+                "fanout_handler": self._fanout_handler,
                 **block_configuration,
             }
 
@@ -229,6 +277,57 @@ class DataBuilder:
         # Return
         return blocks
 
+    # ===========================================================================
+    #                       LOGGER
+    # ===========================================================================
+    def _init_logger(self) -> None:
+        """Initialize a builder-scoped logger backed by a FanOutHandler.
+
+        All task file handlers are pre-registered here so that run-level
+        events emitted before execute_tasks() (run_started, etc.) are captured
+        in the task log files. execute_tasks() calls _register_task_log_handler
+        again for active tasks, which is a no-op thanks to idempotent register().
+        The builder logger is a child of dgt_logger so records also propagate
+        to the root stdout handler.
+        """
+        self._logger = logging.getLogger(f"fms_dgt.builder.{self.name}")
+        self._fanout_handler = FanOutHandler()
+        self._logger.addHandler(self._fanout_handler)
+
+        # Pre-register all task handlers so pre-execute_tasks log records
+        # (run_started, etc.) are written to every task log file.
+        for task in self._tasks:
+            self._register_task_log_handler(task)
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the builder-scoped logger.
+
+        Records emitted here are written to all currently-active task log files
+        via the FanOutHandler, making each task log self-contained.
+
+        Returns:
+            logging.Logger: Builder-scoped logger
+        """
+        return self._logger
+
+    def _register_task_log_handler(self, task: Task) -> None:
+        """Register a task's file handler with the FanOutHandler.
+
+        Call this just before a task enters the active set so that subsequent
+        log records are written to its log file.
+        """
+        if task.log_handler is not None:
+            self._fanout_handler.register(task.name, task.log_handler)
+
+    def _unregister_task_log_handler(self, task: Task) -> None:
+        """Unregister a task's file handler from the FanOutHandler.
+
+        Call this before task.finish() so that the handler is removed from
+        the fan-out set before it is closed by task teardown.
+        """
+        self._fanout_handler.unregister(task.name)
+
     def _pretty_print(self, block: Block, prefix: str = None):
         execution_times = []
         peak_memory = []
@@ -267,7 +366,7 @@ class DataBuilder:
 
         block_name = f"{prefix}.{block.name}" if prefix else block.name
         report_str = f"{block_name if len(block_name) <= 17 else block_name[:17]+'...':<20}\t{execution_time_str:17}\t{peak_memory_str:24}\t{completion_token_usage_str:^19}\t{prompt_token_usage_str:^19}"
-        dgt_logger.info(report_str)
+        self.logger.info(report_str)
 
         return
 
@@ -285,17 +384,17 @@ class DataBuilder:
             )
 
     def _report_profiling_information(self):
-        dgt_logger.info("*" * 99)
-        dgt_logger.info('\t\tEXECUTION PROFILER FOR DATABUILDER "%s"', self.name)
-        dgt_logger.info("*" * 99)
-        dgt_logger.info(
+        self.logger.info("*" * 99)
+        self.logger.info('\t\tEXECUTION PROFILER FOR DATABUILDER "%s"', self.name)
+        self.logger.info("*" * 99)
+        self.logger.info(
             "Block%s\tTime (mean ± std)\tPeak Memory (mean ± std)\tTokens (Completion)\tTokens (Prompt)",
             " " * 15,
         )
         for block in self._blocks:
             self._report_block_wise_profiling_information(block=block)
 
-        dgt_logger.info("*" * 99)
+        self.logger.info("*" * 99)
 
     def close(self):
         # Step 1: Report profiling information
@@ -309,6 +408,15 @@ class DataBuilder:
         self.record_run_results(
             update={"status": "completed", "end_time": int(datetime.now().timestamp())}
         )
+
+        # Step 4: Unregister and close task log handlers now that all run-level
+        # events (run_finished / run_errored) have been written by the caller.
+        # _unregister_task_log_handler is NOT called inside execute_tasks() so
+        # that the FanOutHandler can still route those final events to each
+        # task's log file.
+        for task in self._tasks:
+            self._unregister_task_log_handler(task)
+            task.close_log_handler()
 
     def execute_postprocessing(self, completed_tasks: List[Task]):
         """Executes any postprocessing required after tasks have completed.
@@ -368,18 +476,18 @@ class DataBuilder:
             tasks[task_name][0].save_intermediate_data(d)
             tasks[task_name][1] += 1
 
-        dgt_logger.info("*" * 99)
-        dgt_logger.info("\t[EPOCH %d]\tPOST-PROCESSING RESULTS", self._epoch)
-        dgt_logger.info("*" * 99)
-        dgt_logger.info(
+        self.logger.info("*" * 99)
+        self.logger.info("\t[EPOCH %d]\tPOST-PROCESSING RESULTS", self._epoch)
+        self.logger.info("*" * 99)
+        self.logger.info(
             "Task%s\tBefore\t\t\tAfter",
             " " * 36,
         )
         for task_name, (task, ct) in tasks.items():
             report_str = f"{task_name if len(task_name) <= 37 else task_name[:37]+'...':<40}\t{len(task.machine_data):^10}\t{ct:^20}"
-            dgt_logger.info(report_str)
+            self.logger.info(report_str)
 
-        dgt_logger.info("*" * 99)
+        self.logger.info("*" * 99)
 
         # load_intermediate_data loads from postprocess datastore
         for task in completed_tasks:
@@ -402,7 +510,7 @@ class DataBuilder:
             # Step 1.d: Merge with update
             # Step 1.d.i: If 'metrics' key found in update, warn and ignore
             if update and "metrics" in update:
-                dgt_logger.warning(
+                self.logger.warning(
                     '"metrics" is a protected field and will be set by task.record_task_results().'
                 )
                 del update["metrics"]
@@ -508,16 +616,36 @@ class GenerationDataBuilder(DataBuilder):
         for task in self._tasks:
             task.machine_data = task.load_intermediate_data()
             if task.machine_data:
-                dgt_logger.debug("Loaded %s machine-generated data", len(task.machine_data))
+                self.logger.debug("Loaded %s machine-generated data", len(task.machine_data))
             task.load_dataloader_state()
 
         # Identify active and completed task
         active_tasks = []
         for task in self._tasks:
             if task.is_complete():
-                # Run task cleanup for completed tasks
+                # Task was already complete before this run started (resume path).
+                # Emit task_finished immediately — no task_started because the work
+                # happened in a prior run.
+                self.logger.info(
+                    "Task '%s' finished.",
+                    task.name,
+                    extra={
+                        "event": "task_finished",
+                        "task_name": task.name,
+                        "reason": "already_complete",
+                    },
+                )
                 task.finish()
             else:
+                self._register_task_log_handler(task)
+                self.logger.info(
+                    "Task '%s' started.",
+                    task.name,
+                    extra={
+                        "event": "task_started",
+                        "task_name": task.name,
+                    },
+                )
                 active_tasks.append(task)
 
         # Initialize necessary variables
@@ -537,9 +665,30 @@ class GenerationDataBuilder(DataBuilder):
         # - All tasks finished generating and postprocessing requested number of datapoints OR
         # - Maximum number of attempts to complete tasks is reached
         while active_tasks and attempt <= self._num_attempts_to_complete:
-            dgt_logger.info("*" * 99)
-            dgt_logger.info("\t\t\t\tEPOCH: %s", self._epoch)
-            dgt_logger.info("*" * 99)
+            _epoch_span = Span(
+                "dgt.epoch",
+                self._span_writer,
+                parent_span_name="dgt.run",
+                epoch=self._epoch,
+                active_task_names=",".join(t.name for t in active_tasks),
+                active_task_count=len(active_tasks),
+            )
+            _epoch_span.__enter__()
+            self.logger.info("*" * 99)
+            self.logger.info("\t\t\t\tEPOCH: %s", self._epoch)
+            self.logger.info("*" * 99)
+            self.logger.info(
+                "Epoch %s started with %s active task(s): %s",
+                self._epoch,
+                len(active_tasks),
+                ", ".join(t.name for t in active_tasks),
+                extra={
+                    "event": "epoch_started",
+                    "epoch": self._epoch,
+                    "active_task_names": [t.name for t in active_tasks],
+                    "active_task_count": len(active_tasks),
+                },
+            )
 
             # Reset tasks in postprocessing
             tasks_in_postprocessing_phase: List[GenerationTask] = (
@@ -578,23 +727,23 @@ class GenerationDataBuilder(DataBuilder):
                     generated_data_counter_per_task[relevant_task.name] += 1
 
                 # Report generation statistics
-                dgt_logger.info("*" * 99)
-                dgt_logger.info(
+                self.logger.info("*" * 99)
+                self.logger.info(
                     "\t[EPOCH %d]\tGENERATION RESULTS AFTER ATTEMPT %d (TOTAL ATTEMPTS: %d)",
                     self._epoch,
                     attempt_within_epoch,
                     attempt,
                 )
-                dgt_logger.info("*" * 99)
-                dgt_logger.info(
+                self.logger.info("*" * 99)
+                self.logger.info(
                     "Task%s\tCurrent\t\t\tTotal",
                     " " * 36,
                 )
                 for task in tasks_in_generation_phase:
                     report_str = f"{task.name if len(task.name) <= 37 else task.name[:37]+'...':<40}\t{generated_data_counter_per_task[task.name]:^10}\t{len(task.machine_data):^20}"
-                    dgt_logger.info(report_str)
+                    self.logger.info(report_str)
 
-                dgt_logger.info("*" * 99)
+                self.logger.info("*" * 99)
 
                 # Reset remaining unstalled attempts
                 for task_name, count in generated_data_counter_per_task.items():
@@ -622,14 +771,14 @@ class GenerationDataBuilder(DataBuilder):
                 )  # short-hand to create a new list
 
             # Launch postprocessing
-            dgt_logger.info("Launch postprocessing")
+            self.logger.info("Launch postprocessing")
             self.execute_postprocessing(tasks_in_postprocessing_phase)
             for task in tasks_in_postprocessing_phase:
                 if task.machine_data:
                     remaining_unstalled_epochs_per_task[task.name] = self._max_stalled_attempts
                 else:
                     remaining_unstalled_epochs_per_task[task.name] -= 1
-            dgt_logger.info("Postprocessing completed")
+            self.logger.info("Postprocessing completed")
 
             # Remove stalled or completed task
             for task in tasks_in_postprocessing_phase:
@@ -638,12 +787,9 @@ class GenerationDataBuilder(DataBuilder):
                     or remaining_unstalled_generation_attempts_per_task[task.name] <= 0
                     or remaining_unstalled_epochs_per_task[task.name] <= 0
                 ):
-                    # Terminate task
-                    task.finish()
-
                     # Issue warning for stalled tasks in generation phase
                     if remaining_unstalled_generation_attempts_per_task[task.name] <= 0:
-                        dgt_logger.warning(
+                        self.logger.warning(
                             "Task %s has not generated any data in the last %s attempts, terminating task",
                             task.name,
                             self._max_stalled_attempts,
@@ -651,11 +797,33 @@ class GenerationDataBuilder(DataBuilder):
 
                     # Issue warning for stalled task in post-processing phase
                     if remaining_unstalled_epochs_per_task[task.name] <= 0:
-                        dgt_logger.warning(
+                        self.logger.warning(
                             "Task %s has not produced any data in the last %s attempts after post-processing, terminating task",
                             task.name,
                             self._max_stalled_attempts,
                         )
+
+                    # Determine finish reason for the structured event.
+                    if task.is_complete():
+                        _reason = "complete"
+                    elif remaining_unstalled_generation_attempts_per_task[task.name] <= 0:
+                        _reason = "stalled_generation"
+                    else:
+                        _reason = "stalled_postprocessing"
+                    self.logger.info(
+                        "Task '%s' finished.",
+                        task.name,
+                        extra={
+                            "event": "task_finished",
+                            "task_name": task.name,
+                            "reason": _reason,
+                        },
+                    )
+                    # Do NOT unregister here — _log_handler must stay in the
+                    # FanOutHandler so run_finished (emitted after execute_tasks
+                    # returns) reaches this task's log file.  DataBuilder.close()
+                    # handles both unregister and close_log_handler().
+                    task.finish()
                 else:
                     tasks_in_generation_phase.append(task)
 
@@ -665,13 +833,14 @@ class GenerationDataBuilder(DataBuilder):
             # Report need of a new epoch and increament epoch counter, if necessary
             if active_tasks and attempt <= self._num_attempts_to_complete:
                 report_str = f"Triggering new epoch since {len(active_tasks)} task{'s are' if len(active_tasks) > 1 else ' is'} still pending."
-                dgt_logger.info(report_str)
+                self.logger.info(report_str)
                 self._epoch += 1
 
-            dgt_logger.info("*" * 99)
+            _epoch_span.__exit__(None, None, None)
+            self.logger.info("*" * 99)
 
         # Report generation duration
-        dgt_logger.info("Generation took %.2fs", time.time() - start_time)
+        self.logger.info("Generation took %.2fs", time.time() - start_time)
 
     def call_with_task_list(
         self, tasks: List[GenerationTask], request_idx: int
@@ -730,6 +899,15 @@ class TransformationDataBuilder(DataBuilder):
                 )
 
             task.load_dataloader_state()
+            self._register_task_log_handler(task)
+            self.logger.info(
+                "Task '%s' started.",
+                task.name,
+                extra={
+                    "event": "task_started",
+                    "task_name": task.name,
+                },
+            )
 
         # Initialize necessary variables
         start_time = time.time()
@@ -744,28 +922,38 @@ class TransformationDataBuilder(DataBuilder):
             task.machine_data.append(transformed_datapoint)
 
         # Report performance
-        dgt_logger.info("*" * 99)
-        dgt_logger.info(
+        self.logger.info("*" * 99)
+        self.logger.info(
             "%s\t\tTotal",
             " " * 40,
         )
         for task in tasks:
             report_str = f"{task.name if len(task.name) <= 37 else task.name[:37]+'...':<40}\t\t{len(task.machine_data):^20}"
-            dgt_logger.info(report_str)
+            self.logger.info(report_str)
 
-        dgt_logger.info("*" * 99)
+        self.logger.info("*" * 99)
 
         # Launch postprocessing
-        dgt_logger.info("Launch postprocessing")
+        self.logger.info("Launch postprocessing")
         self.execute_postprocessing(tasks)
-        dgt_logger.info("Postprocessing completed")
+        self.logger.info("Postprocessing completed")
 
         # Terminate completed tasks
         for task in tasks:
+            self.logger.info(
+                "Task '%s' finished.",
+                task.name,
+                extra={
+                    "event": "task_finished",
+                    "task_name": task.name,
+                    "reason": "complete",
+                },
+            )
+            # Do NOT unregister here — see generation execute_tasks() note above.
             task.finish()
 
         # Report transformation duration
-        dgt_logger.info("Transformation took %.2fs", time.time() - start_time)
+        self.logger.info("Transformation took %.2fs", time.time() - start_time)
 
     def call_with_task_list(self, tasks: List[TransformationTask]) -> Iterable[DataPoint]:
         """Executes data builder __call__ function for all in-progress tasks.

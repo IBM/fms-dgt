@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Any, Dict, List
 import copy
@@ -248,6 +251,7 @@ def test_vllm_tensor_parallel():
 #                       TESTS (vLLM Remote)
 # ===========================================================================
 # Test openai API with batch prompts
+@pytest.mark.live
 def test_vllm_remote_batch():
     """
     start server with
@@ -278,6 +282,7 @@ def test_vllm_remote_batch():
         assert isinstance(inp["result"], str)
 
 
+@pytest.mark.live
 def test_vllm_remote_chat_template():
     """
     start server with
@@ -317,6 +322,7 @@ def test_vllm_remote_chat_template():
 
 
 # Test openai API with batch prompts applying a chat template under the covers
+@pytest.mark.live
 def test_vllm_remote_auto_chat():
     """
     start server with

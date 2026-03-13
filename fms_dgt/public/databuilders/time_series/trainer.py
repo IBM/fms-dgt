@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Dict
 import os
@@ -27,7 +30,6 @@ from fms_dgt.constants import DATASET_TYPE
 from fms_dgt.core.blocks.trainer.trainer import Trainer as TrainerBlock
 from fms_dgt.core.blocks.trainer.trainer import TrainingException, get_model_dir
 from fms_dgt.public.databuilders.time_series.utils import embeddings_to_text
-from fms_dgt.utils import dgt_logger
 
 
 @register_block("public/trainers/sdforger-tuning")
@@ -206,7 +208,7 @@ class SDForgerTuningBlock(TrainerBlock):
                         os.remove(file_path)  # Remove the file
                     elif os.path.isdir(file_path):
                         shutil.rmtree(file_path)  # Remove the directory
-                dgt_logger.info(
+                self.logger.info(
                     "Model files were found at %s. All files have been deleted, and the new model will replace the old one.",
                     tuned_model_path,
                 )

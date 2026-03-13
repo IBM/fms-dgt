@@ -52,6 +52,7 @@ Repository = "https://github.com/IBM/fms_dgt"
 [project.optional-dependencies]
 # Feature specific dependencies
 vllm = ["vllm", "more_itertools"]
+telemetry = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
 
 # Pipeline specific dependencies
 time_series = ["statsmodels", "fastparquet>=2024.5.0", "torch>=2.3", "transformers>=4.1", "accelerate>=0.26.0", "matplotlib"]
@@ -71,7 +72,7 @@ dev-docs = ["mkdocs-material"]
 all = ["fms_dgt[public]"]
 
 # Full install from developer perspective
-all-dev = ["fms_dgt[all, dev-test, dev-fmt, dev-build, dev-docs]"]
+all-dev = ["fms_dgt[all, telemetry, dev-test, dev-fmt, dev-build, dev-docs]"]
 
 
 # -----------------------
@@ -95,11 +96,11 @@ py_version = 310
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-ignore = ["I001", "E501"]  # Ignore import sorting (handled by isort)
 
 [tool.ruff.lint]
 # Enable rules for linting (flake8, pycodestyle, warnings)
 select = ["F", "E", "W"]
+ignore = ["I001", "E501"]  # Ignore import sorting (handled by isort)
 
 
 [tool.ruff.lint.per-file-ignores]
