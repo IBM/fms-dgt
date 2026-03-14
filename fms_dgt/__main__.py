@@ -117,6 +117,7 @@ def add_task_args(parser: argparse.ArgumentParser):
         "--restart-generation",
         dest="restart_generation",
         action="store_true",
+        default=None,
         help="Entirely restart instruction generation.",
     )
     group.add_argument(

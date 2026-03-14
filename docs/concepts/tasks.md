@@ -1,10 +1,10 @@
 # Tasks
 
-Tasks are simply classes which allows developers to define required assets (e.g., schemas, seed data, models), stopping criteria (e.g., number of records, time limits, quality thresholds), output data formatter as well as other high-level specifications that govern the overall data creation process.
+Tasks are classes that allow developers to define required assets (such as schemas, seed data, and models), stopping criteria (such as number of records, time limits, and quality thresholds), output data formatters, and other high-level specifications that govern the overall data creation process.
 
-All Tasks in DGT must inherit from [`Task`](https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/base/task.py#L49) base class. Tasks are automatically instantiated using information provided in a configuration YAML file.
+All Tasks in DiGiT must inherit from the [`Task`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/task.py#L49) base class. Tasks are automatically instantiated using information provided in a configuration YAML file.
 
-The base [`Task`](https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/base/task.py#L49) class is intentionally minimal to avoid being overly prescriptive or burdensome for developers.
+The base [`Task`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/task.py#L49) class is intentionally minimal to avoid being overly prescriptive or burdensome for developers.
 
 ### Data Initialization
 
@@ -61,7 +61,8 @@ DGT uses sensible default stopping criteria depending on the task type, but deve
 
 To customize this behavior, developers can override the is_complete method.
 
-??? warning - `is_complete` function does not take any arguments
+???+ warning
+    `is_complete` function does not take any arguments
 
 ### Saving Data
 
@@ -125,10 +126,10 @@ Suppose we want to pass a `random_seed` value for selecting in-context learning 
 ######################################################
 #                   MANDATORY FIELDS
 ######################################################
-task_name: core/simple/logical_reasoning/causal # Must be unique. Recommend following directory structure as naming convention.
+task_name: public/instructlab/simple/logical_reasoning/causal # Must be unique. Recommend following directory structure as naming convention.
 task_description: To teach a language model about Logical Reasoning - causal relationships
 created_by: IBM
-data_builder: simple # Must match exactly with the databuilder name
+data_builder: public/instructlab/simple # Must match exactly with the databuilder name
 
 ######################################################
 #                   RESERVED FIELDS
@@ -170,15 +171,15 @@ seed_examples:
 random_seed: 42
 ```
 
-Next, update the associated [`task.py`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/core/databuilders/simple/task.py) by adding a new argument to the `SimpleTask` constructor:
+Next, update the associated [`task.py`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/public/databuilders/instructlab/simple/task.py) by adding a new argument to the `SimpleTask` constructor:
 
-```{.python hl_lines="19 34-35"}
+```{.python hl_lines="20 34-35"}
 # Standard
 from typing import Any, Dict, List, Optional
 
 # Local
 from fms_dgt.base.task import GenerationTask
-from fms_dgt.core.databuilders.simple.data_objects import SimpleData
+from fms_dgt.public.databuilders.instructlab.simple.data_objects import SimpleData
 
 
 class SimpleTask(GenerationTask):

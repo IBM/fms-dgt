@@ -1,0 +1,13 @@
+databuilders:
+  public/examples/geography_qa:
+    blocks:
+      - name: generator
+        type: openai
+        model_id_or_path: gpt-4o-mini
+
+tasks:
+  public/examples/geography_qa:
+    seed_examples: null
+    seed_datastore:
+      type: default
+      data_path: ${DGT_DATA_DIR}/public/examples/qa/seed_examples.jsonl

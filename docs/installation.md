@@ -14,8 +14,8 @@ Now let's set up your virtual environment.
 === "Python venv"
 
     ```shell
-    python3.10 -m venv ssdg_venv
-    source ssdg_venv/bin/activate
+    python3 -m venv .venv
+    source .venv/bin/activate
     ```
 
     To install packages, we recommend starting off with the following
@@ -60,4 +60,4 @@ DGT uses Large Language Models (LLMs) to generate synthetic data. Following LLM 
 Most of the aforementioned LLM inference engines use environment variables to specify configuration settings. You can either export those environment variables prior to every run or save them in `.env` file at base of `fms-dgt` repository directory.
 
 !!! warning
-vLLM dependencies [requires Linux OS and CUDA](https://docs.vllm.ai/en/latest/getting_started/installation.html#requirements).
+    vLLM dependencies [requires Linux OS and CUDA](https://docs.vllm.ai/en/latest/getting_started/installation.html#requirements).

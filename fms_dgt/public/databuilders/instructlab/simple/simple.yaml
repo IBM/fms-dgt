@@ -1,10 +1,11 @@
-name: simple
+name: public/instructlab/simple
 blocks:
   - name: generator
     type: ollama
-    model_id_or_path: mistral-small3.2
+    model_id_or_path: granite4:3b
     temperature: 0.0
     max_tokens: 512
+    num_ctx: 8192
   - name: validator
     type: noop
   - name: rouge_val

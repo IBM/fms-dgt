@@ -1,7 +1,7 @@
 tasks:
-  core/simple/logical_reasoning/causal: # <-- name of task should go here, if this does not exist DGT will create it, otherwise it will be treated as an override
+  public/instructlab/simple/logical_reasoning/causal: # <-- name of task should go here, if this does not exist DGT will create it, otherwise it will be treated as an override
     created_by: IBM
-    data_builder: simple
+    data_builder: public/instructlab/simple
     runner_config:
       num_outputs_to_generate: 20
       seed_batch_size: 10
@@ -36,13 +36,13 @@ tasks:
 
           "
     task_description: To teach a language model about Logical Reasoning - causal relationships
-  core/simple/temporal_reasoning:
+  public/instructlab/simple/temporal_reasoning:
     created_by: IBM
     task_description: "To teach a language model about chronological order of time. \n"
     runner_config:
       num_outputs_to_generate: 10
       seed_batch_size: 10
     include: # <-- DGT takes the dictionary under the 'include' key and loads the leaf nodes of the dictionary (in this case the path), and then it merges the keys under the dictionary into the config
-      seed_examples: "${DGT_DATA_DIR}/core/simple/temporal_reasoning/additional_seed_examples.yaml"
+      seed_examples: "${DGT_DATA_DIR}/public/instructlab/simple/temporal_reasoning/additional_seed_examples.yaml"
 task_files:
-  - ./tasks/core/simple/temporal_reasoning/task.yaml
+  - ./tasks/public/instructlab/simple/temporal_reasoning/task.yaml

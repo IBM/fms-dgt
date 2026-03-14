@@ -21,7 +21,7 @@ Default configuration for generator used by the data builder is available [here]
 
 ### Generators
 
-- `mistral-small3.2` via `ollama`.
+- `granite4:3b` via `ollama`.
 
 ### Post-processors
 
@@ -31,8 +31,11 @@ Default configuration for generator used by the data builder is available [here]
 
 To try out the databuilder, run the following command:
 
-```
-python -m fms_dgt.public --task-paths ./tasks/public/examples/qa/task.yaml --restart-generation --num-outputs-to-generate 15
+```bash
+python -m fms_dgt.public \
+  --task-paths ./tasks/public/examples/qa/task.yaml \
+  --num-outputs-to-generate 15 \
+  --restart
 ```
 
 This launches a data generation job by passing seed examples data using the YAML specified via `--task-paths` argument.

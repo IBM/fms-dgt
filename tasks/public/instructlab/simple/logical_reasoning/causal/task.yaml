@@ -1,10 +1,10 @@
 ######################################################
 #                   MANDATORY FIELDS
 ######################################################
-task_name: core/simple/logical_reasoning/causal # Must be unique. Recommend following directory structure as naming convention.
+task_name: public/instructlab/simple/logical_reasoning/causal # Must be unique. Recommend following directory structure as naming convention.
 task_description: To teach a language model about Logical Reasoning - causal relationships
 created_by: IBM
-data_builder: simple # Must match exactly with the databuilder name
+data_builder: public/instructlab/simple # Must match exactly with the databuilder name
 
 ######################################################
 #                   RESERVED FIELDS

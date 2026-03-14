@@ -1,5 +1,5 @@
 databuilders:
-  simple: # <-- your databuilder name should go here
+  public/instructlab/simple: # <-- your databuilder name should go here
     blocks:
       - name: generator # <-- the name of the llm generator in your databuilder should go here
         type: watsonx

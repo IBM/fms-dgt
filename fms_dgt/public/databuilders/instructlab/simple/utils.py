@@ -13,7 +13,7 @@ from jinja2 import Template
 
 # Local
 from fms_dgt.constants import BASE_LOGGER_NAME
-from fms_dgt.core.databuilders.simple.task import SimpleData
+from fms_dgt.public.databuilders.instructlab.simple.task import SimpleData
 
 _logger = logging.getLogger(BASE_LOGGER_NAME)
 
@@ -108,17 +108,15 @@ def check_prompt_file(prompt_file_path, model_id_or_path, logger=None):
     try:
         with open(prompt_file_path, encoding="utf=8") as file:
             prompt_template = file.read()
-    except FileNotFoundError as exc:
+    except FileNotFoundError:
         (logger or _logger).info(
             "Cannot find %s. Using default prompt depending on model-family.",
             prompt_file_path,
         )
-        if "merlinite" in model_id_or_path:
-            prompt_template = DEFAULT_PROMPT_TEMPLATE_MERLINITE
-        elif "mistral" in model_id_or_path or "llama" in model_id_or_path:
+        if "mistral" in model_id_or_path or "llama" in model_id_or_path:
             prompt_template = DEFAULT_PROMPT_TEMPLATE_MIXTRAL
         else:
-            raise ValueError(f"Unsupported model '{model_id_or_path}': {exc}") from exc
+            prompt_template = DEFAULT_PROMPT_TEMPLATE_MERLINITE
     prompt_template = prompt_template.strip() + "\n"
     return prompt_template
 
