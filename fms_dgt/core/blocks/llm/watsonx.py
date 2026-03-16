@@ -4,7 +4,6 @@
 # Standard
 from dataclasses import asdict, fields
 from typing import Any, Callable, Dict, List, Set, Tuple
-import asyncio
 import logging
 
 # Third Party
@@ -13,11 +12,17 @@ from tqdm import tqdm
 
 # Local
 from fms_dgt.base.registry import get_resource, register_block
+from fms_dgt.base.telemetry import (
+    payload_max_chars,
+    payload_recording_enabled,
+    record_llm_payload,
+)
 from fms_dgt.core.blocks.llm import (
     LMBlockData,
     LMProvider,
     ToolChoice,
 )
+from fms_dgt.core.blocks.llm.executor import AsyncLLMExecutor
 from fms_dgt.core.resources.watsonx import WatsonXResource
 import fms_dgt.core.blocks.llm.utils as generator_utils
 
@@ -93,6 +98,13 @@ class WatsonXAI(LMProvider):
             model_id=self.model_id_or_path,
             credentials=self._credentials,
             project_id=self._watsonx_resource.project_id,
+        )
+
+        # Register with the credential-based semaphore pool using whichever
+        # credential is configured (token takes precedence over API key).
+        self._init_semaphore(
+            credential=self._watsonx_resource.token or self._watsonx_resource.key,
+            max_concurrent_requests=self._watsonx_resource.max_calls,
         )
 
     # ===========================================================================
@@ -259,40 +271,32 @@ class WatsonXAI(LMProvider):
                 f"Unsupported method ({method}). Please use one of the allowed values: {self.COMPLETION}, {self.CHAT_COMPLETION}."
             )
 
-    async def async_chat_executor(
+    async def _process_chat_item(
         self,
-        queue: asyncio.Queue,
-        update_progress_tracker: Callable,
+        instance: LMBlockData,
+        update_progress: Callable,
     ):
-        """
-        Execute chat completion asynchronously.
-
+        """Process one chat-completion request via the WatsonX AI API.
 
         Args:
-            queue (asyncio.Queue): instances to complete.
-            update_progress_tracker (Callable): progress tracker update function
+            instance: The request to process.
+            update_progress: Zero-argument callable to advance the progress bar.
         """
-        while not queue.empty():
-            # Step 1: Get a "work item" out of the queue.
-            instance = await queue.get()
+        gen_kwargs = self._adjust_chat_completion_parameters(
+            params={**self._chat_parameters, **instance.gen_kwargs}
+        )
 
-            # Step 2: Fetch generation kwargs from 1st request since generation kwargs within a chunk are identical
-            gen_kwargs = instance.gen_kwargs
+        if gen_kwargs.get("logprobs") and gen_kwargs.get("top_logprobs") is None:
+            gen_kwargs["top_logprobs"] = 1
 
-            # Step 3: Extract completion parameters from gen_kwargs
-            gen_kwargs = self._adjust_chat_completion_parameters(
-                params={**self._chat_parameters, **gen_kwargs}
+        async with self._llm_span(
+            method=self.CHAT_COMPLETION, batch_size=1, params=gen_kwargs
+        ) as span_attrs:
+            messages = self._prepare_input(
+                instance, gen_kwargs=gen_kwargs, method=self.CHAT_COMPLETION
             )
-
-            # adding this here to simplify downstream processing
-            if gen_kwargs.get("logprobs") and gen_kwargs.get("top_logprobs") is None:
-                gen_kwargs["top_logprobs"] = 1
-
-            # Step 4: Trigger WatsonX.AI chat completion functions
             response = await self._model.achat(
-                messages=self._prepare_input(
-                    instance, gen_kwargs=gen_kwargs, method=self.CHAT_COMPLETION
-                ),
+                messages=messages,
                 tools=instance.tools,
                 tool_choice=(
                     asdict(instance.tool_choice)
@@ -307,45 +311,48 @@ class WatsonXAI(LMProvider):
                 params=TextChatParameters(**gen_kwargs),
             )
 
-            # Step 5: If multiple choices requested per input
-            # Step 5.a: Get requested choices count from parameters
-            n = gen_kwargs.get("n", 1)
+            span_attrs["prompt_tokens"] = response["usage"]["prompt_tokens"]
+            span_attrs["completion_tokens"] = response["usage"]["completion_tokens"]
 
-            # Step 5.b: Verify enough responses are generated per input
-            if len(response["choices"]) != n:
-                raise RuntimeError(
-                    f"Number of responses ({len(response['choices'])}) does not match number of inputs (1) * n ({n})"
+            if payload_recording_enabled():
+                record_llm_payload(
+                    span_attrs,
+                    self.CHAT_COMPLETION,
+                    payload_max_chars(),
+                    messages=messages,
+                    response_completion=response["choices"][0]["message"],
                 )
 
-            # Step 6: Iterate over each grouped response
-            outputs = []
-            addtl = {
-                "completion_tokens": response["usage"]["completion_tokens"],
-                "prompt_tokens": response["usage"]["prompt_tokens"],
-                "token_logprobs": [],
-            }
-            for choice in response["choices"]:
-                outputs.append(choice["message"])
-
-                token_logprobs = self._extract_token_log_probabilities(
-                    choice=choice, method=self.CHAT_COMPLETION
-                )
-                if token_logprobs:
-                    addtl["token_logprobs"].append(token_logprobs)
-
-            self.update_instance_with_result(
-                self.CHAT_COMPLETION,
-                outputs if len(outputs) > 1 else outputs[0],
-                instance,
-                stop=gen_kwargs.get("stop", None),
-                additional=addtl,
+        n = gen_kwargs.get("n", 1)
+        if len(response["choices"]) != n:
+            raise RuntimeError(
+                f"Number of responses ({len(response['choices'])}) does not match number of inputs (1) * n ({n})"
             )
 
-            # Step 7: Notify the queue that the "work item" has been processed.
-            queue.task_done()
+        outputs = []
+        addtl = {
+            "completion_tokens": response["usage"]["completion_tokens"],
+            "prompt_tokens": response["usage"]["prompt_tokens"],
+            "token_logprobs": [],
+        }
+        for choice in response["choices"]:
+            outputs.append(choice["message"])
 
-            # Step 8: Update progress tracker
-            update_progress_tracker()
+            token_logprobs = self._extract_token_log_probabilities(
+                choice=choice, method=self.CHAT_COMPLETION
+            )
+            if token_logprobs:
+                addtl["token_logprobs"].append(token_logprobs)
+
+        self.update_instance_with_result(
+            self.CHAT_COMPLETION,
+            outputs if len(outputs) > 1 else outputs[0],
+            instance,
+            stop=gen_kwargs.get("stop", None),
+            additional=addtl,
+        )
+
+        update_progress(1)
 
     async def _execute_chat_requests(
         self,
@@ -353,30 +360,14 @@ class WatsonXAI(LMProvider):
         disable_tqdm: bool = False,
         **kwargs,
     ):
-        # Step 1: Initialize necessary variables
-        queue = asyncio.Queue()
-        for request in requests:
-            queue.put_nowait(request)
-
-        # Step 2: Initialize progress tracker
-        pbar = tqdm(
-            total=len(requests),
-            disable=disable_tqdm,
-            desc=f"Running {self.CHAT_COMPLETION} requests",
+        await AsyncLLMExecutor.run(
+            work_items=requests,
+            process_item=self._process_chat_item,
+            call_limit=self._watsonx_resource.max_calls,
+            total_requests=len(requests),
+            method=self.CHAT_COMPLETION,
+            disable_tqdm=disable_tqdm,
         )
-
-        # Step 3: Create generate tasks
-        executors = []
-        for _ in range(min(queue.qsize(), self._watsonx_resource.max_calls)):
-            executors.append(
-                self.async_chat_executor(
-                    queue,
-                    update_progress_tracker=lambda: pbar.update(1),
-                )
-            )
-
-        # Step 4: Wait until all worker are finished
-        await asyncio.gather(*executors, return_exceptions=True)
 
     def completion(self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs) -> None:
         # group requests by their generation_kwargs
@@ -452,6 +443,6 @@ class WatsonXAI(LMProvider):
     def chat_completion(
         self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs
     ) -> None:
-        asyncio.run(
+        self.run_async(
             self._execute_chat_requests(requests=requests, disable_tqdm=disable_tqdm, **kwargs)
         )

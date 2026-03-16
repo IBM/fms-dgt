@@ -4,21 +4,23 @@
 # Standard
 from dataclasses import dataclass, fields
 from typing import Any, Callable, Dict, List, Literal, Tuple
-import asyncio
 import logging
 
 # Third Party
-from tqdm import tqdm
 import anthropic
 
 # Local
 from fms_dgt.base.registry import get_resource, register_block
-from fms_dgt.constants import BASE_LOGGER_NAME, NOT_GIVEN, NotGiven
+from fms_dgt.base.telemetry import (
+    payload_max_chars,
+    payload_recording_enabled,
+    record_llm_payload,
+)
+from fms_dgt.constants import NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters, ToolChoice
+from fms_dgt.core.blocks.llm.executor import AsyncLLMExecutor
 from fms_dgt.core.blocks.llm.utils import remap, retry
 from fms_dgt.core.resources.api import ApiKeyResource
-
-_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 # Disable third party logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -88,13 +90,6 @@ class AnthropicChatCompletionParameters(Parameters):
 # ===========================================================================
 #                       HELPER FUNCTIONS
 # ===========================================================================
-@retry(
-    on_exceptions=(anthropic.AnthropicError,),
-    max_retries=3,
-    on_exception_callback=lambda e, sleep_timer: _logger.warning(
-        "Retrying in %d seconds due to %s: %s", sleep_timer, type(e).__name__, e.args[0]
-    ),
-)
 async def invoke_completion(
     client: anthropic.AsyncAnthropic,
     model: str,
@@ -102,7 +97,7 @@ async def invoke_completion(
     **kwargs,
 ) -> anthropic.types.completion.Completion:
     """
-    Invoke Anthropic legacy completion endopint.
+    Invoke Anthropic legacy completion endpoint.
 
     Args:
         client (anthropic.AsyncAnthropic): Async Anthropic client
@@ -117,13 +112,6 @@ async def invoke_completion(
     )
 
 
-@retry(
-    on_exceptions=(anthropic.AnthropicError,),
-    max_retries=3,
-    on_exception_callback=lambda e, sleep_timer: _logger.warning(
-        "Retrying in %d seconds due to %s: %s", sleep_timer, type(e).__name__, e.args[0]
-    ),
-)
 async def invoke_chat_completion(
     client: anthropic.AsyncAnthropic,
     model: str,
@@ -209,8 +197,11 @@ class Anthropic(LMProvider):
             "api", key_name="ANTHROPIC_API_KEY", call_limit=call_limit
         )
 
-        # Initialize OpenAI clients
+        # Initialize Anthropic async client
         self.async_client = anthropic.AsyncAnthropic(api_key=api_resource.key, timeout=timeout)
+
+        # Register with the credential-based semaphore pool
+        self._init_semaphore(credential=api_resource.key, max_concurrent_requests=call_limit)
 
     # ===========================================================================
     #                       PROPERTIES
@@ -296,56 +287,56 @@ class Anthropic(LMProvider):
 
             return top_logprobs
 
-    async def async_executor(
+    async def _process_item(
         self,
-        queue: asyncio.Queue,
-        update_progress_tracker: Callable,
+        instance: LMBlockData,
+        update_progress: Callable,
         method: str = LMProvider.COMPLETION,
     ):
-        """
-        Execute text completion or chat completion asynchronously.
+        """Process one LMBlockData instance via the Anthropic API.
 
         Args:
-            queue (asyncio.Queue): instances to complete.
-            update_progress_tracker (Callable): progress tracker update function
-            method (str, optional): Either "completion" or "chat_completion". Defaults to LMProvider.COMPLETION.
-
-        Raises:
-            ValueError: If method outside "completion" or "chat_completion" is passed
-            RuntimeError: If number of responses does not match number of inputs * n
+            instance: The request to process.
+            update_progress: Zero-argument callable to advance the progress bar.
+            method: ``LMProvider.COMPLETION`` or ``LMProvider.CHAT_COMPLETION``.
         """
-        while not queue.empty():
-            # Get a "work item" out of the queue.
-            instance = await queue.get()
+        params = (
+            self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
+        ).to_params(instance.gen_kwargs)
 
-            # Extract parameters
-            params = (
-                self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
-            ).to_params(instance.gen_kwargs)
+        invoke_with_retry = retry(
+            on_exceptions=(anthropic.AnthropicError,),
+            max_retries=3,
+            on_exception_callback=lambda e, t: self.logger.warning(
+                "Retrying in %d seconds due to %s: %s", t, type(e).__name__, e.args[0]
+            ),
+        )
 
-            # Trigger appropriate functions
+        async with self._llm_span(method=method, batch_size=1, params=params) as span_attrs:
             if method == self.CHAT_COMPLETION:
-                response = await invoke_chat_completion(
+                messages = self._prepare_input(
+                    instance,
+                    method=method,
+                    max_tokens=params.get("max_tokens", None),
+                )
+                response = await invoke_with_retry(invoke_chat_completion)(
                     client=self.async_client,
                     model=self.model_id_or_path,
-                    messages=self._prepare_input(
-                        instance,
-                        method=method,
-                        max_tokens=params.get("max_tokens", None),
-                    ),
+                    messages=messages,
                     tools=instance.tools,
                     tool_choice=instance.tool_choice,
                     **params,
                 )
             elif method == self.COMPLETION:
-                response = await invoke_completion(
+                prompt = self._prepare_input(
+                    instance,
+                    method=self.COMPLETION,
+                    max_tokens=params.get("max_tokens_to_sample", None),
+                )
+                response = await invoke_with_retry(invoke_completion)(
                     client=self.async_client,
                     model=self.model_id_or_path,
-                    prompt=self._prepare_input(
-                        instance,
-                        method=self.COMPLETION,
-                        max_tokens=params.get("max_tokens_to_sample", None),
-                    ),
+                    prompt=prompt,
                     **params,
                 )
             else:
@@ -353,24 +344,36 @@ class Anthropic(LMProvider):
                     f'Unsupported method ({method}). Only "{self.COMPLETION}" or "{self.CHAT_COMPLETION}" values are allowed.'
                 )
 
-            # Add output
-            self.update_instance_with_result(
-                method,
-                self._extract_choice_content(response, method=method),
-                instance,
-                params.get("stop", None),
-                {
-                    "completion_tokens": response.usage.output_tokens,
-                    "prompt_tokens": response.usage.input_tokens,
-                    "token_logprobs": [],
-                },
-            )
+            span_attrs["prompt_tokens"] = response.usage.input_tokens
+            span_attrs["completion_tokens"] = response.usage.output_tokens
 
-            # Notify the queue that the "work item" has been processed.
-            queue.task_done()
+            if payload_recording_enabled():
+                if method == self.CHAT_COMPLETION:
+                    rc = self._extract_choice_content(response, method=method)
+                else:
+                    rc = response.completion
+                record_llm_payload(
+                    span_attrs,
+                    method,
+                    payload_max_chars(),
+                    prompt=prompt if method == self.COMPLETION else None,
+                    messages=messages if method == self.CHAT_COMPLETION else None,
+                    response_completion=rc,
+                )
 
-            # Update progress tracker
-            update_progress_tracker()
+        self.update_instance_with_result(
+            method,
+            self._extract_choice_content(response, method=method),
+            instance,
+            params.get("stop", None),
+            {
+                "completion_tokens": response.usage.output_tokens,
+                "prompt_tokens": response.usage.input_tokens,
+                "token_logprobs": [],
+            },
+        )
+
+        update_progress(1)
 
     async def _execute_requests(
         self,
@@ -379,33 +382,14 @@ class Anthropic(LMProvider):
         method: str = LMProvider.COMPLETION,
         **kwargs,
     ):
-        # Initialize necessary variables
-        queue = asyncio.Queue()
-
-        # Add to queue
-        for instance in requests:
-            queue.put_nowait(instance)
-
-        # Initialize progress tracker
-        pbar = tqdm(
-            total=len(requests),
-            disable=disable_tqdm,
-            desc=f"Running {method} requests",
+        await AsyncLLMExecutor.run(
+            work_items=requests,
+            process_item=lambda item, upd: self._process_item(item, upd, method=method),
+            call_limit=self._call_limit,
+            total_requests=len(requests),
+            method=method,
+            disable_tqdm=disable_tqdm,
         )
-
-        # Create generate tasks
-        executors = []
-        for _ in range(min(queue.qsize(), self._call_limit)):
-            executors.append(
-                self.async_executor(
-                    queue,
-                    update_progress_tracker=lambda: pbar.update(1),
-                    method=method,
-                )
-            )
-
-        # Wait until all worker are finished
-        await asyncio.gather(*executors, return_exceptions=True)
 
     # ===========================================================================
     #                       MAIN FUNCTIONS
@@ -418,7 +402,7 @@ class Anthropic(LMProvider):
     def chat_completion(
         self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs
     ) -> None:
-        asyncio.run(
+        self.run_async(
             self._execute_requests(
                 requests=requests,
                 disable_tqdm=disable_tqdm,

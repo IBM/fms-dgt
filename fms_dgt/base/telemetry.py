@@ -29,6 +29,88 @@ def _telemetry_dir() -> str:
     return os.environ.get("DGT_TELEMETRY_DIR", os.path.join(DGT_DIR, "telemetry"))
 
 
+def payload_recording_enabled() -> bool:
+    """Return True when ``DGT_TELEMETRY_RECORD_PAYLOADS=1`` is set."""
+    val = os.environ.get("DGT_TELEMETRY_RECORD_PAYLOADS", "").strip().lower()
+    return val in ("1", "true", "yes")
+
+
+def payload_max_chars() -> int:
+    """Maximum characters to record per payload field (default 4096)."""
+    try:
+        return int(os.environ.get("DGT_TELEMETRY_PAYLOAD_MAX_CHARS", "4096"))
+    except ValueError:
+        return 4096
+
+
+def truncate_payload(text: str, max_chars: int) -> tuple[str, bool]:
+    """Truncate *text* to *max_chars* characters.
+
+    Returns:
+        A ``(truncated_text, was_truncated)`` tuple.
+    """
+    if len(text) <= max_chars:
+        return text, False
+    return text[:max_chars], True
+
+
+def record_llm_payload(
+    span_attrs: Dict[str, Any],
+    method: str,
+    max_chars: int,
+    *,
+    prompt: Optional[str] = None,
+    messages: Optional[list] = None,
+    response_completion: "str | dict | None" = None,
+) -> None:
+    """Record LLM request/response payloads into *span_attrs* with truncation.
+
+    Args:
+        span_attrs: Mutable dict yielded by ``_llm_span``; keys are written in-place.
+        method: ``"completion"`` or ``"chat_completion"``.
+        max_chars: Maximum characters per string field (from ``payload_max_chars()``).
+        prompt: Raw prompt string (completion mode only).
+        messages: Raw messages list (chat_completion mode only).
+        response_completion: The completion to record. Pass a string for text
+            completions, or a dict for tool-call / structured responses (the
+            ``content`` key is truncated; ``tool_calls`` are preserved as-is).
+    """
+    trunc_flags = []
+
+    if method == "completion" and prompt is not None:
+        trunc_text, was_trunc = truncate_payload(prompt, max_chars)
+        span_attrs["prompt"] = trunc_text
+        trunc_flags.append(was_trunc)
+
+    elif method == "chat_completion" and messages is not None:
+        serialized = []
+        for msg in messages:
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                trunc_content, was_trunc = truncate_payload(content, max_chars)
+                trunc_flags.append(was_trunc)
+                serialized.append({**msg, "content": trunc_content})
+            else:
+                serialized.append(msg)
+        span_attrs["messages"] = serialized
+
+    if response_completion is not None:
+        if isinstance(response_completion, str):
+            trunc_text, was_trunc = truncate_payload(response_completion, max_chars)
+            span_attrs["completion"] = trunc_text
+            trunc_flags.append(was_trunc)
+        else:
+            result = dict(response_completion)
+            if isinstance(result.get("content"), str):
+                trunc_content, was_trunc = truncate_payload(result["content"], max_chars)
+                result["content"] = trunc_content
+                trunc_flags.append(was_trunc)
+            span_attrs["completion"] = result
+
+    if any(trunc_flags):
+        span_attrs["payload_truncated"] = True
+
+
 # ===========================================================================
 #                       OTel SDK — optional import
 # ===========================================================================

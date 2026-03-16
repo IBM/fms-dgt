@@ -19,7 +19,7 @@ from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
-from fms_dgt.constants import TYPE_KEY
+from fms_dgt.constants import TASK_NAME_KEY, TYPE_KEY
 from fms_dgt.log import LogDatastoreHandler
 from fms_dgt.utils import (
     group_data_by_attribute,
@@ -45,7 +45,7 @@ def group_data_by_task(data_list: List[T]) -> List[List[T]]:
     Returns:
         List[List[T]]: DataPoint that has been grouped into tasks
     """
-    return group_data_by_attribute(data_list, "task_name")
+    return group_data_by_attribute(data_list, TASK_NAME_KEY)
 
 
 # ===========================================================================
@@ -107,7 +107,10 @@ class Task:
         self._runner_config = init_dataclass_from_dict(runner_config, TaskRunnerConfig)
         self._output_dir = self._runner_config.output_dir
         self._save_formatted_output = self._runner_config.save_formatted_output
-        self._restart_generation = self._runner_config.restart_generation
+        # Subclasses that support restart (GenerationTask) set this in their own
+        # __init__ after calling super(). Transformation tasks always do a full
+        # pass so they never restart.
+        self._restart_generation: bool = False
 
         # Initialize necessary state variables
         self._post_proc_id = 0  # Tracks Post processor IDs
@@ -116,27 +119,19 @@ class Task:
         # Determine store name from __init__ OR datastore's property, if defined OR task's name
         self._store_name = store_name or (datastore or dict()).pop("store_name", None) or self._name
 
-        # Datastore configurations
-        self._minimum_datastore_config = {
-            "restart": self.restart_generation,
-            "output_dir": self._output_dir,
-        }
-        self._datastore_cfg = {
-            **self._minimum_datastore_config,
-            **(datastore if datastore is not None else {TYPE_KEY: "default"}),
-        }
-        self._final_datastore_config = {
-            **self._minimum_datastore_config,
-            **(final_datastore if final_datastore is not None else self._datastore_cfg),
-        }
-        self._formatted_datastore_config = {
-            **self._minimum_datastore_config,
-            **(formatted_datastore if formatted_datastore is not None else self._datastore_cfg),
-        }
-        self._task_card_datastore_cfg = {
-            **self._minimum_datastore_config,
-            **self._datastore_cfg,
-        }
+        # Store raw datastore kwargs for each store type. _post_init() merges
+        # these with _minimum_datastore_config (which includes the correct
+        # restart flag) once subclasses have finished their own setup.
+        self._minimum_datastore_config: dict = {}
+        _ds_extra = datastore if datastore is not None else {TYPE_KEY: "default"}
+        self._datastore_cfg = dict(_ds_extra)
+        self._final_datastore_config = dict(
+            final_datastore if final_datastore is not None else _ds_extra
+        )
+        self._formatted_datastore_config = dict(
+            formatted_datastore if formatted_datastore is not None else _ds_extra
+        )
+        self._task_card_datastore_cfg = dict(_ds_extra)
 
         # Datastores
         self._intermediate_data_datastore: Datastore = None
@@ -153,7 +148,50 @@ class Task:
             else None
         )
 
-        # Save task card, initialize datastores and logger
+    def _post_init(self):
+        """Finalise datastore configs and initialise stores + logger.
+
+        Called by each concrete subclass at the end of its own ``__init__``,
+        after all subclass-specific state (notably ``_restart_generation``) has
+        been set.  Separating this from ``Task.__init__`` ensures that
+        ``_minimum_datastore_config`` is built with the correct restart flag.
+        """
+        self._minimum_datastore_config = {
+            "restart": self._restart_generation,
+            "output_dir": self._output_dir,
+        }
+        self._datastore_cfg = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._datastore_cfg.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
+        self._final_datastore_config = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._final_datastore_config.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
+        self._formatted_datastore_config = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._formatted_datastore_config.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
+        self._task_card_datastore_cfg = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._task_card_datastore_cfg.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
         self._save_task_card()
         self._init_datastores()
         self._init_logger()
@@ -305,7 +343,38 @@ class Task:
         task_card_datastore.save_data([self.task_card.to_dict()])
         task_card_datastore.close()
 
+    def _clear_stale_postproc_datastores(self):
+        """Clear postproc_data_N stores left over from a previous run.
+
+        On restart we don't know how many post-processing epochs the prior run
+        produced, so we probe N=1,2,3,... calling clear() on each until we
+        reach one that had nothing to clear (i.e. no prior run wrote it).
+        This uses the datastore abstraction so it works for any backend.
+        """
+        n = 1
+        while True:
+            ds = get_datastore(
+                self._datastore_cfg.get(TYPE_KEY),
+                **{
+                    "store_name": os.path.join(self._store_name, f"postproc_data_{n}"),
+                    **self._datastore_cfg,
+                    "restart": False,  # we call clear() ourselves below
+                },
+            )
+            if not ds.exists():
+                break
+            ds.clear()
+            n += 1
+
     def _init_datastores(self):
+        # When restarting, wipe any postproc_data_N stores from the prior run
+        # before initialising the current run's datastores.  Without this a
+        # user inspecting the output directory would see stale postproc_data_5
+        # files alongside the current run's postproc_data_1 / postproc_data_2,
+        # with no way to tell which epoch count is authoritative.
+        if self._restart_generation:
+            self._clear_stale_postproc_datastores()
+
         # Initialize datastore to save intermediate generated/transformed data
         self._intermediate_data_datastore = get_datastore(
             self._datastore_cfg.get(TYPE_KEY),
@@ -583,7 +652,13 @@ class GenerationTask(Task):
             **kwargs,
         )
 
-        # Extract required variables from the runner configuration
+        # restart_generation lives on GenerationTaskRunnerConfig (not the base
+        # TaskRunnerConfig) because it is meaningless for transformation tasks.
+        # Set it before _post_init() so datastores are initialised with the
+        # correct restart flag.
+        self._restart_generation = self.runner_config.restart_generation
+        self._post_init()
+
         self._seed_batch_size = self.runner_config.seed_batch_size
         self._machine_batch_size = self.runner_config.machine_batch_size
         self._num_outputs_to_generate = self.runner_config.num_outputs_to_generate
@@ -781,6 +856,11 @@ class TransformationTask(Task):
             runner_config=init_dataclass_from_dict(runner_config, TransformationTaskRunnerConfig),
             **kwargs,
         )
+
+        # _restart_generation stays False (set by Task.__init__); call _post_init()
+        # now so datastores and logger are ready before the transformation-specific
+        # setup below.
+        self._post_init()
 
         # Extract required variables from the runner configuration
         self._transform_batch_size = self._runner_config.transform_batch_size

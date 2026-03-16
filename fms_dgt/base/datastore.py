@@ -59,6 +59,30 @@ class Datastore:
     #                       FUNCTIONS
     # ===========================================================================
     @abstractmethod
+    def exists(self) -> bool:
+        """Return True if this store has previously persisted data.
+
+        Used to probe for stale stores (e.g. ``postproc_data_N`` from a prior
+        run) without relying on filesystem-specific APIs.
+        """
+        raise NotImplementedError(
+            f"Missing implementation in {self.__module__}.{self.__class__.__name__}"
+        )
+
+    @abstractmethod
+    def clear(self) -> None:
+        """Remove all previously stored data for this store.
+
+        Subclasses should call this at the end of their own ``__init__`` when
+        ``self._restart`` is True (after their own state is fully initialised).
+        Implementations must be idempotent: calling ``clear()`` on a store that
+        does not yet exist must succeed without raising an error.
+        """
+        raise NotImplementedError(
+            f"Missing implementation in {self.__module__}.{self.__class__.__name__}"
+        )
+
+    @abstractmethod
     def save_data(self, data_to_save: DATASET_TYPE) -> None:
         """
         Saves generated data to specified location

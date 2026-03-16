@@ -5,6 +5,7 @@
 from functools import wraps
 from inspect import iscoroutinefunction
 from typing import Any, Callable, Optional, Set, Tuple, Type
+import asyncio
 import collections
 import itertools
 import logging
@@ -16,6 +17,29 @@ from fms_dgt.constants import BASE_LOGGER_NAME
 _logger = logging.getLogger(BASE_LOGGER_NAME)
 
 
+def _retry_after_seconds(exc: Exception, backoff_time: float) -> float:
+    """Return how long to wait before the next retry attempt.
+
+    If the exception carries a ``Retry-After`` header (OpenAI and Anthropic
+    both set this on 429 responses via ``httpx.Response``), honour it.
+    Otherwise fall back to the caller-supplied ``backoff_time``.
+
+    Args:
+        exc: The caught exception.
+        backoff_time: Exponential-backoff default (seconds).
+
+    Returns:
+        Seconds to wait before the next attempt.
+    """
+    try:
+        header = exc.response.headers.get("retry-after", None)
+        if header is not None:
+            return float(header)
+    except AttributeError:
+        pass
+    return backoff_time
+
+
 def retry(
     on_exceptions: Tuple[Type[Exception]],
     max_retries: int = 3,
@@ -23,7 +47,12 @@ def retry(
     backoff_multiplier: float = 1.5,
     on_exception_callback: Optional[Callable[[Exception, float], Any]] = None,
 ):
-    """Retry on an LLM Provider's rate limit error with exponential backoff
+    """Retry on an LLM Provider's rate limit error with exponential backoff.
+
+    When the exception carries a ``Retry-After`` header (HTTP 429), that
+    value is used as the wait time instead of the computed backoff so the
+    caller honours the server's guidance exactly.
+
     For example, to use for OpenAI, do the following:
     ```
     from openai import RateLimitError
@@ -39,45 +68,41 @@ def retry(
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            # Initialize necessary variables
             sleep_timer = backoff_time
             attempt = 0
 
-            # Keep retrying till max retries are attempted
             while attempt < max_retries:
                 try:
                     return func(*args, **kwargs)
                 except on_exceptions as e:
-                    # Trigger exception callback
+                    wait = _retry_after_seconds(e, sleep_timer)
+
                     if on_exception_callback is not None:
-                        on_exception_callback(e, sleep_timer)
+                        on_exception_callback(e, wait)
 
-                    # Wait for sleep timer before retrying
-                    time.sleep(sleep_timer)
+                    time.sleep(wait)
 
-                    # Increament sleep timer and attempt counter
                     sleep_timer *= backoff_multiplier
                     attempt += 1
 
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
-            # Initialize necessary variables
             sleep_timer = backoff_time
             attempt = 0
 
-            # Keep retrying till max retries are attempted
             while attempt < max_retries:
                 try:
                     return await func(*args, **kwargs)
                 except on_exceptions as e:
-                    # Trigger exception callback
+                    wait = _retry_after_seconds(e, sleep_timer)
+
                     if on_exception_callback is not None:
-                        on_exception_callback(e, sleep_timer)
+                        on_exception_callback(e, wait)
 
-                    # Wait for sleep timer before retrying
-                    time.sleep(sleep_timer)
+                    # Use asyncio.sleep so the event loop is not blocked
+                    # while waiting to retry.
+                    await asyncio.sleep(wait)
 
-                    # Increament sleep timer and attempt counter
                     sleep_timer *= backoff_multiplier
                     attempt += 1
 

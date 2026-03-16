@@ -3,6 +3,7 @@
 
 # Standard
 from collections import ChainMap
+from json import JSONDecodeError
 from typing import (
     Any,
     Callable,
@@ -594,7 +595,7 @@ def read_jsonl(file_path: str, encoding: str = "utf-8", lazy: bool = False):
                 if line:
                     try:
                         yield json.loads(line)
-                    except json.JSONDecodeError as err:
+                    except JSONDecodeError as err:
                         dgt_logger.warning("Decoding error %s for line: %s", str(err), line)
 
     if lazy:

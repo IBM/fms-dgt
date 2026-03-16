@@ -4,21 +4,23 @@
 # Standard
 from dataclasses import asdict, dataclass, fields
 from typing import Any, Callable, Dict, Iterable, List, Literal, Tuple
-import asyncio
 import logging
 
 # Third Party
-from tqdm import tqdm
 import openai
 import tiktoken
 
 # Local
 from fms_dgt.base.registry import get_resource, register_block
-from fms_dgt.constants import BASE_LOGGER_NAME, NOT_GIVEN, NotGiven
+from fms_dgt.base.telemetry import (
+    payload_max_chars,
+    payload_recording_enabled,
+    record_llm_payload,
+)
+from fms_dgt.constants import NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters, ToolChoice
+from fms_dgt.core.blocks.llm.executor import AsyncLLMExecutor
 from fms_dgt.core.blocks.llm.utils import Grouper, chunks, remap, retry
-
-_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 # Disable third party logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -98,13 +100,6 @@ class OpenAIChatCompletionParameters(Parameters):
 # ===========================================================================
 #                       HELPER FUNCTIONS
 # ===========================================================================
-@retry(
-    on_exceptions=(openai.OpenAIError,),
-    max_retries=3,
-    on_exception_callback=lambda e, sleep_timer: _logger.warning(
-        "Retrying in %d seconds due to %s: %s", sleep_timer, type(e).__name__, e.args[0]
-    ),
-)
 async def invoke_completion(
     client: openai.AsyncOpenAI,
     model: str,
@@ -112,7 +107,7 @@ async def invoke_completion(
     **kwargs,
 ) -> openai.types.completion.Completion:
     """
-    Invoke OpenAI legacy completion endopint.
+    Invoke OpenAI legacy completion endpoint.
 
     Args:
         client (openai.AsyncOpenAI): Async OpenAI client
@@ -125,13 +120,6 @@ async def invoke_completion(
     return await client.completions.create(model=model, prompt=prompt, **kwargs)
 
 
-@retry(
-    on_exceptions=(openai.OpenAIError,),
-    max_retries=3,
-    on_exception_callback=lambda e, sleep_timer: _logger.warning(
-        "Retrying in %d seconds due to %s: %s", sleep_timer, type(e).__name__, e.args[0]
-    ),
-)
 async def invoke_chat_completion(
     client: openai.AsyncOpenAI,
     model: str,
@@ -148,7 +136,7 @@ async def invoke_chat_completion(
         model (str): OpenAI model name
         messages (List[Dict[str, Any]]): list of messages in the conversation
         tools: List[Dict[str, Any]] | None: list of tool definitions available to the model
-        tool_choice: controls which (if any) tool is called by the model. `none` means the model will not call any tool and instead generates a message. `auto` means the model can pick between generating a message or calling one or more tools.`required` means the model must call one or more tools. Specifying a particular tool via `{"type": "function", "function": {"name": "my_function"}}` forces the model to call that tool. `none` is the default when no tools are present. `auto` is the default if tools are present.
+        tool_choice: controls which (if any) tool is called by the model. `none` means the model will not call any tool and instead generates a message. `auto` means the model can pick between generating a message or calling one or more tools. `required` means the model must call one or more tools. Specifying a particular tool via `{"type": "function", "function": {"name": "my_function"}}` forces the model to call that tool. `none` is the default when no tools are present. `auto` is the default if tools are present.
 
     Returns:
         openai.types.completion.Completion: Completion response
@@ -192,16 +180,21 @@ class OpenAI(LMProvider):
         self._call_limit = call_limit
 
         # Step 4: Initialize OpenAI clients
+        resolved_key = (
+            api_key
+            if api_key
+            else get_resource("api", key_name="OPENAI_API_KEY", call_limit=call_limit).key
+        )
         self.async_client = openai.AsyncOpenAI(
-            api_key=(
-                api_key
-                if api_key
-                else get_resource("api", key_name="OPENAI_API_KEY", call_limit=call_limit).key
-            ),
+            api_key=resolved_key,
             timeout=timeout,
             base_url=base_url,
             default_headers=default_headers,
         )
+
+        # Step 5: Register with the credential-based semaphore pool so that all
+        # blocks sharing the same API key share a single concurrency limit.
+        self._init_semaphore(credential=resolved_key, max_concurrent_requests=call_limit)
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -259,72 +252,76 @@ class OpenAI(LMProvider):
 
             return top_logprobs
 
-    async def async_executor(
+    async def _process_item(
         self,
-        queue: asyncio.Queue,
-        update_progress_tracker: Callable,
+        chunk,
+        update_progress: Callable,
         method: str = LMProvider.COMPLETION,
     ):
-        """
-        Execute text completion or chat completion asynchronously.
-
-        NOTE:
-        - For "chat" completion, queue contains individual conversation to complete
-        - For "text" completion, queue contains batches of prompts that can be passed in a single call
+        """Process one work item (a batch for completion, a single instance for chat).
 
         Args:
-            queue (asyncio.Queue): instances to complete.
-            update_progress_tracker (Callable): progress tracker update function
-            method (str, optional): Either "completion" or "chat_completion". Defaults to LMProvider.COMPLETION.
+            chunk: A list of ``LMBlockData`` for completion mode, or a single
+                ``LMBlockData`` for chat-completion mode.
+            update_progress: Callable ``(int) -> None`` to advance the progress bar.
+            method: ``LMProvider.COMPLETION`` or ``LMProvider.CHAT_COMPLETION``.
 
         Raises:
-            ValueError: If method outside "completion" or "chat_completion" is passed
-            RuntimeError: If number of responses does not match number of inputs * n
+            ValueError: If an unsupported method is passed.
+            RuntimeError: If the number of API responses does not match expected.
         """
-        while not queue.empty():
-            # Step 1: Get a "work item" out of the queue.
-            chunk = await queue.get()
+        # Fetch generation kwargs from 1st request (identical within a chunk)
+        params = next(iter(chunk)).gen_kwargs if isinstance(chunk, Iterable) else chunk.gen_kwargs
 
-            # Step 2: Fetch generation kwargs from 1st request since generation kwargs within a chunk are identical
-            params = (
-                next(iter(chunk)).gen_kwargs if isinstance(chunk, Iterable) else chunk.gen_kwargs
-            )
+        # Extract completion parameters from gen_kwargs
+        params = (
+            self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
+        ).to_params(params)
 
-            # Step 3: Extract completion parameters from gen_kwargs
-            params = (
-                self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
-            ).to_params(params)
+        # Simplify downstream processing
+        if params.get("logprobs") and params.get("top_logprobs") is None:
+            params["top_logprobs"] = 1
 
-            # adding this here to simplify downstream processing
-            if params.get("logprobs") and params.get("top_logprobs") is None:
-                params["top_logprobs"] = 1
+        invoke_with_retry = retry(
+            on_exceptions=(openai.OpenAIError,),
+            max_retries=3,
+            on_exception_callback=lambda e, t: self.logger.warning(
+                "Retrying in %d seconds due to %s: %s", t, type(e).__name__, e.args[0]
+            ),
+        )
 
-            # Step 4: Trigger OpenAI completion functions
+        batch_size = len(chunk) if isinstance(chunk, Iterable) else 1
+
+        async with self._llm_span(
+            method=method, batch_size=batch_size, params=params
+        ) as span_attrs:
             if method == self.CHAT_COMPLETION:
-                response = await invoke_chat_completion(
+                messages = self._prepare_input(
+                    chunk,
+                    method=self.CHAT_COMPLETION,
+                    max_tokens=params.get("max_completion_tokens", None),
+                )
+                response = await invoke_with_retry(invoke_chat_completion)(
                     client=self.async_client,
                     model=self.model_id_or_path,
-                    messages=self._prepare_input(
-                        chunk,
-                        method=self.CHAT_COMPLETION,
-                        max_tokens=params.get("max_completion_tokens", None),
-                    ),
+                    messages=messages,
                     tools=chunk.tools,
                     tool_choice=chunk.tool_choice,
                     **params,
                 )
             elif method == self.COMPLETION:
-                response = await invoke_completion(
+                prompts = [
+                    self._prepare_input(
+                        instance,
+                        method=self.COMPLETION,
+                        max_tokens=params.get("max_tokens", None),
+                    )
+                    for instance in chunk
+                ]
+                response = await invoke_with_retry(invoke_completion)(
                     client=self.async_client,
                     model=self.model_id_or_path,
-                    prompt=[
-                        self._prepare_input(
-                            instance,
-                            method=self.COMPLETION,
-                            max_tokens=params.get("max_tokens", None),
-                        )
-                        for instance in chunk
-                    ],
+                    prompt=prompts,
                     **params,
                 )
             else:
@@ -332,56 +329,64 @@ class OpenAI(LMProvider):
                     f'Unsupported method ({method}). Only "{self.COMPLETION}" or "{self.CHAT_COMPLETION}" values are allowed.'
                 )
 
-            # Step 5: If multiple choices requested per input
-            # Step 5.a: Get requested choices count from parameters
-            n = params.get("n", 1)
+            # Record token usage in span
+            span_attrs["prompt_tokens"] = response.usage.prompt_tokens
+            span_attrs["completion_tokens"] = response.usage.completion_tokens
 
-            # Step 5.b: Verify enough responses are generated per input
-            if len(response.choices) != n * (len(chunk) if isinstance(chunk, Iterable) else 1):
-                raise RuntimeError(
-                    f"Number of responses does not match number of inputs * n, [{len(response.choices)}, {len(chunk) if isinstance(chunk, Iterable) else 1}, {n}]"
-                )
-
-            # Step 5.c: Group N responses for each request
-            response_choices_per_input = [
-                response.choices[i : i + n] for i in range(0, len(response.choices), n)
-            ]
-            total_outputs = sum([len(x) for x in response_choices_per_input])
-
-            # Step 6: Iterate over each grouped response
-            for response_choices, instance in zip(
-                response_choices_per_input,
-                chunk if isinstance(chunk, Iterable) else [chunk],
-            ):
-                outputs = []
-                addtl = {
-                    "completion_tokens": (response.usage.completion_tokens // total_outputs),
-                    "prompt_tokens": response.usage.prompt_tokens // total_outputs,
-                    "token_logprobs": [],
-                }
-                for choice in response_choices:
-                    outputs.append(self._extract_choice_content(choice, method=method))
-
-                    token_logprobs = self._extract_token_log_probabilities(
-                        choice=choice, method=method
-                    )
-                    if token_logprobs:
-                        addtl["token_logprobs"].append(token_logprobs)
-                        addtl["completion_tokens"] = len(token_logprobs)
-
-                self.update_instance_with_result(
+            if payload_recording_enabled():
+                if method == self.CHAT_COMPLETION:
+                    rc = self._extract_choice_content(response.choices[0], method=method)
+                else:
+                    rc = " ".join(c.text for c in response.choices if hasattr(c, "text"))
+                record_llm_payload(
+                    span_attrs,
                     method,
-                    outputs if len(outputs) > 1 else outputs[0],
-                    instance,
-                    params.get("stop", None),
-                    addtl,
+                    payload_max_chars(),
+                    prompt="\n---\n".join(prompts) if method == self.COMPLETION else None,
+                    messages=messages if method == self.CHAT_COMPLETION else None,
+                    response_completion=rc,
                 )
 
-            # Step 7: Notify the queue that the "work item" has been processed.
-            queue.task_done()
+        # Validate response count
+        n = params.get("n", 1)
+        if len(response.choices) != n * batch_size:
+            raise RuntimeError(
+                f"Number of responses does not match number of inputs * n, [{len(response.choices)}, {batch_size}, {n}]"
+            )
 
-            # Step 8: Update progress tracker
-            update_progress_tracker()
+        # Group N responses per input and write results back
+        response_choices_per_input = [
+            response.choices[i : i + n] for i in range(0, len(response.choices), n)
+        ]
+        total_outputs = sum(len(x) for x in response_choices_per_input)
+
+        for response_choices, instance in zip(
+            response_choices_per_input,
+            chunk if isinstance(chunk, Iterable) else [chunk],
+        ):
+            outputs = []
+            addtl = {
+                "completion_tokens": (response.usage.completion_tokens // total_outputs),
+                "prompt_tokens": response.usage.prompt_tokens // total_outputs,
+                "token_logprobs": [],
+            }
+            for choice in response_choices:
+                outputs.append(self._extract_choice_content(choice, method=method))
+
+                token_logprobs = self._extract_token_log_probabilities(choice=choice, method=method)
+                if token_logprobs:
+                    addtl["token_logprobs"].append(token_logprobs)
+                    addtl["completion_tokens"] = len(token_logprobs)
+
+            self.update_instance_with_result(
+                method,
+                outputs if len(outputs) > 1 else outputs[0],
+                instance,
+                params.get("stop", None),
+                addtl,
+            )
+
+        update_progress(self._batch_size if method == self.COMPLETION else 1)
 
     async def _execute_requests(
         self,
@@ -390,50 +395,30 @@ class OpenAI(LMProvider):
         method: str = LMProvider.COMPLETION,
         **kwargs,
     ):
-        # Step 1: Initialize necessary variables
-        queue = asyncio.Queue()
-
-        # Step 2: Group requests by their generation_kwargs
+        # Build work items: batches for completion, individual instances for chat
+        work_items = []
         grouper = Grouper(requests, lambda x: str(x.gen_kwargs))
-
-        # Step 3: Iterate over each group
         for _, reqs in grouper.get_grouped().items():
-            # Step 3.a: Create request chunks based on maximum allowed batch size and add to queue
             for chunk in chunks(reqs, n=self.batch_size):
                 if method == self.CHAT_COMPLETION:
-                    for instance in chunk:
-                        queue.put_nowait(instance)
+                    work_items.extend(chunk)
                 else:
-                    queue.put_nowait(chunk)
+                    work_items.append(chunk)
 
-        # Step 4: Initialize progress tracker
-        pbar = tqdm(
-            total=len(requests),
-            disable=disable_tqdm,
-            desc=f"Running {method} requests",
+        await AsyncLLMExecutor.run(
+            work_items=work_items,
+            process_item=lambda item, upd: self._process_item(item, upd, method=method),
+            call_limit=self._call_limit,
+            total_requests=len(requests),
+            method=method,
+            disable_tqdm=disable_tqdm,
         )
-
-        # Step 5: Create generate tasks
-        executors = []
-        for _ in range(min(queue.qsize(), self._call_limit)):
-            executors.append(
-                self.async_executor(
-                    queue,
-                    update_progress_tracker=lambda: pbar.update(
-                        self._batch_size if method == self.COMPLETION else 1
-                    ),
-                    method=method,
-                )
-            )
-
-        # Step 6: Wait until all worker are finished
-        await asyncio.gather(*executors, return_exceptions=True)
 
     # ===========================================================================
     #                       MAIN FUNCTIONS
     # ===========================================================================
     def completion(self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs) -> None:
-        asyncio.run(
+        self.run_async(
             self._execute_requests(
                 requests=requests,
                 disable_tqdm=disable_tqdm,
@@ -445,7 +430,7 @@ class OpenAI(LMProvider):
     def chat_completion(
         self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs
     ) -> None:
-        asyncio.run(
+        self.run_async(
             self._execute_requests(
                 requests=requests,
                 disable_tqdm=disable_tqdm,
