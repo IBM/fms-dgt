@@ -27,6 +27,7 @@ from fms_dgt.constants import (
     DATASET_TYPE,
     DGT_DIR,
     STORE_NAME_KEY,
+    TASK_NAME_KEY,
     TYPE_KEY,
 )
 
@@ -59,16 +60,16 @@ def get_row_name(gen_inst: DATASET_ROW_TYPE) -> str | None:
         str | None: Name of task, or None if not found.
     """
     if isinstance(gen_inst, dict):
-        if "task_name" in gen_inst:
-            return gen_inst["task_name"]
-        src = gen_inst.get("SRC_DATA")
+        if TASK_NAME_KEY in gen_inst:
+            return gen_inst[TASK_NAME_KEY]
+        src = gen_inst.get(_SRC_DATA)
         if src is not None:
             return get_row_name(src)
     else:
-        task_name = getattr(gen_inst, "task_name", None)
+        task_name = getattr(gen_inst, TASK_NAME_KEY, None)
         if task_name is not None:
             return task_name
-        src = getattr(gen_inst, "SRC_DATA", None)
+        src = getattr(gen_inst, _SRC_DATA, None)
         if src is not None:
             return get_row_name(src)
 

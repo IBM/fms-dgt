@@ -19,6 +19,7 @@ from fms_dgt.base.task_card import TaskRunCard
 from fms_dgt.base.telemetry import Span, configure_telemetry
 from fms_dgt.constants import (
     BLOCKS_KEY,
+    DATABUILDER_KEY,
     DGT_ENV_VARS,
     RAY_CONFIG_KEY,
     RUNNER_CONFIG_KEY,
@@ -120,7 +121,7 @@ def generate_data(
             for task_init in utils.read_tasks(task_path):
                 task_init = {
                     **task_init,
-                    **task_overrides.get(task_init["task_name"], dict()),
+                    **task_overrides.get(task_init[TASK_NAME_KEY], dict()),
                 }
                 task_inits.append(task_init)
         else:
@@ -138,7 +139,7 @@ def generate_data(
 
     # Step 7: Collate databuilders from task configurations
     # Step 7.a: Form requested databuilders list
-    requested_databuilder_names = [t["data_builder"] for t in task_inits]
+    requested_databuilder_names = [t[DATABUILDER_KEY] for t in task_inits]
 
     # Step 7.b: Initialize databuilder index
     databuilder_index = DataBuilderIndex(
@@ -191,8 +192,8 @@ def generate_data(
                 {
                     # Step 8.b.i.*: Prepare task card
                     "task_card": TaskRunCard(
-                        task_name=task_init.get("task_name"),
-                        databuilder_name=task_init.get("data_builder"),
+                        task_name=task_init.get(TASK_NAME_KEY),
+                        databuilder_name=task_init.get(DATABUILDER_KEY),
                         task_spec={"task_init": task_init, "task_kwargs": task_kwargs},
                         databuilder_spec=utils.load_nested_paths(builder_cfg, builder_dir),
                         build_id=build_id,
@@ -206,7 +207,7 @@ def generate_data(
                     **{k: v for k, v in task_init.items() if k not in [RUNNER_CONFIG_KEY]},
                 }
                 for task_init in task_inits
-                if task_init["data_builder"] == builder_name
+                if task_init[DATABUILDER_KEY] == builder_name
             ],
             **builder_kwargs,
         }

@@ -19,7 +19,7 @@ from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
-from fms_dgt.constants import TYPE_KEY
+from fms_dgt.constants import TASK_NAME_KEY, TYPE_KEY
 from fms_dgt.log import LogDatastoreHandler
 from fms_dgt.utils import (
     group_data_by_attribute,
@@ -45,7 +45,7 @@ def group_data_by_task(data_list: List[T]) -> List[List[T]]:
     Returns:
         List[List[T]]: DataPoint that has been grouped into tasks
     """
-    return group_data_by_attribute(data_list, "task_name")
+    return group_data_by_attribute(data_list, TASK_NAME_KEY)
 
 
 # ===========================================================================
