@@ -67,10 +67,14 @@ nav:
       - concepts/blocks.md
       - concepts/datastores.md
       - concepts/dataloaders.md
+      - concepts/observability.md
   - Tutorials:
+      - tutorials/generate_data.md
+      - tutorials/transform_data.md
       - tutorials/changing_lm_engine.md
       - tutorials/loading_seed_examples_from_file.md
       - tutorials/creating_validator.md
   - Examples:
-      - examples/generate_data.md
-      - examples/transform_data.md
+      - examples/simple_reasoning.md
+      - examples/instructlab.md
+      - examples/time_series.md

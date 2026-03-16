@@ -13,12 +13,12 @@ from fms_dgt.base.databuilder import GenerationDataBuilder
 from fms_dgt.base.registry import register_data_builder
 from fms_dgt.base.task import GenerationTask, group_data_by_task
 from fms_dgt.core.blocks.llm import LMProvider
-from fms_dgt.core.databuilders.simple.data_objects import SimpleData
-from fms_dgt.core.databuilders.simple.task import SimpleTask
-import fms_dgt.core.databuilders.simple.utils as utils
+from fms_dgt.public.databuilders.instructlab.simple.data_objects import SimpleData
+from fms_dgt.public.databuilders.instructlab.simple.task import SimpleTask
+import fms_dgt.public.databuilders.instructlab.simple.utils as utils
 
 
-@register_data_builder("simple")
+@register_data_builder("public/instructlab/simple")
 class SimpleDataBuilder(GenerationDataBuilder):
     """Class for InstructLab"""
 

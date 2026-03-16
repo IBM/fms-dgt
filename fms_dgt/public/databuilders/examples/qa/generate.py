@@ -58,43 +58,50 @@ class GeographyQADataBuilder(GenerationDataBuilder):
             # Randomly select in-context learning (icl) examples
             icl_examples = random.choices(seed_data, k=3)
 
-            # Build prompt
-            # 1. From variable
             encoded_icl_examples = "\n\n".join(
                 [
                     f"Question: {icl_example.question}\nAnswer: {icl_example.answer}"
                     for icl_example in icl_examples
                 ]
             )
-            prompt = f"{self._prompt_template}{encoded_icl_examples}\n\nNow generate a different question-answer pair in the similar format.\n\nQuestion: "
 
-            # OR
-            # 2. Using PromptTemplate class
-            prompt = self._prompts["prompt"].encode(
-                render_dict={
-                    "examples": "\n\n".join(
-                        [
-                            f"Question: {icl_example.question}\nAnswer: {icl_example.answer}"
-                            for icl_example in icl_examples
-                        ]
-                    )
-                }
-            )
+            # Build prompt
+            # Option A (chat_completion): pass as a messages list.  The model returns a
+            # dict {"role": "assistant", "content": "..."} in the "result" field.
+            prompt = self._prompts["prompt"].encode(render_dict={"examples": encoded_icl_examples})
+
+            # Option B (completion): pass as a plain string with a trailing primer so the
+            # model continues the text directly.  Useful for base / instruction models
+            # that give more control via raw text completion (e.g. Mixtral, Qwen base).
+            # To use this instead, change the input below to `prompt_completion` and
+            # pass method="completion" to self.generator(...) below.
+            #
+            # prompt_completion = (
+            #     f"{self._prompt_template}{encoded_icl_examples}"
+            #     "\n\nNow generate a different question-answer pair in the similar format."
+            #     "\n\nQuestion: "
+            # )
 
             # Build generator inputs
-            # input (str | List[Dict[str, Any]]): (Reserved field) prompt to be passed to `/completion` endpoint or messages to be passed to `/chat/completion` endpoint
-            # gen_kwargs (Optional[Dict[str, Any]]): (Reserved field) Additional generation specific parameters to be passed to `/completion` or `/chat/completion` endpoint
-            # reference (Optional[Any]): We recommend passing data used to build prompt for future use. DiGiT returns all non-reserved field in output from a block.
+            # input (str | List[Dict[str, Any]]): (Reserved field) messages for
+            #   /chat_completion, or a plain string for /completion.
+            # gen_kwargs (Optional[Dict[str, Any]]): (Reserved field) per-request
+            #   overrides for generation params (e.g. {"temperature": 0.9, "max_tokens": 256}).
+            #   Not set here because the defaults from qa.yaml are sufficient.
+            # reference (Optional[Any]): We recommend passing data used to build prompt
+            #   for future use. DiGiT returns all non-reserved fields in block output.
             generator_inputs.append(
                 {
-                    "input": prompt,
+                    "input": [{"role": "user", "content": prompt}],
                     "reference": icl_examples,
                 }
             )
 
         # Execute block
-        # LMProvider block is optimized to perform asynchronous invocation of `/completion` or `/chat/completion` endpoint to enable batch processing.
-        generator_outputs = self.generator(generator_inputs)
+        # LMProvider runs requests asynchronously for throughput.
+        # Switch method="completion" and pass a plain string input (Option B above)
+        # to use the text-completion endpoint instead.
+        generator_outputs = self.generator(generator_inputs, method="chat_completion")
 
         # Process outputs from block
         outputs = []
@@ -102,8 +109,13 @@ class GeographyQADataBuilder(GenerationDataBuilder):
             # Extract icl examples passed to LMProvider block
             icl_examples = generator_output["reference"]
 
-            # LMProvider block return output from `/completion` or `/chat/completion` endpoint in "result" field.
-            question_answer_pair = generator_output["result"].split("Answer:")
+            # For chat_completion, "result" is a dict {"role": "assistant", "content": "..."}.
+            # Extract the text content before parsing.
+            result = generator_output["result"]
+            if isinstance(result, dict):
+                result = result.get("content") or ""
+
+            question_answer_pair = result.split("Answer:")
 
             # Minimal check to guarantee well formed response
             if len(question_answer_pair) == 2:

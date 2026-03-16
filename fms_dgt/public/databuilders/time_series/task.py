@@ -30,7 +30,6 @@ class TimeSeriesTask(TransformationTask):
     ):
         runner_config = init_dataclass_from_dict(runner_config, TransformationTaskRunnerConfig)
         runner_config.transform_batch_size = data_params.get("train_length", 5000)
-        runner_config.restart_generation = True
         self.data_params = data_params
         self.sdforger_params = sdforger_params
         super().__init__(*args, runner_config=runner_config, **kwargs)

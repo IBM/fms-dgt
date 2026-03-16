@@ -33,6 +33,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 @dataclass(kw_only=True)
 class OllamaCompletionParameters(Parameters):
     num_predict: int | NotGiven = NOT_GIVEN
+    num_ctx: int | NotGiven = NOT_GIVEN
     seed: int | NotGiven = NOT_GIVEN
     top_p: int | NotGiven = NOT_GIVEN
     temperature: float | NotGiven = NOT_GIVEN

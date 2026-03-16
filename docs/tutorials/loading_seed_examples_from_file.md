@@ -1,109 +1,89 @@
-# Loading seed examples from a file
+# Loading Seed Examples from a File
 
-In synthetic data generation, a common pattern involves using seed examples (also known as in-context learning (ICL) examples) in the prompt provided to the teacher model. To support this, DGT offers a base class called `GenerationTask`, which allows databuilder developers to specify seed examples either directly in the task YAML file or through external files in formats such as .jsonl, .json, or .parquet.
+In synthetic data generation, seed examples (also called in-context learning examples) are provided in the prompt given to the teacher model. DiGiT's `GenerationTask` base class supports two ways to supply them: inline in the task YAML, or from an external file in `.jsonl`, `.json`, or `.parquet` format.
 
-Continuing with our earlier example of generating geography-related question-answer pairs, you can find the seed examples defined in the task YAML file.
+This tutorial continues with the misconceptions databuilder built in [Building a Generation Databuilder](../tutorials/generate_data.md). The seed examples are currently defined inline in the task YAML at `tasks/public/examples/misconceptions/task.yaml`:
 
-Let’s take a closer look at its contents:
-
-```{.yaml .no-copy title="tasks/public/examples/qa/task.yaml" hl_lines="13-53" }
+```{.yaml .no-copy title="tasks/public/examples/misconceptions/task.yaml" hl_lines="13-23"}
 ######################################################
 #                   MANDATORY FIELDS
 ######################################################
-task_name: public/examples/geography_qa
-task_description: A task for geography question-answering
+task_name: public/examples/misconceptions
+task_description: Generate misconception-correction pairs for training a model to identify and correct misinformation.
 created_by: IBM
 
-data_builder: public/examples/geography_qa
+data_builder: public/examples/misconceptions
 
 ######################################################
 #                   RESERVED FIELDS
 ######################################################
 seed_examples:
-  - question: What is the name of the tallest mountain in the world?
-    answer: Mount Everest
-  - question: What are the names of the five oceans of the world?
-    answer: Atlantic, Pacific, Indian, Arctic, and the Antarctic
-  - question: What is the largest desert in the world?
-    answer: The Antarctic Desert
-  - question: What is the longest river in Africa?
-    answer: The Nile River
-  - question: What is the smallest country in the world by land area?
-    answer: Vatican City
-  - question: What is the capital of Australia?
-    answer: Canberra
-  - question: What is the longest mountain range in South America?
-    answer: The Andes mountain range
-  - question: What are well known dense forests around the world?
-    answer: Amazon Rainforest, Congo Basin, La Mosquitia jungle are few examples of dense rainforests with thick, nearly impenetrable vegetation.
-  - question: Which country has the largest population in the world?
-    answer: China
-  - question: What American city is the Golden Gate Bridge located in?
-    answer: San Francisco
-  - question: What is the capital of Mexico?
-    answer: Mexico City
-  - question: What is the name of the largest ocean in the world?
-    answer: The Pacific Ocean
-  - question: What country has the most natural lakes?
-    answer: Canada
-  - question: What continent is Britain part of?
-    answer: Europe
-  - question: Which European country is closest to Africa?
-    answer: Spain
-  - question: In what country is the Taj Mahal located?
-    answer: India
-  - question: What do you call a chain of mountains?
-    answer: A range
-  - question: How many time zones does Russia have?
-    answer: 11
-  - question: What is the name of the only tropical rainforest in the United States?
-    answer: Puerto Rico’s El Yunque National Forest
-  - question: What country formerly ruled Iceland?
-    answer: Denmark
+  - misconception: Lightning never strikes the same place twice.
+    correction: Lightning frequently strikes the same place multiple times. Tall structures like the Empire State Building are struck dozens of times per year.
+  - misconception: Humans only use 10 percent of their brains.
+    correction: Brain imaging studies show that virtually all regions of the brain are active at some point, and most are active almost all the time.
+  - misconception: Swallowed chewing gum stays in your stomach for seven years.
+    correction: While gum base is not digestible, it passes through the digestive system and is excreted within a few days, just like other indigestible matter.
+  - misconception: Goldfish have a memory span of only three seconds.
+    correction: Research has shown that goldfish can remember things for months and can be trained to navigate mazes and recognize their owners.
+  - misconception: The Great Wall of China is visible from space with the naked eye.
+    correction: The Great Wall is too narrow to be seen from low Earth orbit without aid. Astronauts have confirmed this repeatedly.
 ```
 
-Instead of defining seed examples directly in the task YAML file, let’s specify them in a separate .jsonl file. This approach improves modularity, making the seed examples easier to manage and reuse across different tasks.
-Save the following file as seed_examples.jsonl in the data/public/examples/qa directory.
+Keeping seed examples in the task YAML works well for small sets. For larger collections, or when you want to share seeds across multiple tasks, an external file is easier to manage.
 
-```{.json title="seed_examples.jsonl"}
-{"question": "What is the name of the tallest mountain in the world?", "answer": "Mount Everest"}
-{"question": "What are the names of the five oceans of the world?", "answer": "Atlantic, Pacific, Indian, Arctic, and the Antarctic"}
-{"question": "What is the largest desert in the world?", "answer": "The Antarctic Desert"}
-{"question": "What is the longest river in Africa?", "answer": "The Nile River"}
-{"question": "What is the smallest country in the world by land area?", "answer": "Vatican City"}
-{"question": "What is the capital of Australia?", "answer": "Canberra"}
-{"question": "What is the longest mountain range in South America?", "answer": "The Andes mountain range"}
-{"question": "What are well known dense forests around the world?", "answer": "Amazon Rainforest, Congo Basin, La Mosquitia jungle are few examples of dense rainforests with thick, nearly impenetrable vegetation."}
-{"question": "Which country has the largest population in the world?", "answer": "China"}
-{"question": "What American city is the Golden Gate Bridge located in?", "answer": "San Francisco"}
-{"question": "What is the capital of Mexico?", "answer": "Mexico City"}
-{"question": "What is the name of the largest ocean in the world?", "answer": "The Pacific Ocean"}
-{"question": "What country has the most natural lakes?", "answer": "Canada"}
-{"question": "What continent is Britain part of?", "answer": "Europe"}
-{"question": "Which European country is closest to Africa?", "answer": "Spain"}
-{"question": "In what country is the Taj Mahal located?", "answer": "India"}
-{"question": "What do you call a chain of mountains?", "answer": "A range"}
-{"question": "How many time zones does Russia have?", "answer": "11"}
-{"question": "What is the name of the only tropical rainforest in the United States?", "answer": "Puerto Rico’s El Yunque National Forest"}
-{"question": "What country formerly ruled Iceland?", "answer": "Denmark"}
+## Step 1: Create the seed file
+
+Save the following as `data/public/examples/misconceptions/seed_examples.jsonl`:
+
+```{.json title="data/public/examples/misconceptions/seed_examples.jsonl"}
+{"misconception": "Lightning never strikes the same place twice.", "correction": "Lightning frequently strikes the same place multiple times. Tall structures like the Empire State Building are struck dozens of times per year."}
+{"misconception": "Humans only use 10 percent of their brains.", "correction": "Brain imaging studies show that virtually all regions of the brain are active at some point, and most are active almost all the time."}
+{"misconception": "Swallowed chewing gum stays in your stomach for seven years.", "correction": "While gum base is not digestible, it passes through the digestive system and is excreted within a few days, just like other indigestible matter."}
+{"misconception": "Goldfish have a memory span of only three seconds.", "correction": "Research has shown that goldfish can remember things for months and can be trained to navigate mazes and recognize their owners."}
+{"misconception": "The Great Wall of China is visible from space with the naked eye.", "correction": "The Great Wall is too narrow to be seen from low Earth orbit without aid. Astronauts have confirmed this repeatedly."}
 ```
 
-Now, we can reference the newly created seed_examples.jsonl file in our task YAML as shown below:
+Each line is a JSON object with the same keys (`misconception`, `correction`) that the task's `instantiate_input_example` method expects.
 
-```{.yaml title="tasks/public/examples/qa/task.yaml" hl_lines="13-15" }
+## Step 2: Update the task YAML
+
+Replace the `seed_examples` block with a `seed_datastore` reference:
+
+```{.yaml title="tasks/public/examples/misconceptions/task.yaml" hl_lines="13-15"}
 ######################################################
 #                   MANDATORY FIELDS
 ######################################################
-task_name: public/examples/geography_qa
-task_description: A task for geography question-answering
+task_name: public/examples/misconceptions
+task_description: Generate misconception-correction pairs for training a model to identify and correct misinformation.
 created_by: IBM
 
-data_builder: public/examples/geography_qa
+data_builder: public/examples/misconceptions
 
 ######################################################
 #                   RESERVED FIELDS
 ######################################################
 seed_datastore:
-    type: default
-    data_path: ${DGT_DATA_DIR}/public/examples/qa/seed_examples.jsonl
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/examples/misconceptions/seed_examples.jsonl
 ```
+
+`${DGT_DATA_DIR}` resolves to the `data/` directory at the root of the repository by default. You can override it by setting the environment variable.
+
+## Step 3: Run it
+
+The run command is unchanged:
+
+```bash
+python -m fms_dgt.public \
+  --task-paths ./tasks/public/examples/misconceptions/task.yaml \
+  --num-outputs-to-generate 20 \
+  --restart
+```
+
+DiGiT loads the seed examples from the file at startup and uses them exactly as it would inline examples.
+
+## Next steps
+
+- To switch to a different LM engine, see [Changing the Language Model Engine](changing_lm_engine.md).
+- To add a validator that filters low-quality outputs, see [Creating a Validator](creating_validator.md).

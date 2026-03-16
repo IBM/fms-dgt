@@ -23,9 +23,9 @@ to_execute = [
     # simple
     #
     (
-        "core",
-        "simple",
-        f"--task-paths {os.path.join(INTERNAL_DGT_DIR, 'tasks/core/simple/logical_reasoning/causal/task.yaml')} --num-outputs-to-generate 1 --output-dir {_OUTPUT_DIR}",
+        "public",
+        "public/instructlab/simple",
+        f"--task-paths {os.path.join(INTERNAL_DGT_DIR, 'tasks/public/instructlab/simple/logical_reasoning/causal/task.yaml')} --num-outputs-to-generate 1 --output-dir {_OUTPUT_DIR}",
         50,
     ),
 ]

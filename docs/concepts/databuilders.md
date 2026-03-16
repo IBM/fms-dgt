@@ -7,7 +7,7 @@
 
 This design enables Data Builders to be reused across multiple tasks, as long as those tasks operate on the same type of dataclass. By decoupling data generation logic from task design, the framework promotes modularity and flexibility.
 
-There is built-in support for two prominent patterns data processing patterns viz. 1) Generation and 2) Transformation
+There is built-in support for two prominent data processing patterns: Generation and Transformation.
 
 |                      | **Generation**                                                     | **Transformation**                               |
 | -------------------- | ------------------------------------------------------------------ | ------------------------------------------------ |
@@ -19,7 +19,7 @@ There is built-in support for two prominent patterns data processing patterns vi
 | **Processing Style** | **Iterative**: continues until target number of datapoints reached | **Single-pass**: processes each input once       |
 | **Example**          | Generate synthetic sentences from seed text                        | Translate English sentences to French            |
 
-### Effeciency via Blocks
+### Efficiency via Blocks
 
 We designed the framework to be non-prescriptive, allowing flexible implementation of the `__call__` function. However, we strongly encourage the use of blocks for computationally intensive operations, such as batch processing with LLMs (predefined blocks for LLMs are available [here](https://github.com/IBM/fms-dgt/tree/main/fms_dgt/core/blocks/llm)).
 
@@ -60,18 +60,18 @@ blocks:
   # Language model connector
   - name: generator
     type: ollama
-    model_id_or_path: mistral-small3.2
+    model_id_or_path: granite4:3b
     temperature: 0.0
     max_tokens: 128
   .
 ```
 
-??? warning
-Make sure the value specified for `model_id_or_path` field matches models available for the specified LLM backends.
+???+ warning
+    Make sure the value specified for `model_id_or_path` field matches models available for the specified LLM backends.
 
-### Effeciency via Parallelism
+### Efficiency via Parallelism
 
-Keep in mind that data builders can handle task parallelism, meaning multiple tasks can be processed simultaneously by the same data builder. This results in a mixed list of input data in the `__call__` function. When combining data from multiple tasks (e.g., for instruction following), ensure you track the origin of each data point.
+Data builders can handle task parallelism: multiple tasks can be processed simultaneously by the same data builder. This results in a mixed list of input data in the `__call__` function. When combining data from multiple tasks (for example, for instruction following), ensure you track the origin of each data point.
 
 One can opt out of task parallelism by overriding the `call_with_task_list` method for `Generation` pattern, as shown below:
 

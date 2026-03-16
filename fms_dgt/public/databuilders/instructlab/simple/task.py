@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 # Local
 from fms_dgt.base.task import GenerationTask
-from fms_dgt.core.databuilders.simple.data_objects import SimpleData
+from fms_dgt.public.databuilders.instructlab.simple.data_objects import SimpleData
 
 
 class SimpleTask(GenerationTask):

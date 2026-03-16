@@ -27,7 +27,7 @@ class RatingDataBuilder(TransformationDataBuilder):
 
     TASK_TYPE: RatingTask = RatingTask
 
-    # NOTE: rator is the language model that we will use to rate the synthetic examples
+    # NOTE: rater is the language model that we will use to rate the synthetic examples
     rater: LMProvider
 
     def __init__(
@@ -47,25 +47,33 @@ class RatingDataBuilder(TransformationDataBuilder):
         # Build rater inputs
         rater_inputs: List[Dict] = []
         for data_point in data_points:
-            # Build rater inputs
-            # input (str | List[Dict[str, Any]]): (Reserved field) prompt to be passed to `/completion` endpoint or messages to be passed to `/chat/completion` endpoint
-            # gen_kwargs (Optional[Dict[str, Any]]): (Reserved field) Additional generation specific parameters to be passed to `/completion` or `/chat/completion` endpoint
-            # reference (Optional[Any]): We recommend passing data used to build prompt for future use. DiGiT returns all non-reserved field in output from a block.
+            # input (str | List[Dict[str, Any]]): (Reserved field) messages for
+            #   /chat_completion, or a plain string for /completion.
+            # gen_kwargs (Optional[Dict[str, Any]]): (Reserved field) per-request
+            #   overrides for generation params (e.g. {"temperature": 0.0, "max_tokens": 512}).
+            #   Not set here because the defaults from rater.yaml are sufficient.
+            # reference (Optional[Any]): We recommend passing data used to build prompt
+            #   for future use. DiGiT returns all non-reserved fields in block output.
             rater_inputs.append(
                 {
-                    "input": self._prompts["judge"].encode(
-                        render_dict={
-                            "question": data_point.question,
-                            "answer": data_point.answer,
+                    "input": [
+                        {
+                            "role": "user",
+                            "content": self._prompts["judge"].encode(
+                                render_dict={
+                                    "question": data_point.question,
+                                    "answer": data_point.answer,
+                                }
+                            ),
                         }
-                    ),
+                    ],
                     "reference": data_point,
                 }
             )
 
         # Execute block
-        # LMProvider block is optimized to perform asynchronous invocation of `/completion` or `/chat/completion` endpoint to enable batch processing.
-        rater_outputs = self.rater(rater_inputs)
+        # LMProvider runs requests asynchronously for throughput.
+        rater_outputs = self.rater(rater_inputs, method="chat_completion")
 
         # Process outputs from block
         outputs = []
@@ -73,8 +81,13 @@ class RatingDataBuilder(TransformationDataBuilder):
             # Extract data point passed to LMProvider block
             data_point = rater_output["reference"]
 
-            # LMProvider block return output from `/completion` or `/chat/completion` endpoint in "result" field.
-            ratings = self.parse(response=rater_output["result"])
+            # For chat_completion, "result" is a dict {"role": "assistant", "content": "..."}.
+            # Extract the text content before passing to the parser.
+            result = rater_output["result"]
+            if isinstance(result, dict):
+                result = result.get("content") or ""
+
+            ratings = self.parse(response=result)
 
             # Add to outputs
             outputs.append(

@@ -27,14 +27,16 @@ Default configuration for generator used by the data builder is available [here]
 
 ### Rater
 
-- `mistral-small3.2` via `ollama`.
+- `granite4:3b` via `ollama`.
 
 ## Usage
 
 To try out the databuilder, run the following command:
 
-```
-python -m fms_dgt.public --task-paths ./tasks/public/examples/rate/task.yaml --restart-generation
+```bash
+python -m fms_dgt.public \
+  --task-paths ./tasks/public/examples/rate/task.yaml \
+  --restart
 ```
 
 This launches a data transformation job by passing examples to be transformed via `data` field in the YAMLs specified via `--task-paths` argument.

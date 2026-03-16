@@ -2,3 +2,7 @@
 *.jsonl
 **/.github
 **/data
+
+# mkdocs uses admonitions, content tabs, and annotations that require
+# specific indentation prettier normalizes away, breaking mkdocs rendering
+docs/

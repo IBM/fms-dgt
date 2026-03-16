@@ -1,77 +1,138 @@
-# Changing the Language Model (LM) Engine
+# Changing the Language Model Engine
 
-DGT offers built-in support for over five different language model (LM) engines (WatsonX, OpenAI, Azure OpenAI, vLLM, Ollama, and Anthropic) through the `LMProvider` block. As described in this [section](../concepts/architecture.md), blocks are single-operation components that are initialized once per databuilder. This design makes it easy to switch between LM engines by simply updating the databuilder YAML configuration.
+DiGiT provides built-in support for multiple language model (LM) engines through the `LMProvider` block: Ollama, WatsonX, OpenAI, Azure OpenAI, vLLM, and Anthropic. As described in the [architecture overview](../concepts/architecture.md), blocks are single-operation components initialized once per databuilder. Switching LM engines requires only a change to the databuilder YAML configuration.
 
-Typically, the YAML file for a databuilder is located in the same directory as `generate.py`, which serves as the entry point for that databuilder. Let’s revisit our earlier example of generating geography-based question-answer pairs.
+The databuilder YAML is located in the same directory as `generate.py`. For the misconceptions generation databuilder built in [Building a Generation Databuilder](../tutorials/generate_data.md), the config is at:
 
-The corresponding YAML file can be found at:
-`fms_dgt/public/databuilders/examples/qa/qa.yaml`
+`fms_dgt/public/databuilders/examples/misconceptions/misconceptions.yaml`
 
-Here’s a closer look at its contents:
+The relevant section is:
 
-```{.yaml .no-copy title="fms_dgt/public/databuilders/examples/qa/qa.yaml" hl_lines="11 12 13" }
-######################################################
-#                   MANDATORY FIELDS
-######################################################
-name: public/examples/geography_qa
-
-######################################################
-#                   RESERVED FIELDS
-######################################################
+```{.yaml .no-copy title="fms_dgt/public/databuilders/examples/misconceptions/misconceptions.yaml" hl_lines="3 4"}
 blocks:
-  # Language model connector
   - name: generator # (1)!
-    type: ollama # (2)!
-    model_id_or_path: mistral-small3.2 # (3)!
-    temperature: 0.0
+    type: ollama    # (2)!
+    model_id_or_path: granite4:3b # (3)!
+    temperature: 0.7
     max_tokens: 128
-  # Built-in Rouge-L score based deduplicator
-  - name: dedup
-    type: rouge_scorer
-    filter: true
-    threshold: 1.0
-    input_map:
-      question: input
-postprocessors:
-  # Post-processors operate on all data points simultaneously
-  - name: dedup
-metadata:
-  version: 1.0
-
+    num_ctx: 4096
 ```
 
-1. Identifier for the LM block.
-2. Specifies the LM engine. Supported values include watsonx, openai, azure-openai, anthropic, vllm, vllm-remote, and ollama.
-3. The model identifier or path, which varies depending on the selected LM engine. Refer to the documentation for the specific engine to determine the correct value.
+1. The name must match the class-level annotation in `generate.py` (`generator: LMProvider`).
+2. The LM engine. Supported values: `ollama`, `watsonx`, `openai`, `azure-openai`, `anthropic`, `vllm`, `vllm-remote`.
+3. The model identifier. The correct format depends on the engine.
 
-Let's try via changing the model used from `mistral-small3.2` to `gemma3:1b` as follows
+## Switching models within Ollama
 
-```{.yaml title="fms_dgt/public/databuilders/examples/qa/qa.yaml" hl_lines="13" }
-######################################################
-#                   MANDATORY FIELDS
-######################################################
-name: public/examples/geography_qa
+To use a different locally-hosted model, update `model_id_or_path` and pull the model first:
 
-######################################################
-#                   RESERVED FIELDS
-######################################################
+```bash
+ollama pull llama3.2:3b
+```
+
+Then update the YAML:
+
+```{.yaml title="fms_dgt/public/databuilders/examples/misconceptions/misconceptions.yaml" hl_lines="4"}
 blocks:
-  # Language model connector
   - name: generator
     type: ollama
-    model_id_or_path: gemma3:1b
-    temperature: 0.0
+    model_id_or_path: llama3.2:3b
+    temperature: 0.7
     max_tokens: 128
-  # Built-in Rouge-L score based deduplicator
-  - name: dedup
-    type: rouge_scorer
-    filter: true
-    threshold: 1.0
-    input_map:
-      question: input
-postprocessors:
-  # Post-processors operate on all data points simultaneously
-  - name: dedup
-metadata:
-  version: 1.0
+    num_ctx: 4096
 ```
+
+`llama3.2:3b` is a good general-purpose alternative. It is licensed under the Llama 3.2 Community License, which explicitly permits synthetic data generation.
+
+## Switching to a cloud provider
+
+To switch from Ollama to a cloud-hosted model, change `type` and `model_id_or_path` and set the required environment variables. The generation parameters (`temperature`, `max_tokens`) carry over unchanged.
+
+???+ warning "Review your provider's terms before using outputs for training"
+    Cloud API providers may use API request and response data to improve their own models unless you have an enterprise agreement that opts out of this. WatsonX, OpenAI, and Anthropic all offer enterprise or API-tier contracts that disable training data collection. Review your agreement before using cloud-generated outputs in a training dataset at scale.
+
+=== "WatsonX"
+
+    ```{.yaml title="fms_dgt/public/databuilders/examples/misconceptions/misconceptions.yaml" hl_lines="3 4"}
+    blocks:
+      - name: generator
+        type: watsonx
+        model_id_or_path: meta-llama/llama-3-3-70b-instruct
+        temperature: 0.7
+        max_new_tokens: 128
+    ```
+
+    Set the following environment variables before running:
+
+    | Variable | Required | Description |
+    |---|---|---|
+    | `WATSONX_PROJECT_ID` | Yes | Your WatsonX project ID |
+    | `WATSONX_API_KEY` | Yes | Your IBM Cloud API key |
+    | `WATSONX_API_URL` | No | Defaults to `https://us-south.ml.cloud.ibm.com` |
+
+    ```bash
+    export WATSONX_PROJECT_ID=your-project-id
+    export WATSONX_API_KEY=your-api-key
+    ```
+
+    WatsonX uses `max_new_tokens` instead of `max_tokens`. All other generation parameters are the same.
+
+=== "OpenAI"
+
+    ```{.yaml title="fms_dgt/public/databuilders/examples/misconceptions/misconceptions.yaml" hl_lines="3 4"}
+    blocks:
+      - name: generator
+        type: openai
+        model_id_or_path: gpt-4o-mini
+        temperature: 0.7
+        max_tokens: 128
+    ```
+
+    Set the following environment variable before running:
+
+    | Variable | Required | Description |
+    |---|---|---|
+    | `OPENAI_API_KEY` | Yes | Your OpenAI API key |
+
+    ```bash
+    export OPENAI_API_KEY=your-api-key
+    ```
+
+=== "Anthropic"
+
+    ```{.yaml title="fms_dgt/public/databuilders/examples/misconceptions/misconceptions.yaml" hl_lines="3 4"}
+    blocks:
+      - name: generator
+        type: anthropic
+        model_id_or_path: claude-3-5-haiku-20241022
+        temperature: 0.7
+        max_tokens: 128
+    ```
+
+    Set the following environment variable before running:
+
+    | Variable | Required | Description |
+    |---|---|---|
+    | `ANTHROPIC_API_KEY` | Yes | Your Anthropic API key |
+
+    ```bash
+    export ANTHROPIC_API_KEY=your-api-key
+    ```
+
+    The Anthropic provider processes one request at a time. For large runs, expect lower throughput compared to Ollama or OpenAI.
+
+## Running after switching
+
+The run command is the same regardless of the engine:
+
+```bash
+python -m fms_dgt.public \
+  --task-paths ./tasks/public/examples/misconceptions/task.yaml \
+  --num-outputs-to-generate 20 \
+  --restart
+```
+
+## Next steps
+
+- To load seed examples from an external file instead of the task YAML, see [Loading Seed Examples from a File](loading_seed_examples_from_file.md).
+- To add a validator that filters low-quality outputs, see [Creating a Validator](creating_validator.md).

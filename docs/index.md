@@ -4,19 +4,44 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 ![GitHub License](https://badgen.net/static/license/Apache%202.0/green)
 
-High-quality data is the backbone of modern AI development, but acquiring diverse, domain-specific, and scalable datasets remains a major bottleneck. Synthetic data generation addresses this challenge by enabling the creation of tailored datasets that are:
+**DGT** (Data Generation and Transformation, pronounced "digit") is a framework for building synthetic data pipelines that generate training data for fine-tuning large language models.
 
-- Cost-effective and privacy-preserving
-- Customizable for specific tasks and domains
-- Scalable to meet evolving model needs
+Write a handful of seed examples. Point DiGiT at a model. Get a dataset. Typical runs take under five minutes on a laptop with Ollama.
 
-DGT (Data Generation and Transformation) [pronounced "digit"] is a horizontal framework designed to streamline and scale expert, domain-specific synthetic data generation via simplifying and standardizing essential components.
+## What it does
+
+High-quality, domain-specific training data is the biggest bottleneck in LLM fine-tuning. DiGiT addresses this by letting you:
+
+- **Generate** new examples from a small seed set using any LLM as a teacher model
+- **Transform** existing data (add chain-of-thought, score for difficulty, reformat, filter)
+- **Compose** generation and transformation stages into multi-step pipelines
 
 ## Features
 
-- 🤖 Standardize interface for ~5+ different LM engines (WatsonX, OpenAI, Azure OpenAI, vLLM, ollama, anthropic etc.) with retry/fallback logic
-- 💡 Support for several domain-specific pipelines for tool calling, time series, question answering and more
-- 🧪 Growing list of syntactic validators, deduplicators, LLMaJs (LLM-as-a-Judge)
-- 🔒 Local execution capabilities for sensitive data and air-gapped environments
-- 🤖 Plug-and-play [integrations][integrations] incl. Docling
-- 💻 Simple and convenient CLI
+- **6 LM engines out of the box:** Ollama, OpenAI, Azure OpenAI, Anthropic, WatsonX, vLLM — switch with a one-line config change
+- **Built-in quality controls:** deduplicators, syntactic validators, LLM-as-a-Judge scoring
+- **Concurrent execution:** async batch requests across all providers for fast throughput
+- **Local-first:** runs entirely on your machine for sensitive data and air-gapped environments
+- **Extensible:** add a new databuilder in three files; plug into the same CLI and engine layer
+
+## Get started in 5 minutes
+
+```bash
+# 1. Clone and install
+git clone git@github.com:IBM/fms-dgt.git && cd fms-dgt
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[all]"
+
+# 2. Pull a local model (no API key needed)
+ollama pull granite4:3b
+
+# 3. Generate 20 geography QA pairs
+python -m fms_dgt.public \
+  --task-paths ./tasks/public/examples/qa/task.yaml \
+  --num-outputs-to-generate 20 \
+  --restart
+```
+
+Output: `output/public/examples/geography_qa/final_data.jsonl`
+
+Ready to do more? See [Quick Start](usage.md) for the rater example, cloud provider setup, and CLI reference.

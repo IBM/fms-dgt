@@ -10,9 +10,10 @@ blocks:
   # Language model connector
   - name: generator
     type: ollama
-    model_id_or_path: mistral-small3.2
+    model_id_or_path: granite4:3b
     temperature: 0.0
     max_tokens: 128
+    num_ctx: 4096
   # Built-in Rouge-L score based deduplicator
   - name: dedup
     type: rouge_scorer

@@ -1,11 +1,11 @@
 ######################################################
 #                   MANDATORY FIELDS
 ######################################################
-task_name: core/simple/temporal_reasoning
+task_name: public/instructlab/simple/temporal_reasoning
 task_description: To teach a language model about chronological order of time.
 created_by: IBM
 
-data_builder: simple # Must match exactly with the databuilder name
+data_builder: public/instructlab/simple # Must match exactly with the databuilder name
 
 ######################################################
 #                   RESERVED FIELDS

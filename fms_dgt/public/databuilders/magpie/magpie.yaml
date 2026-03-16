@@ -8,7 +8,7 @@ blocks:
       messages: magpie_mt_input
     lm_config:
       type: ollama
-      model_id_or_path: mistral-small3.2
+      model_id_or_path: granite3.3:2b
       temperature: 0.0
       max_new_tokens: 512
       stop: ["Q:"]

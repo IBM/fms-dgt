@@ -10,9 +10,9 @@ This data builder supports generation defining the following parameters:
 
 - `created_by`: creator of the task.
 - `task_description`: description of the task.
-- `data_builder`: simple
+- `data_builder`: public/instructlab/simple
 
-An example can be found [here](../../../../tasks/core/simple/logical_reasoning/causal/task.yaml)
+An example can be found [here](../../../../../tasks/public/instructlab/simple/logical_reasoning/causal/task.yaml)
 
 ### Seed data fields
 
@@ -26,7 +26,10 @@ An example can be found [here](../../../../tasks/core/simple/logical_reasoning/c
 To execute this databuilder, run the following command
 
 ```bash
-python -m fms_dgt.core --task-path ./tasks/core/simple/logical_reasoning/causal/task.yaml --restart --num-outputs 10
+python -m fms_dgt.public \
+  --task-paths ./tasks/public/instructlab/simple/logical_reasoning/causal/task.yaml \
+  --num-outputs-to-generate 10 \
+  --restart
 ```
 
 ## Notice

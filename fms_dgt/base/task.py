@@ -857,9 +857,10 @@ class TransformationTask(Task):
             **kwargs,
         )
 
-        # _restart_generation stays False (set by Task.__init__); call _post_init()
-        # now so datastores and logger are ready before the transformation-specific
-        # setup below.
+        # Transformation tasks always restart with a clean slate because the
+        # cardinality of the transformation (1→1, M→N, etc.) is unknown, so
+        # resuming a partial output is never safe.
+        self._restart_generation = True
         self._post_init()
 
         # Extract required variables from the runner configuration
