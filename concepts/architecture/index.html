@@ -17,11 +17,8 @@
         <link rel="next" href="../tasks/">
       
       
-        
-      
-      
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
     
     
       
@@ -29,10 +26,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -57,6 +54,7 @@
 
     
     
+    
   </head>
   
   
@@ -76,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tasks" class="md-skip">
+        <a href="#architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -277,7 +275,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../tutorials/changing_lm_engine/" class="md-tabs__link">
+        <a href="../../tutorials/generate_data/" class="md-tabs__link">
           
   
   
@@ -297,7 +295,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/generate_data/" class="md-tabs__link">
+        <a href="../../examples/simple_reasoning/" class="md-tabs__link">
           
   
   
@@ -382,14 +380,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Home
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -398,11 +391,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Home
-  
-
+            Home
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -418,14 +407,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Welcome to DGT
-  
-
     
   </span>
-  
   
 
       </a>
@@ -446,14 +430,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Installation
-  
-
     
   </span>
-  
   
 
       </a>
@@ -474,14 +453,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Usage
-  
-
     
   </span>
-  
   
 
       </a>
@@ -530,14 +504,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Concepts
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -546,11 +515,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Concepts
-  
-
+            Concepts
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -567,20 +532,17 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
   
   
   <span class="md-ellipsis">
-    
-  
     Architecture
-  
-
     
   </span>
-  
   
 
           <span class="md-nav__icon md-icon"></span>
@@ -591,14 +553,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Architecture
-  
-
     
   </span>
-  
   
 
       </a>
@@ -609,6 +566,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -617,56 +576,37 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Concepts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#tasks" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        Tasks
-      
+      Tasks
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#databuilders" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        Databuilders
-      
+      Databuilders
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#execution-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Execution Model
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#additional-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Additional Components
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Additional Components">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#blocks" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        Blocks
-      
+      Blocks
     </span>
   </a>
   
@@ -675,9 +615,58 @@
           <li class="md-nav__item">
   <a href="#datastores-and-dataloaders" class="md-nav__link">
     <span class="md-ellipsis">
+      Datastores and Dataloaders
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
-        Datastores and Dataloaders
+        <li class="md-nav__item">
+  <a href="#execution-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execution Model
+    </span>
+  </a>
+  
+</li>
       
+        <li class="md-nav__item">
+  <a href="#key-architectural-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Architectural Decisions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Architectural Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-grouping-by-databuilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      Task grouping by databuilder
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-lm-concurrency-with-credential-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Async LM concurrency with credential pooling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lazy-plugin-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lazy plugin registry
     </span>
   </a>
   
@@ -709,14 +698,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Tasks
-  
-
     
   </span>
-  
   
 
       </a>
@@ -737,14 +721,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Data Builders
-  
-
     
   </span>
-  
   
 
       </a>
@@ -765,14 +744,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Blocks
-  
-
     
   </span>
-  
   
 
       </a>
@@ -793,14 +767,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Datastores
-  
-
     
   </span>
-  
   
 
       </a>
@@ -821,14 +790,32 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Dataloaders
-  
-
     
   </span>
   
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Observability
+    
+  </span>
   
 
       </a>
@@ -872,14 +859,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Tutorials
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -888,13 +870,55 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Tutorials
-  
-
+            Tutorials
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/generate_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Building a Generation Databuilder
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/transform_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Building a Transformation Databuilder
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -908,14 +932,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
-    Changing the Language Model (LM) Engine
-  
-
+    Changing the Language Model Engine
     
   </span>
-  
   
 
       </a>
@@ -936,14 +955,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
-    Loading seed examples from a file
-  
-
+    Loading Seed Examples from a File
     
   </span>
-  
   
 
       </a>
@@ -964,14 +978,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
-    Creating a validator
-  
-
+    Creating a Validator
     
   </span>
-  
   
 
       </a>
@@ -1015,14 +1024,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Examples
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -1031,11 +1035,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Examples
-  
-
+            Examples
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -1046,19 +1046,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/generate_data/" class="md-nav__link">
+      <a href="../../examples/simple_reasoning/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    
-  
-    Data Generation
-  
-
+    Logical and Temporal Reasoning
     
   </span>
-  
   
 
       </a>
@@ -1074,19 +1069,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/transform_data/" class="md-nav__link">
+      <a href="../../examples/instructlab/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    
-  
-    Data Transformation
-  
-
+    InstructLab: Skills and Knowledge
     
   </span>
-  
   
 
       </a>
@@ -1102,19 +1092,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/generate_qa_over_knowledge/" class="md-nav__link">
+      <a href="../../examples/time_series/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    
-  
-    Generate question-answer (QA) pairs over knowledge documents
-  
-
+    Time Series Data Augmentation
     
   </span>
-  
   
 
       </a>
@@ -1147,6 +1132,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1155,56 +1142,37 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Concepts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#tasks" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        Tasks
-      
+      Tasks
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#databuilders" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        Databuilders
-      
+      Databuilders
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#execution-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Execution Model
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#additional-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Additional Components
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Additional Components">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#blocks" class="md-nav__link">
     <span class="md-ellipsis">
-      
-        Blocks
-      
+      Blocks
     </span>
   </a>
   
@@ -1213,9 +1181,58 @@
           <li class="md-nav__item">
   <a href="#datastores-and-dataloaders" class="md-nav__link">
     <span class="md-ellipsis">
+      Datastores and Dataloaders
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
-        Datastores and Dataloaders
+        <li class="md-nav__item">
+  <a href="#execution-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execution Model
+    </span>
+  </a>
+  
+</li>
       
+        <li class="md-nav__item">
+  <a href="#key-architectural-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Architectural Decisions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Architectural Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-grouping-by-databuilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      Task grouping by databuilder
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-lm-concurrency-with-credential-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Async LM concurrency with credential pooling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lazy-plugin-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lazy plugin registry
     </span>
   </a>
   
@@ -1236,13 +1253,6 @@
           
           
             <div class="md-content" data-md-component="content">
-              
-                
-
-
-
-
-              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -1252,49 +1262,86 @@
   
 
 
-  <h1>Architecture</h1>
-
-<p><strong>DGT</strong> is a modular and extensible framework designed to support the generation of synthetic data across a wide range of use cases. It enables users to specify both <strong>what</strong> data they need and <strong>how</strong> it should be generated through two primary components: <strong>Tasks</strong> and <strong>Databuilders</strong>.</p>
+<h1 id="architecture">Architecture</h1>
+<p>Synthetic data generation pipelines tend to collapse into one-off scripts: a prompt template, a loop, an LLM call, some output parsing, and a file write. That works for a single experiment, but it does not scale. Models change, prompts evolve, quality bars shift, and the same underlying generation logic ends up duplicated across a dozen slightly different scripts.</p>
+<p>DiGiT is built around a different premise. The <strong>what</strong> and the <strong>how</strong> of data generation are separated into two distinct concepts, Tasks and Databuilders, and everything else in the framework (Blocks, Datastores, Dataloaders) exists to make those two concepts composable, reusable, and efficient at scale.</p>
+<h2 id="core-concepts">Core Concepts</h2>
 <h3 id="tasks">Tasks</h3>
-<p>Tasks define the <strong>intent</strong> and <strong>requirements</strong> for synthetic data generation. They serve as high-level specifications that guide the overall data generation process.</p>
-<p>Each task includes:</p>
+<p>A Task defines <strong>what</strong> data to produce. It is a declarative specification that captures:</p>
 <ul>
-<li>The type of data to be generated</li>
-<li>Required assets (e.g., schemas, seed data)</li>
-<li>Stopping criteria (e.g., number of records, time limits, quality thresholds)</li>
+<li>The schema of input and output data (via typed dataclasses)</li>
+<li>Where to load seed or input data from</li>
+<li>How many records to generate, or when to stop</li>
+<li>Where to write intermediate and final output</li>
 </ul>
-<p>Tasks are declarative and reusable. While there is generally a many-to-one relationship between tasks and databuilders, a task can theoretically be fulfilled by multiple databuilders, provided the generated data adheres to the constraints defined by the databuilder.</p>
+<p>Tasks are configuration, not code. A developer configures a task in a YAML file and the framework instantiates it at runtime. The same task YAML can be run against different databuilders, or the same databuilder can serve multiple tasks simultaneously.</p>
+<p>DiGiT provides two built-in task patterns:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>GenerationTask</strong></th>
+<th><strong>TransformationTask</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Loop style</strong></td>
+<td>Iterative: runs until target record count is reached</td>
+<td>Single-pass: processes each input record once</td>
+</tr>
+<tr>
+<td><strong>Input</strong></td>
+<td>Seed examples (inline or from file), optionally mixed with previously generated outputs</td>
+<td>A fixed dataset to transform</td>
+</tr>
+<tr>
+<td><strong>Output</strong></td>
+<td>New synthetic records in the same schema as seeds</td>
+<td>Transformed records, potentially a different schema</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../tasks/">Tasks</a> for the full reference.</p>
 <h3 id="databuilders">Databuilders</h3>
-<p>Databuilders are the <strong>operational units</strong> responsible for implementing the logic to generate synthetic data. They transform task specifications into actual data outputs. They are typically opinonated and stateless in their design. Databuilders are engineered with broader applicability and maintainability in mind.</p>
-<h2 id="execution-model">Execution Model</h2>
-<p>Parallelism is a core feature of DGT. It supports the execution of multiple tasks—associated with the same or different databuilders—within a single run.</p>
-<p>A typical run proceeds as follows:</p>
-<ul>
-<li><strong>Initialization</strong>: All requested tasks are initialized, followed by their associated databuilders.</li>
-</ul>
-<!-- prettier-ignore-start -->
-<ul>
-<li><strong>Iteration Loop</strong>:<ul>
-<li>Each databuilder receives a set of incomplete tasks.</li>
-<li>It generates synthetic data points for those tasks.</li>
-</ul>
-</li>
-</ul>
-<!-- prettier-ignore-end -->
-
-<ul>
-<li><strong>Stopping Criteria Check</strong>: After each iteration, the framework checks whether stopping criteria (e.g., record count, stall limit, failure threshold) have been met for each task.</li>
-<li><strong>Completion</strong>: The run ends when all tasks are either completed or exited.</li>
-</ul>
-<h2 id="additional-components">Additional Components</h2>
+<p>A Databuilder defines <strong>how</strong> to produce data. It is a Python class that implements a <code>__call__</code> method: given a batch of input records, return a batch of output records. Everything else, looping, stopping, saving, deduplicating, is handled by the framework.</p>
+<p>Databuilders are designed to be reusable. A single databuilder can serve multiple tasks in the same run, and its blocks (see below) are initialized once and shared across all of them.</p>
+<p>See <a href="../databuilders/">Databuilders</a> for the full reference.</p>
 <h3 id="blocks">Blocks</h3>
-<p>Blocks are single-operation components that are initialized once per databuilder and shared across associated tasks. They promote logical isolation, reusability and minimal runtime memory footprint. Few prominent examples of blocks include:</p>
+<p>Blocks are single-operation components used inside a databuilder's <code>__call__</code> method. A block takes a list of dictionary-like inputs, performs one operation (an LLM call, a validation check, a deduplication pass), and returns results.</p>
+<p>The key design decision here is that all parallelism and concurrency lives inside blocks, not inside <code>__call__</code>. This makes databuilder code simple and sequential while the framework handles throughput transparently.</p>
+<p>Built-in block types include:</p>
 <ul>
-<li><strong>LMProvider Block</strong>: Connects to over six Language Model (LM) engines.</li>
-<li><strong>Utility Blocks</strong>: Provide common operations such as deduplication, filtering, syntax checking, and LLM-as-a-Judge (LLMaJ) capabilities.</li>
+<li><strong>LMProvider</strong>: Connects to LLM backends (Ollama, WatsonX, OpenAI, Anthropic, vLLM). Handles async batching, credential pooling, and retry internally.</li>
+<li><strong>ValidatorBlock</strong>: Filters records by a boolean condition. Rejected records are saved to a separate store for inspection.</li>
+<li><strong>Utility blocks</strong>: ROUGE-L deduplication, field remapping, list flattening, and others.</li>
 </ul>
+<p>See <a href="../blocks/">Blocks</a> for the full reference.</p>
 <h3 id="datastores-and-dataloaders">Datastores and Dataloaders</h3>
-<p>Most data generation pipelines require loading external assets such as In-context learning (ICL) examples, knowledge documents, API specifications, prompt templates. DGT simplifies such asset management through <strong>Datastores</strong> and <strong>Dataloaders</strong>.</p>
+<p>Datastores and Dataloaders handle data persistence and iteration respectively.</p>
+<p>A <strong>Datastore</strong> is a storage abstraction. It knows how to read and write data in a specific format (JSONL, Parquet, CSV, JSON) to a specific location. DiGiT creates one datastore per output type per task: <code>data</code> (intermediate), <code>final_data</code> (post-processed), <code>formatted_data</code> (after formatting), and block stores for rejected records.</p>
+<p>A <strong>Dataloader</strong> is a stateful iterator over a datastore. It supports resumable iteration (useful for long-running generation jobs), optional field remapping, and looping over seed data indefinitely.</p>
+<p>See <a href="../datastores/">Datastores</a> and <a href="../dataloaders/">Dataloaders</a> for the full reference.</p>
+<h2 id="execution-model">Execution Model</h2>
+<p>A DiGiT run proceeds as follows:</p>
+<ol>
+<li><strong>Parse</strong>: All task YAML files are loaded and grouped by their <code>data_builder</code> field.</li>
+<li><strong>Initialize</strong>: One databuilder instance is created per unique builder name, with all associated tasks passed to it. Blocks are initialized once per databuilder.</li>
+<li><strong>Generate</strong>: Each databuilder runs its task loop. For generation tasks, the loop continues until all tasks reach their target record count. For transformation tasks, it makes one pass over the input data.</li>
+<li><strong>Postprocess</strong>: Postprocessors (which are blocks declared in the builder YAML) run over the accumulated data for each task.</li>
+<li><strong>Save</strong>: Final data is written to each task's output datastore.</li>
+</ol>
+<h2 id="key-architectural-decisions">Key Architectural Decisions</h2>
+<h3 id="task-grouping-by-databuilder">Task grouping by databuilder</h3>
+<p>When multiple tasks share the same databuilder, they run together in a single loop. The databuilder receives a mixed batch of examples from all active tasks, generates data for all of them in one call, and the framework routes results back to the correct task by the <code>task_name</code> field on each record.</p>
+<p>This matters for throughput: if you have ten tasks using the same LLM, one databuilder instance makes ten tasks worth of LLM calls in a single batched request, instead of ten sequential loops each making independent calls.</p>
+<h3 id="async-lm-concurrency-with-credential-pooling">Async LM concurrency with credential pooling</h3>
+<p>LMProvider blocks issue all requests in a batch concurrently using a persistent async event loop. Concurrent requests are bounded by two limits: a per-block <code>call_limit</code> and a global semaphore shared across all blocks that use the same API credential.</p>
+<p>The global semaphore is the important part. If you run five databuilders that all call the same OpenAI API key, the total number of in-flight requests across all of them is capped at the semaphore limit. This prevents rate-limit errors even as you scale the number of tasks and builders in a single run.</p>
+<h3 id="lazy-plugin-registry">Lazy plugin registry</h3>
+<p>Databuilders, blocks, datastores, dataloaders, and formatters are all registered with decorators (<code>@register_data_builder</code>, <code>@register_block</code>, and so on). The registry does not import these modules at startup. Instead, it scans source files statically to build a map of decorator calls to file paths, and imports a module only when its registered name is first requested.</p>
+<p>This means startup time does not grow with the number of plugins installed, and adding a new databuilder or block requires no changes to any registry configuration file. The decorator on the class is the entire registration.</p>
+<p>Plugins are organized into namespaces (<code>core</code>, <code>public</code>). The <code>core</code> namespace is always loaded. Additional namespaces are added by the entry point (<code>fms_dgt.public</code>) or via <code>--include-namespaces</code> at the command line.</p>
 
 
 
@@ -1353,11 +1400,10 @@
     
     
       
-      
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>

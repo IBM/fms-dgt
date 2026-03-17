@@ -17,11 +17,8 @@
         <link rel="next" href="../datastores/">
       
       
-        
-      
-      
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
     
     
       
@@ -29,10 +26,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -55,6 +52,7 @@
     
       
 
+    
     
     
   </head>
@@ -277,7 +275,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../tutorials/changing_lm_engine/" class="md-tabs__link">
+        <a href="../../tutorials/generate_data/" class="md-tabs__link">
           
   
   
@@ -297,7 +295,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/generate_data/" class="md-tabs__link">
+        <a href="../../examples/simple_reasoning/" class="md-tabs__link">
           
   
   
@@ -382,14 +380,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Home
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -398,11 +391,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Home
-  
-
+            Home
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -418,14 +407,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Welcome to DGT
-  
-
     
   </span>
-  
   
 
       </a>
@@ -446,14 +430,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Installation
-  
-
     
   </span>
-  
   
 
       </a>
@@ -474,14 +453,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Usage
-  
-
     
   </span>
-  
   
 
       </a>
@@ -530,14 +504,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Concepts
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -546,11 +515,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Concepts
-  
-
+            Concepts
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -566,14 +531,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Architecture
-  
-
     
   </span>
-  
   
 
       </a>
@@ -594,14 +554,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Tasks
-  
-
     
   </span>
-  
   
 
       </a>
@@ -622,14 +577,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Data Builders
-  
-
     
   </span>
-  
   
 
       </a>
@@ -654,22 +604,178 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Blocks
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
-    
-  
     Blocks
-  
-
     
   </span>
   
-  
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-blocks-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why blocks exist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-a-block-from-a-databuilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a block from a databuilder
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using a block from a databuilder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#declaring-a-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Declaring a block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-a-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring a block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calling-a-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Calling a block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-remapping-with-input_map-and-output_map" class="md-nav__link">
+    <span class="md-ellipsis">
+      Field remapping with input_map and output_map
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#postprocessors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Postprocessors
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Built-in blocks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementing-a-new-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementing a new block
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementing a new block">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#choosing-a-base-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Choosing a base class
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#define-data_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Define DATA_TYPE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#register-the-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Register the block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-guidance-for-block-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design guidance for block authors
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -688,14 +794,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Datastores
-  
-
     
   </span>
-  
   
 
       </a>
@@ -716,14 +817,32 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Dataloaders
-  
-
     
   </span>
   
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Observability
+    
+  </span>
   
 
       </a>
@@ -767,14 +886,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Tutorials
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -783,13 +897,55 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Tutorials
-  
-
+            Tutorials
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/generate_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Building a Generation Databuilder
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/transform_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Building a Transformation Databuilder
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -803,14 +959,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
-    Changing the Language Model (LM) Engine
-  
-
+    Changing the Language Model Engine
     
   </span>
-  
   
 
       </a>
@@ -831,14 +982,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
-    Loading seed examples from a file
-  
-
+    Loading Seed Examples from a File
     
   </span>
-  
   
 
       </a>
@@ -859,14 +1005,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
-    Creating a validator
-  
-
+    Creating a Validator
     
   </span>
-  
   
 
       </a>
@@ -910,14 +1051,9 @@
   
   
   <span class="md-ellipsis">
-    
-  
     Examples
-  
-
     
   </span>
-  
   
 
             <span class="md-nav__icon md-icon"></span>
@@ -926,11 +1062,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
-            
-  
-    Examples
-  
-
+            Examples
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -941,19 +1073,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/generate_data/" class="md-nav__link">
+      <a href="../../examples/simple_reasoning/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    
-  
-    Data Generation
-  
-
+    Logical and Temporal Reasoning
     
   </span>
-  
   
 
       </a>
@@ -969,19 +1096,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/transform_data/" class="md-nav__link">
+      <a href="../../examples/instructlab/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    
-  
-    Data Transformation
-  
-
+    InstructLab: Skills and Knowledge
     
   </span>
-  
   
 
       </a>
@@ -997,19 +1119,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/generate_qa_over_knowledge/" class="md-nav__link">
+      <a href="../../examples/time_series/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    
-  
-    Generate question-answer (QA) pairs over knowledge documents
-  
-
+    Time Series Data Augmentation
     
   </span>
-  
   
 
       </a>
@@ -1045,6 +1162,143 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-blocks-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why blocks exist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-a-block-from-a-databuilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a block from a databuilder
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using a block from a databuilder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#declaring-a-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Declaring a block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-a-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring a block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calling-a-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Calling a block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-remapping-with-input_map-and-output_map" class="md-nav__link">
+    <span class="md-ellipsis">
+      Field remapping with input_map and output_map
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#postprocessors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Postprocessors
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Built-in blocks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementing-a-new-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementing a new block
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementing a new block">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#choosing-a-base-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Choosing a base class
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#define-data_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Define DATA_TYPE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#register-the-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      Register the block
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-guidance-for-block-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design guidance for block authors
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1053,13 +1307,6 @@
           
           
             <div class="md-content" data-md-component="content">
-              
-                
-
-
-
-
-              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -1070,31 +1317,155 @@
 
 
 <h1 id="blocks">Blocks</h1>
-<p>As mentioned previously, in the data builder <code>__call__</code> function, you will make use of blocks, which are the components in DGT that do the heavy lifting or contain specialized algorithms that would be useful to share across teams. While there are few constraints as to what types of programs can be written as blocks, for the most part, we have found that most blocks will fall under the general category of "generators" and "validators". To use a specific block in your databuilder, you need to specify it in both the YAML and in the <code>generate.py</code> file as a attribute of the databuilder's class. From a design standpoint, we aim to keep all multiprocessing and parallelism contained to the generators and the validators, i.e., <strong>not</strong> in the <code>__call__</code> function. By defining these ahead of time and restricting heavy operations to these objects, we can allow for better performance optimizations in terms of speed and resource allocation.</p>
-<p>To define a new block, first take a look at the base classes that the concrete implementation will inherit from. These are found in <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py">here</a>. All blocks must define a <code>execute</code> function which contains their main logic.</p>
-<p>Blocks are designed to be composable and specifiable through both config and code. A block will take as its main inputs an iterable of dictionaries, a huggingface dataset, or a pandas dataframe (see <code>fms_dgt/base/block.py</code>). Internally, it operates over a dataclass that is linked in its class definition under the <code>DATA_TYPE</code> field (e.g., see <a href="https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/core/blocks/llm/llm.py#L37">LMBlockData</a>). When the list of inputs (e.g., dictionaries) is passed to the block, the <a href="https://github.com/IBM/fms-dgt/blob/ec3ce21f341bf9938426a082b1e63431da031e03/fms_dgt/base/block.py#L334"><code>__call__</code> function</a> extracts the elements of the dictionary and maps them to the fields of the specified dataclass. This can be explicitly performed by specifying <code>input_map</code> or <code>output_map</code> in either the <code>__init__</code> of the block or in the call to the block. When neither <code>input_map</code> or <code>output_map</code> are specified, the DGT assumes the required fields (e.g., the fields of the internal block dataclass) will be present in the input / output objects.</p>
-<p>The core computation of the block (e.g., an LLM call in <code>fms_dgt/core/blocks/llm/llm.py</code>) is then run on those extracted dataclass objects and the results are written back to the original dictionaries (using the <code>output_map</code>).</p>
-<p>For example, within a databuilder one might call an llm block with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">inp</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  <span class="s2">&quot;llm_input&quot;</span><span class="p">:</span> <span class="s2">&quot;Respond &#39;yes&#39; or &#39;no&#39;&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  <span class="s2">&quot;llm_params&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="s2">&quot;stop&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">],</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">inp_lst</span> <span class="o">=</span> <span class="p">[</span><span class="n">inp</span><span class="p">]</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">llm_outputs</span> <span class="o">=</span> <span class="n">llm_class</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">input_map</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;llm_input&quot;</span><span class="p">:</span> <span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="s2">&quot;llm_params&quot;</span><span class="p">:</span> <span class="s2">&quot;gen_kwargs&quot;</span><span class="p">},</span> <span class="n">output_map</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="s2">&quot;llm_result&quot;</span><span class="p">})</span>
+<p>A block is a single-operation component that a databuilder calls inside its <code>__call__</code> method. Blocks handle the computationally intensive work: LLM inference, validation, deduplication, field transformation. The databuilder code remains simple and sequential; all concurrency and parallelism lives inside the blocks.</p>
+<h2 id="why-blocks-exist">Why blocks exist</h2>
+<p>The simplest way to add an LLM call to a databuilder is to instantiate a client inline and call it directly. That works for one databuilder, but it creates problems at scale:</p>
+<ul>
+<li><strong>Duplicated initialization</strong>: every databuilder that uses the same model creates its own connection and event loop.</li>
+<li><strong>No shared concurrency limits</strong>: two databuilders calling the same API key can independently saturate the rate limit.</li>
+<li><strong>No reuse</strong>: a validation function written for one databuilder cannot be used in another without copying code.</li>
+</ul>
+<p>Blocks solve all three. A block is initialized once per databuilder, shared across all tasks that builder serves, and registered under a name that any databuilder can reference in its YAML config. The framework handles wiring: it reads the block definitions from YAML, instantiates them, and injects them as typed class attributes on the databuilder.</p>
+<h2 id="using-a-block-from-a-databuilder">Using a block from a databuilder</h2>
+<h3 id="declaring-a-block">Declaring a block</h3>
+<p>Declare the block as a class-level annotation in <code>generate.py</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDataBuilder</span><span class="p">(</span><span class="n">GenerationDataBuilder</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">generator</span><span class="p">:</span> <span class="n">LMProvider</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">validator</span><span class="p">:</span> <span class="n">MyValidatorBlock</span>
 </code></pre></div>
-<p>and the output may be extracted with</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">for</span> <span class="n">llm_output</span> <span class="ow">in</span> <span class="n">llm_outputs</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original prompt: &quot;</span> <span class="o">+</span> <span class="n">llm_output</span><span class="p">[</span><span class="s2">&quot;input&quot;</span><span class="p">])</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Result: </span><span class="si">{</span><span class="n">llm_output</span><span class="p">[</span><span class="s1">&#39;llm_result&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<p>The annotation name must match the <code>name</code> field in the corresponding YAML block entry.</p>
+<h3 id="configuring-a-block">Configuring a block</h3>
+<p>Add the block to the <code>blocks</code> list in the builder YAML:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">blocks</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generator</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">model_id_or_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">granite4:3b</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validator</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_validator_type</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">filter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
-<p>Importantly, the <code>output_map</code> will specify what is <em>written</em> onto the object that is passed in. Hence, if you want drag along additional elements in the dictionary, you just add those as fields to the input. Typically, in the process of SDG you are building up some object to return. This could be passed to through block as</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">inp</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="s2">&quot;Respond &#39;yes&#39; or &#39;no&#39;&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  <span class="s2">&quot;gen_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;stop&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">],</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">SdgObjectBeingGenerated</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">inp_lst</span> <span class="o">=</span> <span class="p">[</span><span class="n">inp</span><span class="p">]</span>
+<p>The <code>type</code> field is the registered name of the block class (the string passed to <code>@register_block</code>).</p>
+<h3 id="calling-a-block">Calling a block</h3>
+<p>Blocks accept a list of dictionaries. Each dictionary represents one item to process. The block maps dictionary fields to its internal <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L235"><code>DATA_TYPE</code></a> dataclass, runs its logic, and writes results back to the dictionaries:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="p">[{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span> <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="n">my_data_point</span><span class="p">}],</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;chat_completion&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">original</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">&quot;reference&quot;</span><span class="p">]</span>
 </code></pre></div>
+<p>Fields that are not part of the block's <code>DATA_TYPE</code> (like <code>reference</code> above) are passed through unchanged. This is the standard pattern for carrying data point context through a block call.</p>
+<h3 id="field-remapping-with-input_map-and-output_map">Field remapping with <code>input_map</code> and <code>output_map</code></h3>
+<p>When your dictionary uses different field names than the block's <code>DATA_TYPE</code> expects, use <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L65"><code>input_map</code> and <code>output_map</code></a> to rename fields at the boundary. Maps can be set in the YAML config (applied to every call) or passed per call:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># In YAML: rename &quot;question&quot; in your dict to &quot;input&quot; expected by the block</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dedup</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rouge_scorer</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">filter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">input_map</span><span class="p">:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># At call time: rename &quot;output&quot; in the block result back to &quot;answer&quot; in your dict</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output_map</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="s2">&quot;answer&quot;</span><span class="p">})</span>
+</code></pre></div>
+<p>The YAML convention is <code>{block_internal_field: your_field}</code>. DiGiT flips this internally for lookup, so the YAML reads as "the block's <code>input</code> field comes from my <code>question</code> field."</p>
+<h3 id="postprocessors">Postprocessors</h3>
+<p>Blocks can also run as postprocessors after the main generation loop completes. Declare them in the <code>postprocessors</code> list by name:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">postprocessors</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dedup</span>
+</code></pre></div>
+<p>The block must already be declared in <code>blocks</code>. Postprocessors run over the full accumulated dataset for each task once generation finishes, before final data is written.</p>
+<h2 id="built-in-blocks">Built-in blocks</h2>
+<table>
+<thead>
+<tr>
+<th>Registry name</th>
+<th>Category</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ollama</code>, <code>openai</code>, <code>azure-openai</code>, <code>anthropic</code>, <code>watsonx</code>, <code>vllm</code>, <code>vllm-server</code></td>
+<td>LM inference</td>
+<td>LLM completion and chat completion via various backends</td>
+</tr>
+<tr>
+<td><code>rouge_scorer</code></td>
+<td>Validator</td>
+<td>Filters records whose target field exceeds a ROUGE-L similarity threshold against existing data (deduplication)</td>
+</tr>
+<tr>
+<td><code>lm_judge</code></td>
+<td>Validator</td>
+<td>Uses an LLM to judge whether a generated record meets a quality criterion</td>
+</tr>
+<tr>
+<td><code>tool_call_validator</code></td>
+<td>Validator</td>
+<td>Validates tool-calling sequences in multi-turn data</td>
+</tr>
+<tr>
+<td><code>noop</code></td>
+<td>Validator</td>
+<td>Always passes. Useful as a placeholder or for testing</td>
+</tr>
+<tr>
+<td><code>field_map</code></td>
+<td>Utility</td>
+<td>Renames or copies fields between dictionary keys</td>
+</tr>
+<tr>
+<td><code>flatten_field</code></td>
+<td>Utility</td>
+<td>Explodes a list-valued field into separate records</td>
+</tr>
+</tbody>
+</table>
+<h2 id="implementing-a-new-block">Implementing a new block</h2>
+<h3 id="choosing-a-base-class">Choosing a base class</h3>
+<p>All blocks inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L89"><code>Block</code></a>. For the most common case of filtering or validating records, inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421"><code>ValidatorBlock</code></a> instead. <code>ValidatorBlock</code> handles the iteration, filtering, and rejected-record storage loop for you. You only implement <code>_validate</code>.</p>
+<h3 id="define-data_type">Define DATA_TYPE</h3>
+<p><code>DATA_TYPE</code> declares the fields your block needs. The framework extracts these from incoming dictionaries automatically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBlockData</span><span class="p">(</span><span class="n">ValidatorBlockData</span><span class="p">):</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="nb">input</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># required (no default)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># optional (has default)</span>
+</code></pre></div>
+<p>Fields with no default are required; the block will raise if they are missing from an input dictionary. Fields with defaults are optional.</p>
+<h3 id="register-the-block">Register the block</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@register_block</span><span class="p">(</span><span class="s2">&quot;my_namespace/my_block_name&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBlock</span><span class="p">(</span><span class="n">ValidatorBlock</span><span class="p">):</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">DATA_TYPE</span> <span class="o">=</span> <span class="n">MyBlockData</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">MyBlockData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]:</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">input</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>            <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;Input too short.&quot;</span><span class="p">}</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span>
+</code></pre></div>
+<p>The string passed to <code>@register_block</code> is the <code>type</code> value used in YAML configs.</p>
+<h3 id="design-guidance-for-block-authors">Design guidance for block authors</h3>
+<p><strong>Keep blocks stateless.</strong> Blocks are shared across tasks running in the same databuilder. Any instance variable you write during a call will be visible to other tasks. If you need per-task state, use the <code>store_names</code> mechanism to route data to per-task datastores, which the framework manages automatically.</p>
+<p><strong>Do not put concurrency in <code>__call__</code>.</strong> If your block needs to process items in parallel (for example, calling an external API for each item), implement the concurrency inside <code>execute</code> or <code>_validate</code>. The databuilder's <code>__call__</code> method should remain a simple sequential orchestration.</p>
+<p><strong>Use <code>filter: true</code> and the rejected-record store.</strong> When implementing a <code>ValidatorBlock</code>, always support <code>filter: true</code> and pass <code>store_names</code> through from the caller. This allows users to inspect rejected records without adding any extra code to your block:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validator</span><span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="p">[</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>        <span class="p">{</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>            <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="n">dp</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>            <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="n">dp</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>            <span class="s2">&quot;store_names&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_block_store_names</span><span class="p">(</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>                <span class="n">block_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">validator</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>                <span class="n">task_name</span><span class="o">=</span><span class="n">dp</span><span class="o">.</span><span class="n">task_name</span><span class="p">,</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>            <span class="p">),</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="p">}</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>        <span class="k">for</span> <span class="n">dp</span> <span class="ow">in</span> <span class="n">candidates</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="p">]</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="p">)</span>
+</code></pre></div>
+<p><strong>Prefer narrow <code>DATA_TYPE</code> definitions.</strong> Only declare fields your block actually uses. Narrow types make blocks easier to reuse across databuilders with different schemas, since callers can use <code>input_map</code> to satisfy the requirements from whatever fields they have.</p>
 
 
 
@@ -1153,11 +1524,10 @@
     
     
       
-      
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>
