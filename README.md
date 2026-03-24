@@ -6,7 +6,7 @@ DGT (pronounced "digit") is a framework that enables different algorithms and mo
 [![Code style: black](https://badgen.net/static/Code%20Style/black/black)](https://github.com/psf/black)
 ![GitHub License](https://badgen.net/static/license/Apache%202.0/green)
 
-| [Setup](#setup) | [Quick Start](#quick-start) | [Usage](#usage) |
+| [Setup](#setup) | [Quick Start](#quick-start) | [Usage](#usage) | [Studio](#studio) |
 
 This is the main repository for DiGiT, our **D**ata **G**eneration and **T**ransformation framework.
 
@@ -144,6 +144,44 @@ DGT_TELEMETRY_RECORD_PAYLOADS=1 python -m fms_dgt.public ...
 ```
 
 See [Observability](https://ibm.github.io/fms-dgt/concepts/observability/) in the docs for the full event and span reference.
+
+## Studio
+
+DiGiT Studio is a local run-monitoring UI that works like TensorBoard: it auto-launches alongside a generation run and stays up after the run finishes so you can keep browsing your data.
+
+**Install:**
+
+```bash
+pip install -e ".[studio]"
+```
+
+Node.js (>=24) is required only if you want to rebuild Studio from source. The pre-built assets in `studio/dist/` are committed to the repo, so end users do not need Node.
+
+**Launch with a generation run:**
+
+```bash
+python -m fms_dgt --studio \
+  --task-paths ./tasks/public/examples/qa/task.yaml \
+  --num-outputs-to-generate 20
+# DiGiT Studio is running at http://localhost:4720
+```
+
+**Launch Studio standalone** (to browse existing runs without starting a new generation):
+
+```bash
+digit-studio start
+digit-studio start --output-dir /path/to/output
+digit-studio start --port 4720
+```
+
+**Stop a running instance:**
+
+```bash
+digit-studio stop
+digit-studio stop --port 5000  # if running on a custom port
+```
+
+Studio reads `DGT_OUTPUT_DIR` from your environment by default. Override the port via `DIGIT_STUDIO_PORT` in `.env` or on the command line. Studio intentionally outlives the generation run so you can keep browsing data after it finishes.
 
 ## The Team
 

@@ -1,0 +1,86 @@
+// Copyright The DiGiT Authors
+// SPDX-License-Identifier: Apache-2.0
+
+@use '@carbon/styles/scss/spacing' as *;
+
+.page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.runTile {
+  padding: $spacing-05;
+  border-bottom: solid 1px var(--cds-border-subtle);
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-04;
+}
+
+.runTileHeader {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.runToolbar {
+  display: flex;
+  column-gap: $spacing-03;
+}
+
+.runTileBlock {
+  display: flex;
+  column-gap: $spacing-09;
+}
+
+.runTileBlockElement {
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-03;
+}
+
+.runTileBlockElementHeading {
+  font-size: 14px;
+  line-height: 16px;
+  color: var(--cds-text-helper);
+}
+
+.tabs {
+  flex: 1;
+  overflow: hidden;
+}
+
+.tabs :global(.cds--tab-content) {
+  padding: 0;
+  max-height: 75vh;
+  overflow: auto;
+}
+
+.dataViewer {
+  margin-top: $spacing-05;
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-09;
+}
+
+.dataSelector {
+  margin: 0 $spacing-09;
+}
+
+.stepContainer {
+  padding: 0 $spacing-05;
+}
+
+.tabPanelWarning {
+  margin: 10% 25%;
+  display: flex;
+  column-gap: $spacing-05;
+  align-items: center;
+}
+
+.tabPanelWarningText {
+  font-size: 18px;
+  line-height: 24px;
+}

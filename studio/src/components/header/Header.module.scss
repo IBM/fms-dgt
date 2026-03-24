@@ -1,0 +1,13 @@
+// Copyright The DiGiT Authors
+// SPDX-License-Identifier: Apache-2.0
+
+@use '@carbon/react/scss/spacing' as *;
+
+.statusDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: auto $spacing-03;
+  flex-shrink: 0;
+}

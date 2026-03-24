@@ -44,6 +44,7 @@ fms_dgt = ["**/*.yaml", "data/**/*"]
 
 [project.scripts]
 fms_dgt = "fms_dgt.public.__main__:main"
+digit-studio = "fms_dgt.studio.launcher:main"
 
 [project.urls]
 Homepage = "https://github.com/IBM/fms_dgt"
@@ -51,6 +52,7 @@ Repository = "https://github.com/IBM/fms_dgt"
 
 [project.optional-dependencies]
 # Feature specific dependencies
+studio = ["fastapi", "uvicorn[standard]"]
 vllm = ["vllm", "more_itertools"]
 telemetry = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
 

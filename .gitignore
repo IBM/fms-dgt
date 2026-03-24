@@ -19,6 +19,11 @@ dist/
 *.egg-info/
 MANIFEST
 
+# Studio
+studio/node_modules/
+studio/.next/
+!studio/dist/
+
 # Environments
 .env
 .venv
@@ -54,3 +59,4 @@ dmypy.json
 # Claude Code
 .claude/
 CLAUDE.md
+studio/.env.local
