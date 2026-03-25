@@ -58,7 +58,7 @@ telemetry = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
 time_series = ["statsmodels", "fastparquet>=2024.5.0", "torch>=2.3", "transformers>=4.1", "accelerate>=0.26.0", "matplotlib"]
 
 # Namespace specific dependencies
-public = ["lingua-language-detector"]
+public = ["lingua-language-detector", "nltk", "ftfy"]
 
 # Development setup dependencies
 dev-test = ["pytest", "pytest-cov"]
