@@ -41,7 +41,10 @@ class MagpieTransformDataBuilder(TransformationDataBuilder):
         data_points: MagpieTransformData,
     ) -> Iterable[dict]:
         # Step 1: Initialize outputs from inputs
-        outputs = [{**data_point.input, _MP_INPUT_DATA: data_point} for data_point in data_points]
+        outputs = [
+            {**data_point.input, _MP_INPUT_DATA: data_point, "task_name": data_point.task_name}
+            for data_point in data_points
+        ]
 
         # Step 2: Invoke magpie tagger, if requested
         if hasattr(self, "tagger"):

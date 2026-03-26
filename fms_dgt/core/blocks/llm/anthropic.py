@@ -10,6 +10,7 @@ import logging
 import anthropic
 
 # Local
+from fms_dgt.base.block import get_row_name
 from fms_dgt.base.registry import get_resource, register_block
 from fms_dgt.base.telemetry import (
     payload_max_chars,
@@ -312,7 +313,13 @@ class Anthropic(LMProvider):
             ),
         )
 
-        async with self._llm_span(method=method, batch_size=1, params=params) as span_attrs:
+        _task_name = get_row_name(instance)
+        async with self._llm_span(
+            method=method,
+            batch_size=1,
+            params=params,
+            task_names=[_task_name] if _task_name is not None else None,
+        ) as span_attrs:
             if method == self.CHAT_COMPLETION:
                 messages = self._prepare_input(
                     instance,

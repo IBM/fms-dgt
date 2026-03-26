@@ -11,6 +11,7 @@ import openai
 import tiktoken
 
 # Local
+from fms_dgt.base.block import get_row_name
 from fms_dgt.base.registry import get_resource, register_block
 from fms_dgt.base.telemetry import (
     payload_max_chars,
@@ -291,9 +292,16 @@ class OpenAI(LMProvider):
         )
 
         batch_size = len(chunk) if isinstance(chunk, Iterable) else 1
+        _task_names = list(
+            {
+                n
+                for item in (chunk if isinstance(chunk, Iterable) else [chunk])
+                if (n := get_row_name(item)) is not None
+            }
+        )
 
         async with self._llm_span(
-            method=method, batch_size=batch_size, params=params
+            method=method, batch_size=batch_size, params=params, task_names=_task_names
         ) as span_attrs:
             if method == self.CHAT_COMPLETION:
                 messages = self._prepare_input(

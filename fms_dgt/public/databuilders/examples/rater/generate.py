@@ -54,6 +54,8 @@ class RatingDataBuilder(TransformationDataBuilder):
             #   Not set here because the defaults from rater.yaml are sufficient.
             # reference (Optional[Any]): We recommend passing data used to build prompt
             #   for future use. DiGiT returns all non-reserved fields in block output.
+            # task_name (str): Not used by the block. Included for telemetry — allows
+            #   DiGiT to attribute token usage to this task in traces.
             rater_inputs.append(
                 {
                     "input": [
@@ -68,6 +70,7 @@ class RatingDataBuilder(TransformationDataBuilder):
                         }
                     ],
                     "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 

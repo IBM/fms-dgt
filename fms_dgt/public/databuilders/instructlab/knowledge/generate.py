@@ -134,6 +134,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                         "gen_kwargs": {"stop": prompt_templates["mcq_question_generation"].stop},
                         "document": document,
                         "reference": shuffled_seed_data,
+                        "task_name": shuffled_seed_data[0].task_name,
                     }
                 )
             else:
@@ -161,6 +162,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                             },
                             "document": document,
                             "reference": icl_examples,
+                            "task_name": icl_examples[0].task_name,
                         }
                     )
 
@@ -220,6 +222,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                             for attr in ["question", "answer", "context"]
                         },
                     ),
+                    "task_name": question_answer_pair.task_name,
                 }
                 for question_answer_pair in valid_question_answer_pairs
             ]

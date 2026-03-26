@@ -82,6 +82,12 @@ def main() -> None:
         help="Path to the DiGiT output directory to monitor (default: $DGT_OUTPUT_DIR).",
     )
     parser.add_argument(
+        "--telemetry-dir",
+        type=str,
+        default=os.environ.get("DGT_TELEMETRY_DIR"),
+        help="Path to the DiGiT telemetry directory (default: $DGT_TELEMETRY_DIR).",
+    )
+    parser.add_argument(
         "--port",
         type=int,
         default=STUDIO_PORT,
@@ -98,10 +104,18 @@ def main() -> None:
                 "Example: digit-studio start --output-dir ./output"
             )
             sys.exit(1)
-        launch_studio(output_dir=args.output_dir, port=args.port)
+        launch_studio(
+            output_dir=args.output_dir,
+            telemetry_dir=args.telemetry_dir,
+            port=args.port,
+        )
 
 
-def launch_studio(output_dir: str, port: int = STUDIO_PORT) -> None:
+def launch_studio(
+    output_dir: str,
+    telemetry_dir: str | None = None,
+    port: int = STUDIO_PORT,
+) -> None:
     """Launch DiGiT Studio if a display is available and it is not already running."""
     if not is_display_available():
         print("DiGiT Studio: skipped (no display detected — headless environment)")
@@ -125,6 +139,13 @@ def launch_studio(output_dir: str, port: int = STUDIO_PORT) -> None:
         "PORT": str(port),
         "DGT_OUTPUT_DIR": os.path.abspath(output_dir),
     }
+    if telemetry_dir:
+        env["DGT_TELEMETRY_DIR"] = os.path.abspath(telemetry_dir)
+    elif "DGT_TELEMETRY_DIR" not in env:
+        # Fall back to default: telemetry/ at the repo root (same level as output/).
+        # DGT_TELEMETRY_DIR defaults to "telemetry" relative to the process cwd,
+        # which is the repo root when running via `python -m fms_dgt` or `digit-studio`.
+        env["DGT_TELEMETRY_DIR"] = os.path.abspath("telemetry")
 
     subprocess.Popen(
         ["node", node_server],

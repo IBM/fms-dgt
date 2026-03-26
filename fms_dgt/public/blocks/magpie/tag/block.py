@@ -11,7 +11,7 @@ import os
 import re
 
 # Local
-from fms_dgt.base.block import Block, BlockData
+from fms_dgt.base.block import Block, BlockData, get_row_name
 from fms_dgt.base.registry import get_block, register_block
 from fms_dgt.constants import TYPE_KEY
 from fms_dgt.core.blocks.llm import LMProvider
@@ -695,12 +695,14 @@ class MagpieTagger(Block):
                             output_text=item.magpie_output,
                         )
 
+                    _task_name = get_row_name(item)
                     instances.append(
                         {
                             "input": prompt,
                             "src": item,
                             "task": task,
                             "index": item_idx,
+                            **({"task_name": _task_name} if _task_name is not None else {}),
                         }
                     )
 

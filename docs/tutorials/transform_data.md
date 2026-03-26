@@ -166,6 +166,9 @@ class FactTriplesDataBuilder(TransformationDataBuilder):
                     ],
                     # Pass the full data point through so we can reference it in outputs.
                     "reference": data_point,
+                    # task_name: not used by the block; included so DiGiT can attribute
+                    #   token usage to this task in traces.jsonl.
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -211,10 +214,11 @@ class FactTriplesDataBuilder(TransformationDataBuilder):
         return []
 ````
 
-Two things worth noting:
+Three things worth noting:
 
 - `TransformationDataBuilder.__call__` receives a batch of input records and returns a list of output records. The batch size is controlled by `transform_batch_size` in the runner config (defaults to the full dataset).
 - Because one paragraph can produce multiple triples, the output list may be longer than the input list. This is the 1-to-N transformation pattern.
+- The `task_name` key in each block input dict is a telemetry convention. The block ignores it, but DiGiT reads it to attribute token usage to the correct task in `traces.jsonl`. Always include it as the last key in every block input dict you build.
 
 ## Step 5: Write the builder config
 

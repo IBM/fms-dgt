@@ -169,6 +169,8 @@ class MisconceptionDataBuilder(GenerationDataBuilder):
 
             # input: messages list for chat_completion.
             # reference: passed through unchanged so we can recover task_name below.
+            # task_name: not used by the block; included so DiGiT can attribute token
+            #   usage to this task in traces.jsonl. Always add this as the last key.
             generator_inputs.append(
                 {
                     "input": [
@@ -180,6 +182,7 @@ class MisconceptionDataBuilder(GenerationDataBuilder):
                         }
                     ],
                     "reference": icl_examples,
+                    "task_name": icl_examples[0].task_name,
                 }
             )
 
@@ -216,6 +219,7 @@ A few things worth noting:
 - `@register_data_builder("public/examples/misconceptions")` registers this class under a name that must match the `name` field in the YAML config and the `data_builder` field in the task YAML.
 - `generator: LMProvider` is a class-level annotation. DiGiT reads the YAML config and injects the configured LM block automatically.
 - The `reference` field passes ICL examples through the LM call so we can recover `task_name` when building output objects.
+- The `task_name` field is not used by the block itself. It is a telemetry convention: DiGiT reads it to attribute token usage to the correct task in `traces.jsonl`. Always include it as the last key in every block input dict you build.
 
 ## Step 6: Write the builder config
 

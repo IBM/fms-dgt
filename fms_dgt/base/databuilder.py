@@ -772,15 +772,39 @@ class GenerationDataBuilder(DataBuilder):
 
             # Launch postprocessing
             self.logger.info("Launch postprocessing")
-            self.execute_postprocessing(tasks_in_postprocessing_phase)
+            _counts_before_postproc = {
+                task.name: len(task.machine_data) for task in tasks_in_postprocessing_phase
+            }
+            with Span(
+                "dgt.postprocessing",
+                self._span_writer,
+                parent_span_name="dgt.epoch",
+                epoch=self._epoch,
+                task_count=len(tasks_in_postprocessing_phase),
+            ):
+                self.execute_postprocessing(tasks_in_postprocessing_phase)
             for task in tasks_in_postprocessing_phase:
                 if task.machine_data:
                     remaining_unstalled_epochs_per_task[task.name] = self._max_stalled_attempts
                 else:
                     remaining_unstalled_epochs_per_task[task.name] -= 1
-            self.logger.info("Postprocessing completed")
+            self.logger.info(
+                "Postprocessing completed",
+                extra={
+                    "event": "postprocessing_finished",
+                    "epoch": self._epoch,
+                    "task_counts": {
+                        task.name: {
+                            "before": _counts_before_postproc[task.name],
+                            "after": len(task.machine_data),
+                        }
+                        for task in tasks_in_postprocessing_phase
+                    },
+                },
+            )
 
             # Remove stalled or completed task
+            _epoch_finish_reasons: dict = {}
             for task in tasks_in_postprocessing_phase:
                 if (
                     task.is_complete()
@@ -810,6 +834,7 @@ class GenerationDataBuilder(DataBuilder):
                         _reason = "stalled_generation"
                     else:
                         _reason = "stalled_postprocessing"
+                    _epoch_finish_reasons[task.name] = _reason
                     self.logger.info(
                         "Task '%s' finished.",
                         task.name,
@@ -836,6 +861,19 @@ class GenerationDataBuilder(DataBuilder):
                 self.logger.info(report_str)
                 self._epoch += 1
 
+            self.logger.info(
+                "Epoch %s finished.",
+                self._epoch,
+                extra={
+                    "event": "epoch_finished",
+                    "epoch": self._epoch,
+                    "generation_attempts": attempt_within_epoch,
+                    "task_counts": {
+                        task.name: len(task.machine_data) for task in tasks_in_postprocessing_phase
+                    },
+                    "finish_reasons": _epoch_finish_reasons,
+                },
+            )
             _epoch_span.__exit__(None, None, None)
             self.logger.info("*" * 99)
 
@@ -933,10 +971,28 @@ class TransformationDataBuilder(DataBuilder):
 
         self.logger.info("*" * 99)
 
-        # Launch postprocessing
+        # Capture counts after transformation, before postprocessing
+        counts_before_postproc = {task.name: len(task.machine_data) for task in tasks}
+
+        # Launch postprocessing (timed span, consistent with generation pipeline)
         self.logger.info("Launch postprocessing")
-        self.execute_postprocessing(tasks)
+        with Span("dgt.postprocessing", self._span_writer):
+            self.execute_postprocessing(tasks)
         self.logger.info("Postprocessing completed")
+
+        self.logger.info(
+            "Transformation finished",
+            extra={
+                "event": "transformation_finished",
+                "task_counts": {
+                    task.name: {
+                        "before": counts_before_postproc[task.name],
+                        "after": len(task.machine_data),
+                    }
+                    for task in tasks
+                },
+            },
+        )
 
         # Terminate completed tasks
         for task in tasks:
