@@ -762,6 +762,11 @@ class GenerationTask(Task):
 
         super().finish()
 
+    @property
+    def num_outputs_to_generate(self) -> int:
+        """Returns the number of outputs to generate for this task."""
+        return self._num_outputs_to_generate
+
     def is_complete(self):
         """Indicates whether task has completed.
 
