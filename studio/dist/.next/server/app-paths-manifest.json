@@ -1,9 +1,0 @@
-{
-  "/_global-error/page": "app/_global-error/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/config/route": "app/api/config/route.js",
-  "/api/data/run/route": "app/api/data/run/route.js",
-  "/api/data/runs/route": "app/api/data/runs/route.js",
-  "/api/health/route": "app/api/health/route.js",
-  "/page": "app/page.js"
-}

@@ -1,0 +1,99 @@
+{
+  "_comment": "Token pricing rates per provider and model. Prices are in USD per token (not per million). To add a private or internal model, add an entry under the appropriate provider's 'models' key using the exact model_id string that appears in your DiGiT run's telemetry spans.",
+  "providers": {
+    "anthropic": {
+      "updated_at": "2026-03-25",
+      "description": "Anthropic API (api.anthropic.com). Prices are public list rates; volume discounts and Bedrock pricing differ.",
+      "models": {
+        "claude-opus-4-6":   { "input": 0.000005,   "output": 0.000025   },
+        "claude-opus-4-5":   { "input": 0.000005,   "output": 0.000025   },
+        "claude-sonnet-4-6": { "input": 0.000003,   "output": 0.000015   },
+        "claude-sonnet-4-5": { "input": 0.000003,   "output": 0.000015   },
+        "claude-sonnet-4":   { "input": 0.000003,   "output": 0.000015   },
+        "claude-haiku-4-5":  { "input": 0.000001,   "output": 0.000005   },
+        "claude-haiku-3-5":  { "input": 0.0000008,  "output": 0.000004   },
+        "claude-haiku-3":    { "input": 0.00000025, "output": 0.00000125 }
+      }
+    },
+    "openai": {
+      "updated_at": "2026-03-25",
+      "description": "OpenAI API (api.openai.com). Prices are public list rates; batch API and enterprise pricing differ.",
+      "models": {
+        "gpt-5.4":       { "input": 0.0000025,  "output": 0.000015   },
+        "gpt-5.4-mini":  { "input": 0.00000075, "output": 0.0000045  },
+        "gpt-5.4-nano":  { "input": 0.0000002,  "output": 0.00000125 },
+        "gpt-5.4-pro":   { "input": 0.00003,    "output": 0.00018    },
+        "gpt-4o":        { "input": 0.0000025,  "output": 0.00001    },
+        "gpt-4o-mini":   { "input": 0.00000015, "output": 0.0000006  },
+        "gpt-4-turbo":   { "input": 0.00001,    "output": 0.00003    },
+        "gpt-3.5-turbo": { "input": 0.0000005,  "output": 0.0000015  }
+      }
+    },
+    "watsonx": {
+      "updated_at": "2026-03-25",
+      "description": "IBM watsonx.ai (ibm.com/watsonx). Prices are approximate public list rates; enterprise contracts and resource units differ.",
+      "models": {
+        "meta-llama/llama-3-3-70b-instruct":        { "input": 0.0000009,  "output": 0.0000009  },
+        "meta-llama/llama-3-1-70b-instruct":        { "input": 0.0000009,  "output": 0.0000009  },
+        "meta-llama/llama-3-1-8b-instruct":         { "input": 0.0000003,  "output": 0.0000003  },
+        "meta-llama/llama-3-2-11b-vision-instruct": { "input": 0.0000003,  "output": 0.0000003  },
+        "ibm/granite-3-3-8b-instruct":              { "input": 0.0000003,  "output": 0.0000003  },
+        "ibm/granite-3-3-2b-instruct":              { "input": 0.0000001,  "output": 0.0000001  },
+        "mistralai/mistral-large":                  { "input": 0.000002,   "output": 0.000006   },
+        "mistralai/mistral-large-instruct-2411":    { "input": 0.000002,   "output": 0.000006   }
+      }
+    },
+    "ollama": {
+      "updated_at": "2026-03-25",
+      "description": "Ollama local inference. Costs are rough estimates of electricity and amortized hardware. Actual cost varies significantly by hardware (consumer GPU, Apple Silicon, CPU-only) and electricity rate. Treat these as order-of-magnitude guidance only.",
+      "models": {
+        "llama3.3":         { "input": 0.0000002,  "output": 0.0000002  },
+        "llama3.2":         { "input": 0.00000005, "output": 0.00000005 },
+        "llama3.1":         { "input": 0.0000002,  "output": 0.0000002  },
+        "llama3.1:8b":      { "input": 0.00000005, "output": 0.00000005 },
+        "llama3.1:70b":     { "input": 0.0000002,  "output": 0.0000002  },
+        "llama3.1:405b":    { "input": 0.0000005,  "output": 0.0000005  },
+        "llama3:8b":        { "input": 0.00000005, "output": 0.00000005 },
+        "llama3:70b":       { "input": 0.0000002,  "output": 0.0000002  },
+        "mistral":          { "input": 0.00000005, "output": 0.00000005 },
+        "mistral-large":    { "input": 0.0000002,  "output": 0.0000002  },
+        "gemma3":           { "input": 0.00000002, "output": 0.00000002 },
+        "gemma3:2b":        { "input": 0.00000002, "output": 0.00000002 },
+        "gemma3:9b":        { "input": 0.00000005, "output": 0.00000005 },
+        "gemma3:27b":       { "input": 0.0000002,  "output": 0.0000002  },
+        "qwen2.5":          { "input": 0.00000005, "output": 0.00000005 },
+        "qwen2.5:7b":       { "input": 0.00000005, "output": 0.00000005 },
+        "qwen2.5:72b":      { "input": 0.0000002,  "output": 0.0000002  },
+        "phi4":             { "input": 0.00000005, "output": 0.00000005 },
+        "phi4-mini":        { "input": 0.00000002, "output": 0.00000002 },
+        "granite3.3":       { "input": 0.00000005, "output": 0.00000005 },
+        "granite3.3:2b":    { "input": 0.00000002, "output": 0.00000002 },
+        "granite3.3:8b":    { "input": 0.00000005, "output": 0.00000005 },
+        "granite4":         { "input": 0.00000005, "output": 0.00000005 },
+        "granite4:3b":      { "input": 0.00000002, "output": 0.00000002 },
+        "granite4:8b":      { "input": 0.00000005, "output": 0.00000005 },
+        "ministral":        { "input": 0.00000002, "output": 0.00000002 },
+        "ministral-3":      { "input": 0.00000002, "output": 0.00000002 }
+      }
+    },
+    "vllm": {
+      "updated_at": "2026-03-25",
+      "description": "vLLM self-hosted inference. Costs are rough estimates based on cloud GPU rental rates (A100/H100) and typical throughput. Actual cost depends heavily on GPU type, batch size, utilization, and whether you use cloud or on-prem hardware. Treat these as order-of-magnitude guidance only.",
+      "models": {
+        "meta-llama/llama-3-3-70b-instruct":        { "input": 0.0000015, "output": 0.0000015 },
+        "meta-llama/llama-3-1-70b-instruct":        { "input": 0.0000015, "output": 0.0000015 },
+        "meta-llama/llama-3-1-8b-instruct":         { "input": 0.0000004, "output": 0.0000004 },
+        "meta-llama/llama-3-2-3b-instruct":         { "input": 0.0000001, "output": 0.0000001 },
+        "meta-llama/llama-3-2-1b-instruct":         { "input": 0.0000001, "output": 0.0000001 },
+        "meta-llama/llama-3-405b-instruct":         { "input": 0.000004,  "output": 0.000004  },
+        "mistralai/mistral-7b-instruct":            { "input": 0.0000004, "output": 0.0000004 },
+        "mistralai/mistral-large-instruct-2411":    { "input": 0.0000015, "output": 0.0000015 },
+        "mistralai/mixtral-8x7b-instruct":          { "input": 0.0000008, "output": 0.0000008 },
+        "ibm/granite-3-3-8b-instruct":              { "input": 0.0000004, "output": 0.0000004 },
+        "ibm/granite-3-3-2b-instruct":              { "input": 0.0000001, "output": 0.0000001 },
+        "google/gemma-2-9b-it":                     { "input": 0.0000004, "output": 0.0000004 },
+        "google/gemma-2-27b-it":                    { "input": 0.0000008, "output": 0.0000008 }
+      }
+    }
+  }
+}

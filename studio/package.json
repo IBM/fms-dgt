@@ -9,9 +9,9 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "next dev --port 4720",
+    "dev": "(cd .. && DGT_STUDIO_MODE=dev .venv/bin/python -m fms_dgt.studio.server) & next dev --port 3000",
     "build": "next build",
-    "start": "next start",
+    "start": "(cd .. && .venv/bin/python -m fms_dgt.studio.server)",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src/ && stylelint \"src/**/*.{css,scss}\"",

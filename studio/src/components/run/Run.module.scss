@@ -50,11 +50,20 @@
 .tabs {
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs :global(.cds--tabs) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .tabs :global(.cds--tab-content) {
   padding: 0;
-  max-height: 75vh;
+  flex: 1;
   overflow: auto;
 }
 

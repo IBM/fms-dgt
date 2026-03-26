@@ -1,0 +1,67 @@
+// Copyright The DiGiT Authors
+// SPDX-License-Identifier: Apache-2.0
+
+@use '@carbon/styles/scss/spacing' as *;
+@use '@carbon/styles/scss/type' as *;
+
+.statsTab {
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-05;
+  padding: $spacing-05;
+}
+
+.sectionHeading {
+  @include type-style('heading-02');
+
+  margin: 0;
+  color: var(--cds-text-primary);
+}
+
+.statRow {
+  display: flex;
+  column-gap: $spacing-05;
+}
+
+.statTileSpacer {
+  flex: 1;
+}
+
+.statTile {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  row-gap: $spacing-03;
+  background-color: var(--cds-layer-02);
+}
+
+.statLabel {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  column-gap: $spacing-02;
+}
+
+.statValue {
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.tooltipButton {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--cds-text-secondary);
+}
+
+.tooltipIcon {
+  display: flex;
+  align-items: center;
+}
+
+.chart {
+  width: 100%;
+}

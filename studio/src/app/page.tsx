@@ -79,7 +79,7 @@ export default function Page() {
   // Load runs once outputDir is resolved
   useEffect(() => {
     if (outputDir) fetchRuns(outputDir);
-  }, [outputDir]);
+  }, [outputDir, fetchRuns]);
 
   // Fast poll while any run is active; slow background poll when idle to detect new runs.
   useEffect(() => {

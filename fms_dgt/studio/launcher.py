@@ -125,30 +125,27 @@ def launch_studio(
         print(f"DiGiT Studio is already running at http://localhost:{port}")
         return
 
-    node_server = os.path.join(_studio_dist_path(), "server.js")
-    if not os.path.exists(node_server):
+    if not os.path.isdir(_studio_dist_path()):
         print(
-            "DiGiT Studio: dist not found. "
-            "Run: cd studio && npm install && npm run build && "
-            "cp -r .next/standalone ../studio/dist && cp -r .next/static ../studio/dist/.next/static"
+            "DiGiT Studio: static build not found. "
+            "Run: cd studio && npm install && npm run build"
         )
         return
 
+    resolved_telemetry = (
+        os.path.abspath(telemetry_dir)
+        if telemetry_dir
+        else os.path.abspath(os.environ.get("DGT_TELEMETRY_DIR", "telemetry"))
+    )
+
     env = {
         **os.environ,
-        "PORT": str(port),
         "DGT_OUTPUT_DIR": os.path.abspath(output_dir),
+        "DGT_TELEMETRY_DIR": resolved_telemetry,
     }
-    if telemetry_dir:
-        env["DGT_TELEMETRY_DIR"] = os.path.abspath(telemetry_dir)
-    elif "DGT_TELEMETRY_DIR" not in env:
-        # Fall back to default: telemetry/ at the repo root (same level as output/).
-        # DGT_TELEMETRY_DIR defaults to "telemetry" relative to the process cwd,
-        # which is the repo root when running via `python -m fms_dgt` or `digit-studio`.
-        env["DGT_TELEMETRY_DIR"] = os.path.abspath("telemetry")
 
     subprocess.Popen(
-        ["node", node_server],
+        [sys.executable, "-m", "fms_dgt.studio.server"],
         env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -162,6 +159,4 @@ def launch_studio(
             return
         time.sleep(0.5)
 
-    print(
-        "DiGiT Studio: server did not respond within 10s, check that Node.js is installed and on your PATH"
-    )
+    print("DiGiT Studio: server did not respond within 10s")

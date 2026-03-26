@@ -60,6 +60,7 @@ nav:
       - Welcome to DGT: index.md
       - Installation: installation.md
       - Usage: usage.md
+      - Studio: studio.md
   - Concepts:
       - concepts/architecture.md
       - concepts/tasks.md

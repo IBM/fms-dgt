@@ -28,6 +28,7 @@ import {
   ModelBuilder,
   DataBlob,
   BusinessMetrics,
+  Dashboard,
   StopFilled,
 } from '@carbon/icons-react';
 
@@ -36,11 +37,15 @@ import {
   DGT_TASK_CARD,
   DataPoint,
   DGT_TASK_RESULT,
+  GenerationStats,
+  TransformationStats,
+  TokenUsage,
 } from '@/types/custom';
 import { useTheme } from '@/src/common/state/theme';
 import { useNotification } from '@/src/components/notification/Notification';
 import DataPointsTable from '@/src/components/datapoints_table/DataPointsTable';
 import RunMetrics from '@/src/components/run_metrics/RunMetrics';
+import StatsTab from '@/src/components/run_metrics/StatsTab';
 
 import classes from './Run.module.scss';
 
@@ -53,6 +58,8 @@ async function fetchRun(
   setLog: Function,
   setResult: Function,
   setDataPoints: Function,
+  setGenerationStats: Function,
+  setTransformationStats: Function,
   createNotification: Function,
 ) {
   await fetch(`/api/data/run?path=${path}`, {
@@ -73,8 +80,23 @@ async function fetchRun(
       setLog(data.log);
       setResult(data.result);
       setDataPoints(data.datapoints);
+      setGenerationStats(data.generationStats ?? null);
+      setTransformationStats(data.transformationStats ?? null);
     }
   });
+}
+
+async function fetchTokenUsage(path: string, setTokenUsage: Function) {
+  try {
+    const response = await fetch(`/api/telemetry/tokens?path=${path}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      next: { revalidate: 0 },
+    });
+    if (response.status === 200) {
+      setTokenUsage(await response.json());
+    }
+  } catch {}
 }
 
 async function cancelRun(path: string, createNotification: Function) {
@@ -232,6 +254,11 @@ export default function RunView({
   const [taskCard, setTaskCard] = useState<DGT_TASK_CARD>();
   const [log, setLog] = useState<string>();
   const [result, setResult] = useState<DGT_TASK_RESULT>();
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
+  const [generationStats, setGenerationStats] =
+    useState<GenerationStats | null>(null);
+  const [transformationStats, setTransformationStats] =
+    useState<TransformationStats | null>(null);
   const [datapoints, setDataPoints] = useState<{
     intermediate: DataPoint[];
     postprocessed: { [key: string]: DataPoint[] };
@@ -252,10 +279,13 @@ export default function RunView({
         setLog,
         setResult,
         setDataPoints,
+        setGenerationStats,
+        setTransformationStats,
         createNotification,
       );
+      fetchTokenUsage(run.path, setTokenUsage);
     }
-  }, [run.path, lastFetched]);
+  }, [run.path, lastFetched, createNotification]);
 
   // Auto-scroll log to bottom when new content arrives for a running job
   useEffect(() => {
@@ -279,6 +309,7 @@ export default function RunView({
           selectedIndex={selectedTabIndex}
         >
           <TabList contained fullWidth>
+            <Tab renderIcon={Dashboard}>Stats</Tab>
             <Tab renderIcon={Activity}>Log</Tab>
             <Tab renderIcon={Task}>Task Config</Tab>
             <Tab renderIcon={ModelBuilder}>Builder Config</Tab>
@@ -286,6 +317,15 @@ export default function RunView({
             <Tab renderIcon={BusinessMetrics}>Metrics</Tab>
           </TabList>
           <TabPanels>
+            <TabPanel>
+              <StatsTab
+                datapoints={datapoints}
+                tokenUsage={tokenUsage}
+                generationStats={generationStats}
+                transformationStats={transformationStats}
+                isRunning={run.status === 'running'}
+              />
+            </TabPanel>
             <TabPanel>
               {log || isEmpty(log) ? (
                 <CodeMirror
@@ -351,7 +391,17 @@ export default function RunView({
               <DataViewer datapoints={datapoints} />
             </TabPanel>
             <TabPanel>
-              <RunMetrics metrics={result?.metrics} />
+              {run.status === 'running' ? (
+                <div className={classes.tabPanelWarning}>
+                  <BusinessMetrics size={32} />
+                  <div className={classes.tabPanelWarningText}>
+                    Metrics are written at run completion. Check back when the
+                    run finishes.
+                  </div>
+                </div>
+              ) : (
+                <RunMetrics metrics={result?.metrics} />
+              )}
             </TabPanel>
           </TabPanels>
         </Tabs>
