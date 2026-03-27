@@ -55,7 +55,9 @@ class SkillsDataBuilder(GenerationDataBuilder):
 
             outputs.extend(
                 self(
-                    seed_data=task.get_batch_examples(),
+                    seed_data=task.sample_examples(
+                        k=task.seed_batch_size + task.machine_batch_size
+                    ),
                     prompt_templates=task.prompt_templates,
                     num_icl_examples_per_prompt=task.num_icl_examples_per_prompt,
                     num_questions_to_generate_per_prompt=task.num_questions_to_generate_per_prompt,

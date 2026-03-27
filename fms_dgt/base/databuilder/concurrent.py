@@ -22,9 +22,9 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
 
     Replaces the synchronous inner loop of GenerationDataBuilder.execute_tasks()
     with a ThreadPoolExecutor that processes mini-batches of data points in
-    parallel. All other behaviour — block initialization, telemetry spans,
-    structured log events, postprocessing, stall detection, task completion —
-    is preserved.
+    parallel. Mirrors the full epoch loop of GenerationDataBuilder including the
+    outer loop that re-queues tasks after postprocessing if their data count
+    dropped below num_outputs_to_generate.
 
     Worker allocation across tasks uses a proportional-fill policy:
     - Every incomplete task is guaranteed at least 1 worker slot.
@@ -34,11 +34,16 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
       spawns as many futures as it has work for; freed slots flow to other
       tasks on the next recompute.
     - Allocation is recomputed on every future completion.
+    - Unused slots after proportional distribution are redistributed to tasks
+      with the most remaining work, ensuring full pool utilization.
 
-    Stall detection mirrors GenerationDataBuilder: a task's stall counter
-    increments each time one of its futures returns zero successes. The counter
-    resets on any success. The task is terminated when the counter exceeds
-    max_stalled_attempts.
+    Two levels of stall detection mirror GenerationDataBuilder:
+    - Per-future stall: incremented each time a future returns zero successes;
+      reset on any success. Task exits generation when counter reaches
+      max_stalled_attempts.
+    - Per-epoch stall: incremented each time postprocessing leaves a task with
+      zero data; reset when postprocessing retains any data. Task is terminated
+      when this counter reaches max_stalled_attempts (stalled_postprocessing).
 
     The __call__ contract for subclasses:
     - Take N inputs, return M outputs (M <= N).
@@ -156,6 +161,31 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
         if total_to_spawn > available_slots:
             scale = available_slots / total_to_spawn
             spawn = {name: max(1, int(count * scale)) for name, count in spawn.items()}
+            total_to_spawn = sum(spawn.values())
+
+        # Redistribute any unused slots to tasks with the most remaining work,
+        # ensuring full pool utilization when there is work to be done.
+        unused = available_slots - total_to_spawn
+        if unused > 0:
+            # Sort tasks by remaining work descending; only tasks already in
+            # spawn are eligible (tasks not in spawn have no batches to give).
+            eligible = sorted(
+                [t for t in active_tasks if t.name in spawn],
+                key=lambda t: max(0, t.num_outputs_to_generate - len(t.machine_data)),
+                reverse=True,
+            )
+            for task in eligible:
+                if unused <= 0:
+                    break
+                task_remaining = max(0, task.num_outputs_to_generate - len(task.machine_data))
+                in_flight = in_flight_per_task.get(task.name, 0)
+                max_batches_needed = -(-task_remaining // self._items_per_worker)
+                current = spawn[task.name]
+                headroom = max(0, max_batches_needed - in_flight - current)
+                add = min(unused, headroom)
+                if add > 0:
+                    spawn[task.name] += add
+                    unused -= add
 
         return spawn
 
@@ -165,9 +195,20 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
     def execute_tasks(self):
         """Concurrent execution loop.
 
-        Replaces the synchronous inner loop of GenerationDataBuilder with a
-        ThreadPoolExecutor. Preserves all structured log events and telemetry
-        spans emitted by the synchronous implementation.
+        Mirrors GenerationDataBuilder.execute_tasks() with a two-level loop:
+
+        Outer loop (epochs): runs while any task is still incomplete and the
+        attempt budget has not been exhausted. After each epoch's generation
+        phase, postprocessing runs on all tasks that produced data. Tasks that
+        are still incomplete after postprocessing re-enter the next epoch's
+        generation phase. A per-epoch stall counter terminates tasks where
+        postprocessing consistently destroys all data.
+
+        Inner loop (generation phase): a ThreadPoolExecutor drains all active
+        tasks concurrently. Workers are allocated proportionally with a
+        per-task floor of 1. Allocation is recomputed on every future
+        completion. A per-future stall counter terminates tasks that
+        consistently produce zero results.
         """
 
         # Load existing machine data and dataloader state.
@@ -209,132 +250,226 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
 
         start_time = time.time()
 
-        # Stall counters: incremented each time a future for a task yields zero
-        # successes; reset on any success. Mirrors the synchronous model.
+        # Per-future stall counters: incremented when a future returns zero
+        # successes; reset on any success.
         consecutive_empty_futures: Dict[str, int] = {t.name: 0 for t in active_tasks}
 
-        with Span(
-            "dgt.epoch",
-            self._span_writer,
-            parent_span_name="dgt.run",
-            epoch=self._epoch,
-            active_task_names=",".join(t.name for t in active_tasks),
-            active_task_count=len(active_tasks),
-        ):
-            self.logger.info("*" * 99)
-            self.logger.info("\t\t\t\tCONCURRENT GENERATION")
-            self.logger.info("*" * 99)
-            self.logger.info(
-                "Starting concurrent generation with %s worker(s), %s item(s) per worker, %s active task(s): %s",
-                self._max_workers,
-                self._items_per_worker,
-                len(active_tasks),
-                ", ".join(t.name for t in active_tasks),
-                extra={
-                    "event": "epoch_started",
-                    "epoch": self._epoch,
-                    "active_task_names": [t.name for t in active_tasks],
-                    "active_task_count": len(active_tasks),
-                    "max_workers": self._max_workers,
-                    "items_per_worker": self._items_per_worker,
-                },
-            )
+        # Per-epoch stall counters: incremented when postprocessing leaves a
+        # task with zero data; reset when postprocessing retains any data.
+        consecutive_empty_epochs: Dict[str, int] = {t.name: 0 for t in active_tasks}
 
-            futures: Dict[Future, str] = {}
-            in_flight_per_task: Dict[str, int] = {t.name: 0 for t in active_tasks}
+        attempt = 0
 
-            executor = ThreadPoolExecutor(max_workers=self._max_workers)
+        # Outer epoch loop: re-enters when tasks remain incomplete after
+        # postprocessing and the attempt budget has not been exhausted.
+        while active_tasks and attempt <= self._num_attempts_to_complete:
 
-            try:
-                # Initial fill: spawn futures up to max_workers.
-                self._spawn_futures(active_tasks, futures, in_flight_per_task, executor)
-
-                while futures:
-                    done, _ = wait(futures, return_when=FIRST_COMPLETED)
-
-                    for fut in done:
-                        task_name = futures.pop(fut)
-                        in_flight_per_task[task_name] -= 1
-
-                        task = next(t for t in self._tasks if t.name == task_name)
-                        results: List[DataPoint] = fut.result()
-                        successes = 0
-
-                        # Thread-safe: all shared state mutation under per-task lock.
-                        with self._task_locks[task_name]:
-                            for dp in results:
-                                task.save_intermediate_data(dp)
-                                task.save_dataloader_state()
-                                task.machine_data.append(dp)
-                                successes += 1
-
-                        # Stall detection.
-                        if successes > 0:
-                            consecutive_empty_futures[task_name] = 0
-                        else:
-                            consecutive_empty_futures[task_name] += 1
-
-                        stalled = consecutive_empty_futures[task_name] >= self._max_stalled_attempts
-
-                        if task.is_complete() or stalled:
-                            if stalled and not task.is_complete():
-                                self.logger.warning(
-                                    "Task %s has not generated any data in the last %s futures, terminating task",
-                                    task_name,
-                                    self._max_stalled_attempts,
-                                )
-                            reason = "complete" if task.is_complete() else "stalled_generation"
-                            self.logger.info(
-                                "Task '%s' finished.",
-                                task_name,
-                                extra={
-                                    "event": "task_finished",
-                                    "task_name": task_name,
-                                    "reason": reason,
-                                    "produced": len(task.machine_data),
-                                },
-                            )
-                            task.finish()
-                            active_tasks = [t for t in active_tasks if t.name != task_name]
-                            in_flight_per_task.pop(task_name, None)
-                            consecutive_empty_futures.pop(task_name, None)
-                        else:
-                            self._spawn_futures(active_tasks, futures, in_flight_per_task, executor)
-
-            finally:
-                executor.shutdown(wait=True)
-
-        # Postprocessing for all tasks that produced data.
-        completed_tasks = [t for t in self._tasks if t.machine_data]
-        if completed_tasks:
-            self.logger.info("Launch postprocessing")
             with Span(
-                "dgt.postprocessing",
+                "dgt.epoch",
                 self._span_writer,
-                parent_span_name="dgt.epoch",
+                parent_span_name="dgt.run",
                 epoch=self._epoch,
-                task_count=len(completed_tasks),
+                active_task_names=",".join(t.name for t in active_tasks),
+                active_task_count=len(active_tasks),
             ):
-                self.execute_postprocessing(completed_tasks)
-            self.logger.info(
-                "Postprocessing completed",
-                extra={
-                    "event": "postprocessing_finished",
-                    "epoch": self._epoch,
-                    "task_counts": {t.name: len(t.machine_data) for t in completed_tasks},
-                },
-            )
+                self.logger.info("*" * 99)
+                self.logger.info("\t\t\t\tCONCURRENT GENERATION — EPOCH %s", self._epoch)
+                self.logger.info("*" * 99)
+                self.logger.info(
+                    "Epoch %s started: %s worker(s), %s item(s)/worker, %s active task(s): %s",
+                    self._epoch,
+                    self._max_workers,
+                    self._items_per_worker,
+                    len(active_tasks),
+                    ", ".join(t.name for t in active_tasks),
+                    extra={
+                        "event": "epoch_started",
+                        "epoch": self._epoch,
+                        "active_task_names": [t.name for t in active_tasks],
+                        "active_task_count": len(active_tasks),
+                        "max_workers": self._max_workers,
+                        "items_per_worker": self._items_per_worker,
+                    },
+                )
 
-        self.logger.info(
-            "Epoch %s finished.",
-            self._epoch,
-            extra={
-                "event": "epoch_finished",
-                "epoch": self._epoch,
-                "task_counts": {t.name: len(t.machine_data) for t in self._tasks},
-            },
-        )
-        self.logger.info("*" * 99)
+                # ---------------------------------------------------------------
+                # Generation phase: run thread pool until all active tasks are
+                # either complete or stalled.
+                # ---------------------------------------------------------------
+                tasks_in_generation: List[GenerationTask] = list(active_tasks)
+                tasks_finished_generation: List[GenerationTask] = []
+
+                futures: Dict[Future, str] = {}
+                in_flight_per_task: Dict[str, int] = {t.name: 0 for t in tasks_in_generation}
+
+                executor = ThreadPoolExecutor(max_workers=self._max_workers)
+                try:
+                    self._spawn_futures(tasks_in_generation, futures, in_flight_per_task, executor)
+
+                    while futures:
+                        attempt += 1
+                        done, _ = wait(futures, return_when=FIRST_COMPLETED)
+
+                        for fut in done:
+                            task_name = futures.pop(fut)
+                            if task_name in in_flight_per_task:
+                                in_flight_per_task[task_name] -= 1
+
+                            task = next(t for t in self._tasks if t.name == task_name)
+                            results: List[DataPoint] = fut.result()
+                            successes = 0
+
+                            with self._task_locks[task_name]:
+                                for dp in results:
+                                    task.save_intermediate_data(dp)
+                                    task.save_dataloader_state()
+                                    task.machine_data.append(dp)
+                                    successes += 1
+
+                            # Per-future stall detection.
+                            if successes > 0:
+                                consecutive_empty_futures[task_name] = 0
+                            else:
+                                consecutive_empty_futures[task_name] += 1
+
+                            stalled = (
+                                consecutive_empty_futures[task_name] >= self._max_stalled_attempts
+                            )
+
+                            if task.is_complete() or stalled:
+                                if stalled and not task.is_complete():
+                                    self.logger.warning(
+                                        "Task %s has not generated any data in the last %s futures, moving to postprocessing",
+                                        task_name,
+                                        self._max_stalled_attempts,
+                                    )
+                                tasks_in_generation = [
+                                    t for t in tasks_in_generation if t.name != task_name
+                                ]
+                                tasks_finished_generation.append(task)
+                                in_flight_per_task.pop(task_name, None)
+                                # Do not reset consecutive_empty_futures here:
+                                # the epoch decision logic reads it to determine
+                                # stalled_generation reason.
+                            else:
+                                self._spawn_futures(
+                                    tasks_in_generation, futures, in_flight_per_task, executor
+                                )
+
+                finally:
+                    executor.shutdown(wait=True)
+
+                # ---------------------------------------------------------------
+                # Postprocessing phase.
+                # ---------------------------------------------------------------
+                tasks_for_postproc = [t for t in tasks_finished_generation if t.machine_data]
+                _counts_before: Dict[str, int] = {
+                    t.name: len(t.machine_data) for t in tasks_for_postproc
+                }
+
+                if tasks_for_postproc:
+                    self.logger.info("Launch postprocessing")
+                    with Span(
+                        "dgt.postprocessing",
+                        self._span_writer,
+                        parent_span_name="dgt.epoch",
+                        epoch=self._epoch,
+                        task_count=len(tasks_for_postproc),
+                    ):
+                        self.execute_postprocessing(tasks_for_postproc)
+
+                    for task in tasks_for_postproc:
+                        if task.machine_data:
+                            consecutive_empty_epochs[task.name] = 0
+                        else:
+                            consecutive_empty_epochs[task.name] += 1
+
+                    self.logger.info(
+                        "Postprocessing completed",
+                        extra={
+                            "event": "postprocessing_finished",
+                            "epoch": self._epoch,
+                            "task_counts": {
+                                t.name: {
+                                    "before": _counts_before[t.name],
+                                    "after": len(t.machine_data),
+                                }
+                                for t in tasks_for_postproc
+                            },
+                        },
+                    )
+
+                # ---------------------------------------------------------------
+                # Decide which tasks are done vs need another epoch.
+                # ---------------------------------------------------------------
+                _epoch_finish_reasons: Dict[str, str] = {}
+                next_active: List[GenerationTask] = []
+
+                for task in tasks_finished_generation:
+                    generation_stalled = (
+                        consecutive_empty_futures.get(task.name, 0) >= self._max_stalled_attempts
+                    )
+                    epoch_stalled = (
+                        consecutive_empty_epochs.get(task.name, 0) >= self._max_stalled_attempts
+                    )
+
+                    if task.is_complete():
+                        reason = "complete"
+                    elif generation_stalled:
+                        reason = "stalled_generation"
+                        self.logger.warning(
+                            "Task %s has not generated any data in the last %s attempts, terminating",
+                            task.name,
+                            self._max_stalled_attempts,
+                        )
+                    elif epoch_stalled:
+                        reason = "stalled_postprocessing"
+                        self.logger.warning(
+                            "Task %s has not produced any data after postprocessing in the last %s epochs, terminating",
+                            task.name,
+                            self._max_stalled_attempts,
+                        )
+                    else:
+                        # Still incomplete but not stalled: needs another epoch.
+                        next_active.append(task)
+                        continue
+
+                    _epoch_finish_reasons[task.name] = reason
+                    self.logger.info(
+                        "Task '%s' finished.",
+                        task.name,
+                        extra={
+                            "event": "task_finished",
+                            "task_name": task.name,
+                            "reason": reason,
+                            "produced": len(task.machine_data),
+                        },
+                    )
+                    task.finish()
+
+                self.logger.info(
+                    "Epoch %s finished.",
+                    self._epoch,
+                    extra={
+                        "event": "epoch_finished",
+                        "epoch": self._epoch,
+                        "task_counts": {
+                            t.name: len(t.machine_data) for t in tasks_finished_generation
+                        },
+                        "finish_reasons": _epoch_finish_reasons,
+                    },
+                )
+                self.logger.info("*" * 99)
+
+                active_tasks = next_active
+                if active_tasks and attempt <= self._num_attempts_to_complete:
+                    self.logger.info(
+                        "Triggering new epoch since %d task%s still pending.",
+                        len(active_tasks),
+                        "s are" if len(active_tasks) > 1 else " is",
+                    )
+                    self._epoch += 1
+
         self.logger.info("Generation took %.2fs", time.time() - start_time)
 
     # ===========================================================================

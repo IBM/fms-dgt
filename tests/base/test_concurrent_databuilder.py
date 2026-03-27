@@ -88,6 +88,7 @@ class StubConcurrentBuilder(ConcurrentGenerationDataBuilder):
         self._block_datastores_per_task = {}
         self._epoch = 1
         self._max_stalled_attempts = max_stalled_attempts
+        self._num_attempts_to_complete = 1000000
         self._config = MagicMock(name="stub_builder", postprocessors=[])
         self._span_writer = MagicMock()
         self._span_writer.write = MagicMock()
@@ -249,6 +250,28 @@ class TestConcurrentExecution:
         # Finished immediately without calling __call__.
         assert builder.call_counts.get("A", 0) == 0
         assert task.finished
+
+    def test_postprocessing_wipe_triggers_new_epoch(self):
+        """If postprocessing wipes machine_data the task must re-enter generation."""
+        task = StubTask("A", num_outputs=2)
+        # Each __call__ returns 2 data points.
+        responses = {"A": [[make_dp("A"), make_dp("A")]]}
+        builder = StubConcurrentBuilder([task], responses, max_workers=1, items_per_worker=4)
+
+        wipe_count = {"n": 0}
+
+        def postprocessing_that_wipes_once(tasks):
+            if wipe_count["n"] == 0:
+                for t in tasks:
+                    t.machine_data.clear()
+            wipe_count["n"] += 1
+
+        builder.execute_postprocessing = postprocessing_that_wipes_once
+        builder.execute_tasks()
+        # After the wipe the second epoch must top up to completion.
+        assert task.is_complete()
+        assert task.finished
+        assert wipe_count["n"] == 2  # postprocessing ran twice (two epochs)
 
     def test_thread_safety_no_data_corruption(self):
         """Concurrent futures writing to the same task must not corrupt machine_data."""

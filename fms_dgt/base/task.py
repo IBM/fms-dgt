@@ -808,8 +808,75 @@ class GenerationTask(Task):
             pass
         return seed_data
 
+    def sample_examples(
+        self,
+        k: int,
+        seed_fraction: float | None = None,
+    ) -> List[Any]:
+        """Randomly sample up to k examples from seed data and/or machine-generated data.
+
+        Safe to call from anywhere — stages, __call__ implementations, inner
+        thread pools. Does NOT advance the main dataloader. Thread-safe.
+
+        k is always the total cap. seed_fraction controls the seed/synthetic
+        split within that cap. When seed_fraction=None the split is derived
+        from the task config ratio (seed_batch_size / (seed_batch_size +
+        machine_batch_size)), so k still governs the total requested.
+
+        Sampling is random and without replacement on both sides. If either
+        pool has fewer items than its allocated quota, you get however many
+        are available — there is no backfill from the other pool. Callers
+        that strictly need k examples should check the returned length.
+
+        Args:
+            k: Total number of examples requested. Actual count may be less
+                if either pool has insufficient data.
+            seed_fraction: Fraction of k to draw from the seed datastore.
+                Remainder is drawn from machine_data.
+                - 1.0: seeds only
+                - 0.0: synthetic only
+                - None (default): split derived from seed_batch_size /
+                  (seed_batch_size + machine_batch_size) task config ratio.
+
+        Returns:
+            List of randomly sampled examples (INPUT_DATA_TYPE | OUTPUT_DATA_TYPE).
+            Seeds are marked is_seed=True.
+        """
+        if seed_fraction is not None and not (0.0 <= seed_fraction <= 1.0):
+            raise ValueError(f"seed_fraction must be in [0.0, 1.0], got {seed_fraction}")
+
+        if seed_fraction is None:
+            total = self._seed_batch_size + self._machine_batch_size
+            fraction = self._seed_batch_size / total if total > 0 else 0.0
+        else:
+            fraction = seed_fraction
+
+        n_seed = round(k * fraction)
+        n_synthetic = k - n_seed
+
+        results: List[Any] = []
+
+        # Random sample from seed pool (no state mutation on main dataloader).
+        if n_seed > 0:
+            pool = self.get_seed_examples()
+            n = min(n_seed, len(pool))
+            results.extend(random.sample(pool, k=n) if n < len(pool) else pool)
+
+        # Random sample from machine-generated data.
+        if n_synthetic > 0 and self.machine_data:
+            n = min(n_synthetic, len(self.machine_data))
+            results.extend(random.sample(self.machine_data, k=n))
+
+        return results
+
     def get_batch_examples(self) -> List[DataPoint]:
         """Returns batch of examples from dataloader. Mixes examples from seed data and machine-generated data.
+
+        FRAMEWORK-INTERNAL: Called exclusively by the framework execution loop
+        (_spawn_futures in ConcurrentGenerationDataBuilder, call_with_task_list
+        in GenerationDataBuilder). Advances the main dataloader state — do not
+        call from __call__, stages, or any user code. Use sample_examples()
+        instead for ICL sampling or any other purpose outside the framework loop.
 
         Returns:
             List[DataPoint]: List of examples to be used by SDG process.
