@@ -1,5 +1,10 @@
 # ignore jsonl files
 *.jsonl
+
+# studio build output and dependencies
+studio/dist/
+studio/.next/
+studio/node_modules/
 **/.github
 **/data
 

@@ -90,10 +90,13 @@ class GeographyQADataBuilder(GenerationDataBuilder):
             #   Not set here because the defaults from qa.yaml are sufficient.
             # reference (Optional[Any]): We recommend passing data used to build prompt
             #   for future use. DiGiT returns all non-reserved fields in block output.
+            # task_name (str): Not used by the block. Included for telemetry — allows
+            #   DiGiT to attribute token usage to this task in traces.
             generator_inputs.append(
                 {
                     "input": [{"role": "user", "content": prompt}],
                     "reference": icl_examples,
+                    "task_name": icl_examples[0].task_name,
                 }
             )
 

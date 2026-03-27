@@ -11,8 +11,10 @@ from ibm_watsonx_ai.foundation_models.schema import TextGenDecodingMethod
 from tqdm import tqdm
 
 # Local
+from fms_dgt.base.block import get_row_name
 from fms_dgt.base.registry import get_resource, register_block
 from fms_dgt.base.telemetry import (
+    Span,
     payload_max_chars,
     payload_recording_enabled,
     record_llm_payload,
@@ -289,8 +291,12 @@ class WatsonXAI(LMProvider):
         if gen_kwargs.get("logprobs") and gen_kwargs.get("top_logprobs") is None:
             gen_kwargs["top_logprobs"] = 1
 
+        _task_name = get_row_name(instance)
         async with self._llm_span(
-            method=self.CHAT_COMPLETION, batch_size=1, params=gen_kwargs
+            method=self.CHAT_COMPLETION,
+            batch_size=1,
+            params=gen_kwargs,
+            task_names=[_task_name] if _task_name is not None else None,
         ) as span_attrs:
             messages = self._prepare_input(
                 instance, gen_kwargs=gen_kwargs, method=self.CHAT_COMPLETION
@@ -401,16 +407,40 @@ class WatsonXAI(LMProvider):
                 if gen_kwargs.get("logprobs") and gen_kwargs.get("top_logprobs") is None:
                     gen_kwargs["top_logprobs"] = 1
 
+                _task_names = list({n for item in chunk if (n := get_row_name(item)) is not None})
+
                 # Step 3.b.vi: Execute generation routine
-                responses = self._model.generate(
-                    prompt=[
-                        self._prepare_input(instance, gen_kwargs=gen_kwargs, method=self.COMPLETION)
-                        for instance in chunk
-                    ],
-                    params=TextGenParameters(
-                        **gen_kwargs,
-                    ),
-                )
+                with Span(
+                    "dgt.llm_call",
+                    self._span_writer,
+                    parent_span_name="dgt.block",
+                    provider=type(self).__name__,
+                    model_id=self.model_id_or_path,
+                    method=self.COMPLETION,
+                    batch_size=len(chunk),
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    **({"task_names": _task_names} if _task_names else {}),
+                ) as _span:
+                    responses = self._model.generate(
+                        prompt=[
+                            self._prepare_input(
+                                instance, gen_kwargs=gen_kwargs, method=self.COMPLETION
+                            )
+                            for instance in chunk
+                        ],
+                        params=TextGenParameters(
+                            **gen_kwargs,
+                        ),
+                    )
+                    _span.set_attribute(
+                        "prompt_tokens",
+                        sum(r["results"][0]["input_token_count"] for r in responses),
+                    )
+                    _span.set_attribute(
+                        "completion_tokens",
+                        sum(r["results"][0]["generated_token_count"] for r in responses),
+                    )
 
                 # Step 3.b.vii: Process generated outputs
                 for idx, instance in enumerate(chunk):

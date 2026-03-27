@@ -4,9 +4,11 @@
 # Standard
 from typing import List, Optional
 import argparse
+import os
 
 # Local
 from fms_dgt.generate_data import generate_data
+from fms_dgt.studio.launcher import launch_studio
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -65,6 +67,12 @@ def add_base_args(parser: argparse.ArgumentParser):
         "--debug",
         action="store_true",
         help="Set log level to debug",
+    )
+    group.add_argument(
+        "--studio",
+        action="store_true",
+        default=False,
+        help="Launch DiGiT Studio run monitor (requires fms-dgt[studio]).",
     )
     return group
 
@@ -169,6 +177,13 @@ def main(
     # "core" namespace will always be included
     namespaces.insert(0, "core")
     namespaces.extend([x for x in base_args.pop("include_namespaces", []) if x not in namespaces])
+
+    if base_args.pop("studio", False):
+        try:
+            output_dir = task_kwargs.get("output_dir", os.environ.get("DGT_OUTPUT_DIR", "output"))
+            launch_studio(output_dir=output_dir)
+        except ImportError:
+            print("DiGiT Studio requires: pip install fms-dgt[studio]")
 
     generate_data(
         task_kwargs=task_kwargs,

@@ -190,6 +190,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 ),
                 "gen_kwargs": {"stop": prompt_template.stop},
                 "reference": data_point,
+                "task_name": data_point.task_name,
             }
             for data_point in seed_data
         ]
@@ -241,6 +242,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -285,6 +287,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 "store_names": self.get_block_store_names(
                     block_name=self.validator.name, task_name=data_point.task_name
                 ),
+                "task_name": data_point.task_name,
             }
             for data_point in data_points
         ]
@@ -321,6 +324,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -437,6 +441,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "references": icl_examples,
+                    "task_name": icl_examples[0].task_name,
                 }
             )
 
@@ -481,6 +486,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 "store_names": self.get_block_store_names(
                     block_name=self.validator.name, task_name=data_point.task_name
                 ),
+                "task_name": data_point.task_name,
             }
             for data_point in data_points
         ]
@@ -514,6 +520,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -548,6 +555,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 "store_names": self.get_block_store_names(
                     block_name=self.validator.name, task_name=data_point.task_name
                 ),
+                "task_name": data_point.task_name,
             }
             for data_point in data_points
         ]

@@ -303,6 +303,7 @@ class LMProvider(Block):
         method: str,
         batch_size: int,
         params: Dict,
+        task_names: List[str] | None = None,
     ):
         """Async context manager that wraps one LLM API call with a ``dgt.llm_call`` span.
 
@@ -350,6 +351,8 @@ class LMProvider(Block):
             attrs["n"] = _n
         if _max_tokens is not None:
             attrs["max_tokens"] = _max_tokens
+        if task_names:
+            attrs["task_names"] = task_names
 
         # Measure how long we wait for the semaphore separately from API time.
         _wait_start = time.monotonic()

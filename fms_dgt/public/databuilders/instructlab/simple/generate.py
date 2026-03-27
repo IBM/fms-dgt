@@ -66,6 +66,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
                     "input": prompt,
                     "gen_kwargs": {"stop": [f"* Task {len(prompt_instructions)+2}"]},
                     "data": prompt_instructions,
+                    "task_name": prompt_instructions[0].task_name,
                 }
                 inputs.append(inp)
 
@@ -108,6 +109,7 @@ class SimpleDataBuilder(GenerationDataBuilder):
             inp = {
                 "input": instruction_data_entry.instruction,
                 "data": instruction_data_entry,
+                "task_name": instruction_data_entry.task_name,
             }
             val_inputs.append(inp)
 
