@@ -464,6 +464,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../studio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Studio
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1384,54 +1407,58 @@
 <a id="__codelineno-3-56" name="__codelineno-3-56" href="#__codelineno-3-56"></a>                    <span class="p">],</span>
 <a id="__codelineno-3-57" name="__codelineno-3-57" href="#__codelineno-3-57"></a>                    <span class="c1"># Pass the full data point through so we can reference it in outputs.</span>
 <a id="__codelineno-3-58" name="__codelineno-3-58" href="#__codelineno-3-58"></a>                    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="n">data_point</span><span class="p">,</span>
-<a id="__codelineno-3-59" name="__codelineno-3-59" href="#__codelineno-3-59"></a>                <span class="p">}</span>
-<a id="__codelineno-3-60" name="__codelineno-3-60" href="#__codelineno-3-60"></a>            <span class="p">)</span>
-<a id="__codelineno-3-61" name="__codelineno-3-61" href="#__codelineno-3-61"></a>
-<a id="__codelineno-3-62" name="__codelineno-3-62" href="#__codelineno-3-62"></a>        <span class="n">extractor_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">extractor_inputs</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;chat_completion&quot;</span><span class="p">)</span>
-<a id="__codelineno-3-63" name="__codelineno-3-63" href="#__codelineno-3-63"></a>
-<a id="__codelineno-3-64" name="__codelineno-3-64" href="#__codelineno-3-64"></a>        <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-3-65" name="__codelineno-3-65" href="#__codelineno-3-65"></a>        <span class="k">for</span> <span class="n">extractor_output</span> <span class="ow">in</span> <span class="n">extractor_outputs</span><span class="p">:</span>
-<a id="__codelineno-3-66" name="__codelineno-3-66" href="#__codelineno-3-66"></a>            <span class="n">data_point</span><span class="p">:</span> <span class="n">ParagraphData</span> <span class="o">=</span> <span class="n">extractor_output</span><span class="p">[</span><span class="s2">&quot;reference&quot;</span><span class="p">]</span>
-<a id="__codelineno-3-67" name="__codelineno-3-67" href="#__codelineno-3-67"></a>
-<a id="__codelineno-3-68" name="__codelineno-3-68" href="#__codelineno-3-68"></a>            <span class="n">result</span> <span class="o">=</span> <span class="n">extractor_output</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span>
-<a id="__codelineno-3-69" name="__codelineno-3-69" href="#__codelineno-3-69"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-<a id="__codelineno-3-70" name="__codelineno-3-70" href="#__codelineno-3-70"></a>                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-3-71" name="__codelineno-3-71" href="#__codelineno-3-71"></a>
-<a id="__codelineno-3-72" name="__codelineno-3-72" href="#__codelineno-3-72"></a>            <span class="n">triples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-<a id="__codelineno-3-73" name="__codelineno-3-73" href="#__codelineno-3-73"></a>            <span class="k">for</span> <span class="n">triple</span> <span class="ow">in</span> <span class="n">triples</span><span class="p">:</span>
-<a id="__codelineno-3-74" name="__codelineno-3-74" href="#__codelineno-3-74"></a>                <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-<a id="__codelineno-3-75" name="__codelineno-3-75" href="#__codelineno-3-75"></a>                    <span class="n">TripleData</span><span class="p">(</span>
-<a id="__codelineno-3-76" name="__codelineno-3-76" href="#__codelineno-3-76"></a>                        <span class="n">task_name</span><span class="o">=</span><span class="n">data_point</span><span class="o">.</span><span class="n">task_name</span><span class="p">,</span>
-<a id="__codelineno-3-77" name="__codelineno-3-77" href="#__codelineno-3-77"></a>                        <span class="n">is_seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-3-78" name="__codelineno-3-78" href="#__codelineno-3-78"></a>                        <span class="n">subject</span><span class="o">=</span><span class="n">triple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-<a id="__codelineno-3-79" name="__codelineno-3-79" href="#__codelineno-3-79"></a>                        <span class="n">predicate</span><span class="o">=</span><span class="n">triple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-<a id="__codelineno-3-80" name="__codelineno-3-80" href="#__codelineno-3-80"></a>                        <span class="n">obj</span><span class="o">=</span><span class="n">triple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-<a id="__codelineno-3-81" name="__codelineno-3-81" href="#__codelineno-3-81"></a>                        <span class="n">source_paragraph</span><span class="o">=</span><span class="n">data_point</span><span class="o">.</span><span class="n">paragraph</span><span class="p">,</span>
-<a id="__codelineno-3-82" name="__codelineno-3-82" href="#__codelineno-3-82"></a>                    <span class="p">)</span>
-<a id="__codelineno-3-83" name="__codelineno-3-83" href="#__codelineno-3-83"></a>                <span class="p">)</span>
-<a id="__codelineno-3-84" name="__codelineno-3-84" href="#__codelineno-3-84"></a>
-<a id="__codelineno-3-85" name="__codelineno-3-85" href="#__codelineno-3-85"></a>        <span class="k">return</span> <span class="n">outputs</span>
-<a id="__codelineno-3-86" name="__codelineno-3-86" href="#__codelineno-3-86"></a>
-<a id="__codelineno-3-87" name="__codelineno-3-87" href="#__codelineno-3-87"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
-<a id="__codelineno-3-88" name="__codelineno-3-88" href="#__codelineno-3-88"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse a JSON array of triples from the LM response.&quot;&quot;&quot;</span>
-<a id="__codelineno-3-89" name="__codelineno-3-89" href="#__codelineno-3-89"></a>        <span class="c1"># Strip markdown code fences if present.</span>
-<a id="__codelineno-3-90" name="__codelineno-3-90" href="#__codelineno-3-90"></a>        <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-<a id="__codelineno-3-91" name="__codelineno-3-91" href="#__codelineno-3-91"></a>        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>
-<a id="__codelineno-3-92" name="__codelineno-3-92" href="#__codelineno-3-92"></a>            <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-<a id="__codelineno-3-93" name="__codelineno-3-93" href="#__codelineno-3-93"></a>            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;json&quot;</span><span class="p">):</span>
-<a id="__codelineno-3-94" name="__codelineno-3-94" href="#__codelineno-3-94"></a>                <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
-<a id="__codelineno-3-95" name="__codelineno-3-95" href="#__codelineno-3-95"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-3-96" name="__codelineno-3-96" href="#__codelineno-3-96"></a>            <span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-<a id="__codelineno-3-97" name="__codelineno-3-97" href="#__codelineno-3-97"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-<a id="__codelineno-3-98" name="__codelineno-3-98" href="#__codelineno-3-98"></a>                <span class="k">return</span> <span class="n">parsed</span>
-<a id="__codelineno-3-99" name="__codelineno-3-99" href="#__codelineno-3-99"></a>        <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
-<a id="__codelineno-3-100" name="__codelineno-3-100" href="#__codelineno-3-100"></a>            <span class="k">pass</span>
-<a id="__codelineno-3-101" name="__codelineno-3-101" href="#__codelineno-3-101"></a>        <span class="k">return</span> <span class="p">[]</span>
+<a id="__codelineno-3-59" name="__codelineno-3-59" href="#__codelineno-3-59"></a>                    <span class="c1"># task_name: not used by the block; included so DiGiT can attribute</span>
+<a id="__codelineno-3-60" name="__codelineno-3-60" href="#__codelineno-3-60"></a>                    <span class="c1">#   token usage to this task in traces.jsonl.</span>
+<a id="__codelineno-3-61" name="__codelineno-3-61" href="#__codelineno-3-61"></a>                    <span class="s2">&quot;task_name&quot;</span><span class="p">:</span> <span class="n">data_point</span><span class="o">.</span><span class="n">task_name</span><span class="p">,</span>
+<a id="__codelineno-3-62" name="__codelineno-3-62" href="#__codelineno-3-62"></a>                <span class="p">}</span>
+<a id="__codelineno-3-63" name="__codelineno-3-63" href="#__codelineno-3-63"></a>            <span class="p">)</span>
+<a id="__codelineno-3-64" name="__codelineno-3-64" href="#__codelineno-3-64"></a>
+<a id="__codelineno-3-65" name="__codelineno-3-65" href="#__codelineno-3-65"></a>        <span class="n">extractor_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">extractor_inputs</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;chat_completion&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-66" name="__codelineno-3-66" href="#__codelineno-3-66"></a>
+<a id="__codelineno-3-67" name="__codelineno-3-67" href="#__codelineno-3-67"></a>        <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-3-68" name="__codelineno-3-68" href="#__codelineno-3-68"></a>        <span class="k">for</span> <span class="n">extractor_output</span> <span class="ow">in</span> <span class="n">extractor_outputs</span><span class="p">:</span>
+<a id="__codelineno-3-69" name="__codelineno-3-69" href="#__codelineno-3-69"></a>            <span class="n">data_point</span><span class="p">:</span> <span class="n">ParagraphData</span> <span class="o">=</span> <span class="n">extractor_output</span><span class="p">[</span><span class="s2">&quot;reference&quot;</span><span class="p">]</span>
+<a id="__codelineno-3-70" name="__codelineno-3-70" href="#__codelineno-3-70"></a>
+<a id="__codelineno-3-71" name="__codelineno-3-71" href="#__codelineno-3-71"></a>            <span class="n">result</span> <span class="o">=</span> <span class="n">extractor_output</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span>
+<a id="__codelineno-3-72" name="__codelineno-3-72" href="#__codelineno-3-72"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<a id="__codelineno-3-73" name="__codelineno-3-73" href="#__codelineno-3-73"></a>                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-3-74" name="__codelineno-3-74" href="#__codelineno-3-74"></a>
+<a id="__codelineno-3-75" name="__codelineno-3-75" href="#__codelineno-3-75"></a>            <span class="n">triples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<a id="__codelineno-3-76" name="__codelineno-3-76" href="#__codelineno-3-76"></a>            <span class="k">for</span> <span class="n">triple</span> <span class="ow">in</span> <span class="n">triples</span><span class="p">:</span>
+<a id="__codelineno-3-77" name="__codelineno-3-77" href="#__codelineno-3-77"></a>                <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+<a id="__codelineno-3-78" name="__codelineno-3-78" href="#__codelineno-3-78"></a>                    <span class="n">TripleData</span><span class="p">(</span>
+<a id="__codelineno-3-79" name="__codelineno-3-79" href="#__codelineno-3-79"></a>                        <span class="n">task_name</span><span class="o">=</span><span class="n">data_point</span><span class="o">.</span><span class="n">task_name</span><span class="p">,</span>
+<a id="__codelineno-3-80" name="__codelineno-3-80" href="#__codelineno-3-80"></a>                        <span class="n">is_seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-3-81" name="__codelineno-3-81" href="#__codelineno-3-81"></a>                        <span class="n">subject</span><span class="o">=</span><span class="n">triple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-82" name="__codelineno-3-82" href="#__codelineno-3-82"></a>                        <span class="n">predicate</span><span class="o">=</span><span class="n">triple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;predicate&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-83" name="__codelineno-3-83" href="#__codelineno-3-83"></a>                        <span class="n">obj</span><span class="o">=</span><span class="n">triple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-84" name="__codelineno-3-84" href="#__codelineno-3-84"></a>                        <span class="n">source_paragraph</span><span class="o">=</span><span class="n">data_point</span><span class="o">.</span><span class="n">paragraph</span><span class="p">,</span>
+<a id="__codelineno-3-85" name="__codelineno-3-85" href="#__codelineno-3-85"></a>                    <span class="p">)</span>
+<a id="__codelineno-3-86" name="__codelineno-3-86" href="#__codelineno-3-86"></a>                <span class="p">)</span>
+<a id="__codelineno-3-87" name="__codelineno-3-87" href="#__codelineno-3-87"></a>
+<a id="__codelineno-3-88" name="__codelineno-3-88" href="#__codelineno-3-88"></a>        <span class="k">return</span> <span class="n">outputs</span>
+<a id="__codelineno-3-89" name="__codelineno-3-89" href="#__codelineno-3-89"></a>
+<a id="__codelineno-3-90" name="__codelineno-3-90" href="#__codelineno-3-90"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<a id="__codelineno-3-91" name="__codelineno-3-91" href="#__codelineno-3-91"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse a JSON array of triples from the LM response.&quot;&quot;&quot;</span>
+<a id="__codelineno-3-92" name="__codelineno-3-92" href="#__codelineno-3-92"></a>        <span class="c1"># Strip markdown code fences if present.</span>
+<a id="__codelineno-3-93" name="__codelineno-3-93" href="#__codelineno-3-93"></a>        <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<a id="__codelineno-3-94" name="__codelineno-3-94" href="#__codelineno-3-94"></a>        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>
+<a id="__codelineno-3-95" name="__codelineno-3-95" href="#__codelineno-3-95"></a>            <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-3-96" name="__codelineno-3-96" href="#__codelineno-3-96"></a>            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;json&quot;</span><span class="p">):</span>
+<a id="__codelineno-3-97" name="__codelineno-3-97" href="#__codelineno-3-97"></a>                <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+<a id="__codelineno-3-98" name="__codelineno-3-98" href="#__codelineno-3-98"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-3-99" name="__codelineno-3-99" href="#__codelineno-3-99"></a>            <span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+<a id="__codelineno-3-100" name="__codelineno-3-100" href="#__codelineno-3-100"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+<a id="__codelineno-3-101" name="__codelineno-3-101" href="#__codelineno-3-101"></a>                <span class="k">return</span> <span class="n">parsed</span>
+<a id="__codelineno-3-102" name="__codelineno-3-102" href="#__codelineno-3-102"></a>        <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+<a id="__codelineno-3-103" name="__codelineno-3-103" href="#__codelineno-3-103"></a>            <span class="k">pass</span>
+<a id="__codelineno-3-104" name="__codelineno-3-104" href="#__codelineno-3-104"></a>        <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div>
-<p>Two things worth noting:</p>
+<p>Three things worth noting:</p>
 <ul>
 <li><code>TransformationDataBuilder.__call__</code> receives a batch of input records and returns a list of output records. The batch size is controlled by <code>transform_batch_size</code> in the runner config (defaults to the full dataset).</li>
 <li>Because one paragraph can produce multiple triples, the output list may be longer than the input list. This is the 1-to-N transformation pattern.</li>
+<li>The <code>task_name</code> key in each block input dict is a telemetry convention. The block ignores it, but DiGiT reads it to attribute token usage to the correct task in <code>traces.jsonl</code>. Always include it as the last key in every block input dict you build.</li>
 </ul>
 <h2 id="step-5-write-the-builder-config">Step 5: Write the builder config</h2>
 <p>Create <code>fms_dgt/public/databuilders/examples/fact_triples/fact_triples.yaml</code>:</p>

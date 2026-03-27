@@ -464,6 +464,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../studio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Studio
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1382,52 +1405,56 @@
 <a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a>
 <a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a>            <span class="c1"># input: messages list for chat_completion.</span>
 <a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a>            <span class="c1"># reference: passed through unchanged so we can recover task_name below.</span>
-<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a>            <span class="n">generator_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a>                <span class="p">{</span>
-<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a>                    <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">[</span>
-<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a>                        <span class="p">{</span>
-<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>                            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a>                            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span>
-<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a>                                <span class="n">render_dict</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;examples&quot;</span><span class="p">:</span> <span class="n">encoded_examples</span><span class="p">}</span>
-<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a>                            <span class="p">),</span>
-<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a>                        <span class="p">}</span>
-<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a>                    <span class="p">],</span>
-<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a>                    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="n">icl_examples</span><span class="p">,</span>
-<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a>                <span class="p">}</span>
-<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a>            <span class="p">)</span>
-<a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a>
-<a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a>        <span class="c1"># LMProvider runs all requests asynchronously for throughput.</span>
-<a id="__codelineno-4-69" name="__codelineno-4-69" href="#__codelineno-4-69"></a>        <span class="n">generator_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="p">(</span><span class="n">generator_inputs</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;chat_completion&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a>            <span class="c1"># task_name: not used by the block; included so DiGiT can attribute token</span>
+<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a>            <span class="c1">#   usage to this task in traces.jsonl. Always add this as the last key.</span>
+<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a>            <span class="n">generator_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a>                <span class="p">{</span>
+<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>                    <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a>                        <span class="p">{</span>
+<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a>                            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a>                            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span>
+<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a>                                <span class="n">render_dict</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;examples&quot;</span><span class="p">:</span> <span class="n">encoded_examples</span><span class="p">}</span>
+<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a>                            <span class="p">),</span>
+<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a>                        <span class="p">}</span>
+<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a>                    <span class="p">],</span>
+<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a>                    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="n">icl_examples</span><span class="p">,</span>
+<a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a>                    <span class="s2">&quot;task_name&quot;</span><span class="p">:</span> <span class="n">icl_examples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task_name</span><span class="p">,</span>
+<a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a>                <span class="p">}</span>
+<a id="__codelineno-4-69" name="__codelineno-4-69" href="#__codelineno-4-69"></a>            <span class="p">)</span>
 <a id="__codelineno-4-70" name="__codelineno-4-70" href="#__codelineno-4-70"></a>
-<a id="__codelineno-4-71" name="__codelineno-4-71" href="#__codelineno-4-71"></a>        <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-4-72" name="__codelineno-4-72" href="#__codelineno-4-72"></a>        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">generator_outputs</span><span class="p">:</span>
-<a id="__codelineno-4-73" name="__codelineno-4-73" href="#__codelineno-4-73"></a>            <span class="n">icl_examples</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">&quot;reference&quot;</span><span class="p">]</span>
-<a id="__codelineno-4-74" name="__codelineno-4-74" href="#__codelineno-4-74"></a>
-<a id="__codelineno-4-75" name="__codelineno-4-75" href="#__codelineno-4-75"></a>            <span class="n">result</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span>
-<a id="__codelineno-4-76" name="__codelineno-4-76" href="#__codelineno-4-76"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-<a id="__codelineno-4-77" name="__codelineno-4-77" href="#__codelineno-4-77"></a>                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-4-78" name="__codelineno-4-78" href="#__codelineno-4-78"></a>
-<a id="__codelineno-4-79" name="__codelineno-4-79" href="#__codelineno-4-79"></a>            <span class="c1"># Parse the &quot;Misconception: ... \n Correction: ...&quot; format.</span>
-<a id="__codelineno-4-80" name="__codelineno-4-80" href="#__codelineno-4-80"></a>            <span class="n">parts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;Correction:&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-81" name="__codelineno-4-81" href="#__codelineno-4-81"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-4-82" name="__codelineno-4-82" href="#__codelineno-4-82"></a>                <span class="n">misconception</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Misconception:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-83" name="__codelineno-4-83" href="#__codelineno-4-83"></a>                <span class="n">correction</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-84" name="__codelineno-4-84" href="#__codelineno-4-84"></a>                <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-<a id="__codelineno-4-85" name="__codelineno-4-85" href="#__codelineno-4-85"></a>                    <span class="n">MisconceptionData</span><span class="p">(</span>
-<a id="__codelineno-4-86" name="__codelineno-4-86" href="#__codelineno-4-86"></a>                        <span class="n">task_name</span><span class="o">=</span><span class="n">icl_examples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task_name</span><span class="p">,</span>
-<a id="__codelineno-4-87" name="__codelineno-4-87" href="#__codelineno-4-87"></a>                        <span class="n">is_seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-4-88" name="__codelineno-4-88" href="#__codelineno-4-88"></a>                        <span class="n">misconception</span><span class="o">=</span><span class="n">misconception</span><span class="p">,</span>
-<a id="__codelineno-4-89" name="__codelineno-4-89" href="#__codelineno-4-89"></a>                        <span class="n">correction</span><span class="o">=</span><span class="n">correction</span><span class="p">,</span>
-<a id="__codelineno-4-90" name="__codelineno-4-90" href="#__codelineno-4-90"></a>                    <span class="p">)</span>
-<a id="__codelineno-4-91" name="__codelineno-4-91" href="#__codelineno-4-91"></a>                <span class="p">)</span>
-<a id="__codelineno-4-92" name="__codelineno-4-92" href="#__codelineno-4-92"></a>
-<a id="__codelineno-4-93" name="__codelineno-4-93" href="#__codelineno-4-93"></a>        <span class="k">return</span> <span class="n">outputs</span>
+<a id="__codelineno-4-71" name="__codelineno-4-71" href="#__codelineno-4-71"></a>        <span class="c1"># LMProvider runs all requests asynchronously for throughput.</span>
+<a id="__codelineno-4-72" name="__codelineno-4-72" href="#__codelineno-4-72"></a>        <span class="n">generator_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="p">(</span><span class="n">generator_inputs</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;chat_completion&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-73" name="__codelineno-4-73" href="#__codelineno-4-73"></a>
+<a id="__codelineno-4-74" name="__codelineno-4-74" href="#__codelineno-4-74"></a>        <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-4-75" name="__codelineno-4-75" href="#__codelineno-4-75"></a>        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">generator_outputs</span><span class="p">:</span>
+<a id="__codelineno-4-76" name="__codelineno-4-76" href="#__codelineno-4-76"></a>            <span class="n">icl_examples</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">&quot;reference&quot;</span><span class="p">]</span>
+<a id="__codelineno-4-77" name="__codelineno-4-77" href="#__codelineno-4-77"></a>
+<a id="__codelineno-4-78" name="__codelineno-4-78" href="#__codelineno-4-78"></a>            <span class="n">result</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span>
+<a id="__codelineno-4-79" name="__codelineno-4-79" href="#__codelineno-4-79"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<a id="__codelineno-4-80" name="__codelineno-4-80" href="#__codelineno-4-80"></a>                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-4-81" name="__codelineno-4-81" href="#__codelineno-4-81"></a>
+<a id="__codelineno-4-82" name="__codelineno-4-82" href="#__codelineno-4-82"></a>            <span class="c1"># Parse the &quot;Misconception: ... \n Correction: ...&quot; format.</span>
+<a id="__codelineno-4-83" name="__codelineno-4-83" href="#__codelineno-4-83"></a>            <span class="n">parts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;Correction:&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-84" name="__codelineno-4-84" href="#__codelineno-4-84"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-4-85" name="__codelineno-4-85" href="#__codelineno-4-85"></a>                <span class="n">misconception</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Misconception:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-86" name="__codelineno-4-86" href="#__codelineno-4-86"></a>                <span class="n">correction</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-87" name="__codelineno-4-87" href="#__codelineno-4-87"></a>                <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+<a id="__codelineno-4-88" name="__codelineno-4-88" href="#__codelineno-4-88"></a>                    <span class="n">MisconceptionData</span><span class="p">(</span>
+<a id="__codelineno-4-89" name="__codelineno-4-89" href="#__codelineno-4-89"></a>                        <span class="n">task_name</span><span class="o">=</span><span class="n">icl_examples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task_name</span><span class="p">,</span>
+<a id="__codelineno-4-90" name="__codelineno-4-90" href="#__codelineno-4-90"></a>                        <span class="n">is_seed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-4-91" name="__codelineno-4-91" href="#__codelineno-4-91"></a>                        <span class="n">misconception</span><span class="o">=</span><span class="n">misconception</span><span class="p">,</span>
+<a id="__codelineno-4-92" name="__codelineno-4-92" href="#__codelineno-4-92"></a>                        <span class="n">correction</span><span class="o">=</span><span class="n">correction</span><span class="p">,</span>
+<a id="__codelineno-4-93" name="__codelineno-4-93" href="#__codelineno-4-93"></a>                    <span class="p">)</span>
+<a id="__codelineno-4-94" name="__codelineno-4-94" href="#__codelineno-4-94"></a>                <span class="p">)</span>
+<a id="__codelineno-4-95" name="__codelineno-4-95" href="#__codelineno-4-95"></a>
+<a id="__codelineno-4-96" name="__codelineno-4-96" href="#__codelineno-4-96"></a>        <span class="k">return</span> <span class="n">outputs</span>
 </code></pre></div>
 <p>A few things worth noting:</p>
 <ul>
 <li><code>@register_data_builder("public/examples/misconceptions")</code> registers this class under a name that must match the <code>name</code> field in the YAML config and the <code>data_builder</code> field in the task YAML.</li>
 <li><code>generator: LMProvider</code> is a class-level annotation. DiGiT reads the YAML config and injects the configured LM block automatically.</li>
 <li>The <code>reference</code> field passes ICL examples through the LM call so we can recover <code>task_name</code> when building output objects.</li>
+<li>The <code>task_name</code> field is not used by the block itself. It is a telemetry convention: DiGiT reads it to attribute token usage to the correct task in <code>traces.jsonl</code>. Always include it as the last key in every block input dict you build.</li>
 </ul>
 <h2 id="step-6-write-the-builder-config">Step 6: Write the builder config</h2>
 <p>Create <code>fms_dgt/public/databuilders/examples/misconceptions/misconceptions.yaml</code>:</p>

@@ -8,28 +8,28 @@
       
       
       
-        <link rel="canonical" href="https://ibm.github.io/fms-dgt/concepts/dataloaders/">
+        <link rel="canonical" href="https://ibm.github.io/fms-dgt/studio/">
       
       
-        <link rel="prev" href="../datastores/">
+        <link rel="prev" href="../usage/">
       
       
-        <link rel="next" href="../observability/">
+        <link rel="next" href="../concepts/architecture/">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
     
     
       
-        <title>Dataloaders - DiGiT</title>
+        <title>Studio - DiGiT</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,7 +48,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#dataloaders" class="md-skip">
+        <a href="#digit-studio" class="md-skip">
           Skip to content
         </a>
       
@@ -88,7 +88,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="DiGiT" class="md-header__button md-logo" aria-label="DiGiT" data-md-component="logo">
+    <a href=".." title="DiGiT" class="md-header__button md-logo" aria-label="DiGiT" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dataloaders
+              Studio
             
           </span>
         </div>
@@ -229,11 +229,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../.." class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href=".." class="md-tabs__link">
           
   
   
@@ -249,13 +251,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../concepts/architecture/" class="md-tabs__link">
           
   
   
@@ -275,7 +275,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../tutorials/generate_data/" class="md-tabs__link">
+        <a href="../tutorials/generate_data/" class="md-tabs__link">
           
   
   
@@ -295,7 +295,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/simple_reasoning/" class="md-tabs__link">
+        <a href="../examples/simple_reasoning/" class="md-tabs__link">
           
   
   
@@ -329,7 +329,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="DiGiT" class="md-nav__button md-logo" aria-label="DiGiT" data-md-component="logo">
+    <a href=".." title="DiGiT" class="md-nav__button md-logo" aria-label="DiGiT" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -356,26 +356,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
             
   
   
@@ -388,7 +393,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             Home
@@ -402,7 +407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -425,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -448,205 +453,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/" class="md-nav__link">
+      <a href="../usage/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     Usage
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../studio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Studio
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-        
-        
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    Concepts
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            Concepts
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Architecture
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tasks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Tasks
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../databuilders/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Data Builders
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../blocks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Blocks
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../datastores/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Datastores
     
   </span>
   
@@ -678,7 +490,7 @@
   
   
   <span class="md-ellipsis">
-    Dataloaders
+    Studio
     
   </span>
   
@@ -691,7 +503,7 @@
   
   
   <span class="md-ellipsis">
-    Dataloaders
+    Studio
     
   </span>
   
@@ -714,47 +526,140 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
+  <a href="#starting-studio" class="md-nav__link">
     <span class="md-ellipsis">
-      How dataloaders are used
+      Starting Studio
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
+  <a href="#what-studio-shows" class="md-nav__link">
     <span class="md-ellipsis">
-      Default dataloader
+      What Studio shows
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Studio shows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run list
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      Task card
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Result
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data points
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log" class="md-nav__link">
+    <span class="md-ellipsis">
+      Log
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stats
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI reference
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
+  <a href="#environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Field remapping
+      Environment variables
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
+  <a href="#cancelling-a-run" class="md-nav__link">
     <span class="md-ellipsis">
-      Resuming from a checkpoint
+      Cancelling a run
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
+  <a href="#development-setup" class="md-nav__link">
     <span class="md-ellipsis">
-      Implementing a custom dataloader
+      Development setup
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Development setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-dev-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the dev server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -767,6 +672,56 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Concepts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Concepts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
               
                 
   
@@ -774,7 +729,145 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
+      <a href="../concepts/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tasks
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/databuilders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Builders
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/blocks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Blocks
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/datastores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Datastores
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/dataloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dataloaders
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/observability/" class="md-nav__link">
         
   
   
@@ -847,7 +940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/generate_data/" class="md-nav__link">
+      <a href="../tutorials/generate_data/" class="md-nav__link">
         
   
   
@@ -870,7 +963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/transform_data/" class="md-nav__link">
+      <a href="../tutorials/transform_data/" class="md-nav__link">
         
   
   
@@ -893,7 +986,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/changing_lm_engine/" class="md-nav__link">
+      <a href="../tutorials/changing_lm_engine/" class="md-nav__link">
         
   
   
@@ -916,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/loading_seed_examples_from_file/" class="md-nav__link">
+      <a href="../tutorials/loading_seed_examples_from_file/" class="md-nav__link">
         
   
   
@@ -939,7 +1032,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/creating_validator/" class="md-nav__link">
+      <a href="../tutorials/creating_validator/" class="md-nav__link">
         
   
   
@@ -1012,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/simple_reasoning/" class="md-nav__link">
+      <a href="../examples/simple_reasoning/" class="md-nav__link">
         
   
   
@@ -1035,7 +1128,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/instructlab/" class="md-nav__link">
+      <a href="../examples/instructlab/" class="md-nav__link">
         
   
   
@@ -1058,7 +1151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/time_series/" class="md-nav__link">
+      <a href="../examples/time_series/" class="md-nav__link">
         
   
   
@@ -1108,47 +1201,140 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
+  <a href="#starting-studio" class="md-nav__link">
     <span class="md-ellipsis">
-      How dataloaders are used
+      Starting Studio
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
+  <a href="#what-studio-shows" class="md-nav__link">
     <span class="md-ellipsis">
-      Default dataloader
+      What Studio shows
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Studio shows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run list
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      Task card
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Result
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data points
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log" class="md-nav__link">
+    <span class="md-ellipsis">
+      Log
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stats
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI reference
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
+  <a href="#environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Field remapping
+      Environment variables
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
+  <a href="#cancelling-a-run" class="md-nav__link">
     <span class="md-ellipsis">
-      Resuming from a checkpoint
+      Cancelling a run
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
+  <a href="#development-setup" class="md-nav__link">
     <span class="md-ellipsis">
-      Implementing a custom dataloader
+      Development setup
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Development setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-dev-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the dev server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1171,54 +1357,136 @@
   
 
 
-<h1 id="dataloaders">Dataloaders</h1>
-<p>A Dataloader is a stateful iterator over a datastore. Where a datastore handles persistence (reading and writing files), a dataloader handles iteration: yielding one record at a time, tracking position, and optionally looping indefinitely or resuming from a checkpoint.</p>
-<p>You do not typically instantiate dataloaders directly. The framework creates them internally when a task starts iterating over its seed or input data. Understanding dataloaders is useful when you need to control iteration behavior, apply field remapping at load time, or resume a long-running run.</p>
-<h2 id="how-dataloaders-are-used">How dataloaders are used</h2>
-<p>For generation tasks, DiGiT wraps the seed datastore in a dataloader that loops continuously. Each iteration of the generation loop draws the next batch of seed examples from the dataloader, ensuring seeds are recycled as many times as needed until the target record count is reached.</p>
-<p>For transformation tasks, the input datastore is wrapped in a dataloader that does not loop. When the dataloader is exhausted, the task is complete.</p>
-<h2 id="default-dataloader">Default dataloader</h2>
-<p>The <code>default</code> dataloader (<code>type: default</code>) wraps a datastore and yields its records one at a time:</p>
-<ul>
-<li>Tracks position as <code>(iterator_index, row_index)</code> so iteration can be resumed after a restart.</li>
-<li>Supports optional field remapping via the <code>fields</code> parameter.</li>
-<li>Loops back to the start when <code>loop_over: true</code> (the default for seed data).</li>
-</ul>
-<p>The <code>simple</code> dataloader (<code>type: simple</code>) wraps an in-memory list directly, using a single integer index as state. It is used internally for seed examples provided inline in the task YAML.</p>
-<h2 id="field-remapping">Field remapping</h2>
-<p>The <code>fields</code> parameter lets you rename or select fields as records are loaded, without modifying the source file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">seed_datastore</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">data_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DGT_DATA_DIR}/public/examples/qa/seeds.jsonl</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># rename &quot;question&quot; to &quot;instruction&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span><span class="w"> </span><span class="c1"># rename &quot;answer&quot; to &quot;output&quot;</span>
+<h1 id="digit-studio">DiGiT Studio</h1>
+<p>DiGiT Studio is a local run-monitoring UI that lets you inspect active and completed runs without leaving your machine. It requires only Python: no Node.js runtime is needed after installation.</p>
+<h2 id="starting-studio">Starting Studio</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>digit-studio
 </code></pre></div>
-<p>Wildcard syntax keeps all fields while renaming specific ones:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="s">&quot;*&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span><span class="w"> </span><span class="c1"># keep all fields as-is</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># also rename this one</span>
+<p>Studio reads <code>DGT_OUTPUT_DIR</code> from your <code>.env</code> file. You can override it for a specific session with <code>--output-dir</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>digit-studio<span class="w"> </span>--output-dir<span class="w"> </span>./some-other-output
 </code></pre></div>
-<p>Nested fields are accessed with dot notation:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="s">&quot;meta.language&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="w"> </span><span class="c1"># extract nested field to top level</span>
+<p>Once running, open <a href="http://localhost:4720">http://localhost:4720</a> in your browser.</p>
+<p>To stop a running instance:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>digit-studio<span class="w"> </span>stop
 </code></pre></div>
-<h2 id="resuming-from-a-checkpoint">Resuming from a checkpoint</h2>
-<p>Dataloaders expose <code>get_state()</code> and <code>set_state(state)</code> for checkpointing. The state is a small dictionary recording the current position in the iteration sequence:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">dataloader</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># {&quot;_ITER_INDEX&quot;: 0, &quot;_ROW_INDEX&quot;: 142}</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">dataloader</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>  <span class="c1"># resume from row 142</span>
+<h2 id="what-studio-shows">What Studio shows</h2>
+<p>Studio polls your output directory and telemetry files and displays the following for each run.</p>
+<h3 id="run-list">Run list</h3>
+<p>The sidebar lists every run found under the output directory, with its status (<code>running</code>, <code>completed</code>, or <code>errored</code>), start time, and duration.</p>
+<h3 id="task-card">Task card</h3>
+<p>The configuration used for the run: task name, databuilder, model, blocks, and postprocessors.</p>
+<h3 id="result">Result</h3>
+<p>The final outcome record from <code>task_results.jsonl</code>, including status, timing, and any metrics emitted by the databuilder.</p>
+<h3 id="data-points">Data points</h3>
+<p>The generated data files for the run, split across four tabs:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Intermediate</td>
+<td><code>data.jsonl</code></td>
+</tr>
+<tr>
+<td>Post-processed</td>
+<td><code>postproc_data_&lt;n&gt;.jsonl</code></td>
+</tr>
+<tr>
+<td>Final</td>
+<td><code>final_data.jsonl</code></td>
+</tr>
+<tr>
+<td>Formatted</td>
+<td><code>formatted_data.jsonl</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="log">Log</h3>
+<p>The full run log, read from <code>logs.jsonl</code> (or <code>.log</code> files for older runs).</p>
+<h3 id="stats">Stats</h3>
+<p>Generation and postprocessing metrics derived from telemetry, when <code>DGT_TELEMETRY_DIR</code> is set. Includes per-epoch acceptance rates, throughput time series, and token usage with optional cost estimates.</p>
+<h2 id="cli-reference">CLI reference</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>digit-studio<span class="w"> </span>--help
 </code></pre></div>
-<p>DiGiT persists dataloader state automatically during a run. If a run is interrupted and restarted without <code>--restart</code>, seed iteration resumes from where it left off rather than starting over from the first example.</p>
-<h2 id="implementing-a-custom-dataloader">Implementing a custom dataloader</h2>
-<p>All dataloaders inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/dataloader.py"><code>Dataloader</code></a> and must implement:</p>
-<ul>
-<li><code>__next__()</code>: yield the next record, raise <code>StopIteration</code> when exhausted</li>
-<li><code>get_state()</code>: return a serializable state object</li>
-<li><code>set_state(state)</code>: restore position from a previously saved state</li>
-</ul>
-<p>Register with <code>@register_dataloader("my_type")</code> and reference by type in the task YAML datastore configuration.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output-dir</code></td>
+<td><code>$DGT_OUTPUT_DIR</code></td>
+<td>Output directory to monitor</td>
+</tr>
+<tr>
+<td><code>--telemetry-dir</code></td>
+<td><code>$DGT_TELEMETRY_DIR</code></td>
+<td>Telemetry directory for stats and token usage</td>
+</tr>
+<tr>
+<td><code>--port</code></td>
+<td><code>4720</code></td>
+<td>Port to listen on</td>
+</tr>
+</tbody>
+</table>
+<h2 id="environment-variables">Environment variables</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DGT_OUTPUT_DIR</code></td>
+<td><code>output/</code></td>
+<td>Output directory to monitor</td>
+</tr>
+<tr>
+<td><code>DGT_TELEMETRY_DIR</code></td>
+<td><code>telemetry/</code></td>
+<td>Telemetry directory for generation stats and token usage</td>
+</tr>
+<tr>
+<td><code>DIGIT_STUDIO_PORT</code></td>
+<td><code>4720</code></td>
+<td>Port Studio listens on</td>
+</tr>
+</tbody>
+</table>
+<h2 id="cancelling-a-run">Cancelling a run</h2>
+<p>Select a running run in the sidebar and click <strong>Stop</strong> in the detail view. Studio sends a <code>SIGINT</code> to the run process, which triggers a clean shutdown.</p>
+<h2 id="development-setup">Development setup</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>Install Node.js via a version manager. <a href="https://github.com/nvm-sh/nvm">nvm</a> is recommended:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>nvm<span class="w"> </span>install
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>nvm<span class="w"> </span>use
+</code></pre></div>
+<p>The <code>.nvmrc</code> in the <code>studio/</code> directory pins the required Node version. Then install dependencies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">cd</span><span class="w"> </span>studio<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>install
+</code></pre></div>
+<h3 id="running-the-dev-server">Running the dev server</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>studio
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>npm<span class="w"> </span>run<span class="w"> </span>dev
+</code></pre></div>
+<p>This starts the FastAPI backend on port 4720 (with auto-reload on Python file changes) and the Next.js dev server on port 3000. Open <a href="http://localhost:3000">http://localhost:3000</a>. All <code>/api/*</code> requests are proxied automatically to the backend.</p>
+<p>A <code>.env</code> file at the repo root with <code>DGT_OUTPUT_DIR</code> and <code>DGT_TELEMETRY_DIR</code> set is required for the backend to find your runs.</p>
+<p>To build and commit the static frontend after making UI changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>studio
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>npm<span class="w"> </span>run<span class="w"> </span>build
+</code></pre></div>
+<p>Commit the updated <code>studio/dist/</code> directory alongside your code changes.</p>
 
 
 
@@ -1277,10 +1545,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>
