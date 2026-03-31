@@ -3,15 +3,28 @@
 
 # Standard
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
-from typing import Any, Dict, Iterable, List
+from dataclasses import dataclass
+from typing import Any, Dict, Iterable, List, Mapping
+import contextvars
 import threading
 import time
 
 # Local
-from fms_dgt.base.data_objects import DataPoint
+from fms_dgt.base.data_objects import DataBuilderConfig, DataPoint
 from fms_dgt.base.databuilder.generation import GenerationDataBuilder
 from fms_dgt.base.task import GenerationTask
 from fms_dgt.base.telemetry import Span
+from fms_dgt.utils import init_dataclass_from_dict
+
+
+# ===========================================================================
+#                       DATA OBJECTS
+# ===========================================================================
+@dataclass(kw_only=True)
+class ConcurrentGenerationDataBuilderConfig(DataBuilderConfig):
+    """Configuration class for a GenerationDataBuilder that runs work items concurrently via a thread pool."""
+
+    max_workers: int = 4  # Holds the LLM config for finetuning
 
 
 # ===========================================================================
@@ -57,25 +70,26 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
     def __init__(
         self,
         *args: Any,
-        max_workers: int = 4,
-        items_per_worker: int = 4,
+        config: Mapping | ConcurrentGenerationDataBuilderConfig = None,
         **kwargs: Any,
     ) -> None:
         """Initializes the concurrent data builder.
 
         Args:
             max_workers: Number of parallel worker threads. Each worker processes
-                one mini-batch of items_per_worker items from a single task.
-                Default: 4.
-            items_per_worker: Number of data points passed to __call__ per worker
-                invocation. Analogous to machine_batch_size in GenerationDataBuilder.
-                The effective in-flight LM batch under steady-state load is
-                max_workers * items_per_worker. Default: 4.
+                one batch returned by task.get_batch_examples(). The actual batch
+                size is task-controlled (task.batch_size = seed_batch_size +
+                machine_batch_size). Default: 4.
         """
-        super().__init__(*args, **kwargs)
-        self._max_workers = max_workers if isinstance(max_workers, int) and max_workers > 0 else 4
-        self._items_per_worker = (
-            items_per_worker if isinstance(items_per_worker, int) and items_per_worker > 0 else 4
+        config: ConcurrentGenerationDataBuilderConfig = init_dataclass_from_dict(
+            config, ConcurrentGenerationDataBuilderConfig
+        )
+        super().__init__(*args, config=config, **kwargs)
+
+        self._max_workers = (
+            config.max_workers
+            if isinstance(config.max_workers, int) and config.max_workers > 0
+            else 4
         )
         # Per-task locks for thread-safe shared state mutation.
         self._task_locks: Dict[str, threading.Lock] = {}
@@ -87,11 +101,6 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
     def max_workers(self) -> int:
         """Number of parallel worker threads."""
         return self._max_workers
-
-    @property
-    def items_per_worker(self) -> int:
-        """Number of data points passed to __call__ per worker invocation."""
-        return self._items_per_worker
 
     # ===========================================================================
     #                       WORKER ALLOCATION
@@ -150,7 +159,8 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
             new_futures = max(floor, proportional)
 
             # Never spawn more futures than there are items remaining.
-            max_batches_needed = -(-task_remaining // self._items_per_worker)  # ceiling division
+            # Use task.batch_size (seed + machine) as the actual items-per-future.
+            max_batches_needed = -(-task_remaining // task.batch_size)  # ceiling division
             new_futures = min(new_futures, max(0, max_batches_needed - in_flight))
 
             if new_futures > 0:
@@ -179,7 +189,7 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
                     break
                 task_remaining = max(0, task.num_outputs_to_generate - len(task.machine_data))
                 in_flight = in_flight_per_task.get(task.name, 0)
-                max_batches_needed = -(-task_remaining // self._items_per_worker)
+                max_batches_needed = -(-task_remaining // task.batch_size)
                 current = spawn[task.name]
                 headroom = max(0, max_batches_needed - in_flight - current)
                 add = min(unused, headroom)
@@ -276,10 +286,9 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
                 self.logger.info("\t\t\t\tCONCURRENT GENERATION — EPOCH %s", self._epoch)
                 self.logger.info("*" * 99)
                 self.logger.info(
-                    "Epoch %s started: %s worker(s), %s item(s)/worker, %s active task(s): %s",
+                    "Epoch %s started: %s worker(s), %s active task(s): %s",
                     self._epoch,
                     self._max_workers,
-                    self._items_per_worker,
                     len(active_tasks),
                     ", ".join(t.name for t in active_tasks),
                     extra={
@@ -288,7 +297,6 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
                         "active_task_names": [t.name for t in active_tasks],
                         "active_task_count": len(active_tasks),
                         "max_workers": self._max_workers,
-                        "items_per_worker": self._items_per_worker,
                     },
                 )
 
@@ -491,7 +499,7 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
                 batch = task.get_batch_examples()
                 if not batch:
                     break
-                fut = executor.submit(self, self._epoch, batch)
+                fut = executor.submit(contextvars.copy_context().run, self, self._epoch, batch)
                 futures[fut] = task.name
                 in_flight_per_task[task.name] = in_flight_per_task.get(task.name, 0) + 1
 

@@ -32,9 +32,10 @@ class StubDataPoint(DataPoint):
 class StubTask:
     """Minimal GenerationTask stub — no file I/O, no dataloader."""
 
-    def __init__(self, name: str, num_outputs: int):
+    def __init__(self, name: str, num_outputs: int, batch_size: int = 4):
         self.name = name
         self._num_outputs_to_generate = num_outputs
+        self._batch_size = batch_size
         self.machine_data: List[StubDataPoint] = []
         self.task_card = MagicMock(build_id="build-1", run_id="run-1")
         self.log_handler = None
@@ -59,8 +60,12 @@ class StubTask:
     def save_dataloader_state(self) -> None:
         pass
 
+    @property
+    def batch_size(self) -> int:
+        return self._batch_size
+
     def get_batch_examples(self) -> List[StubDataPoint]:
-        return [StubDataPoint(task_name=self.name, value=i) for i in range(4)]
+        return [StubDataPoint(task_name=self.name, value=i) for i in range(self._batch_size)]
 
     @property
     def finished(self) -> bool:
@@ -79,7 +84,6 @@ class StubConcurrentBuilder(ConcurrentGenerationDataBuilder):
         tasks: List[StubTask],
         responses_per_task: Dict[str, List[List[StubDataPoint]]],
         max_workers: int = 2,
-        items_per_worker: int = 4,
         max_stalled_attempts: int = 3,
     ):
         # Bypass DataBuilder.__init__ entirely — set required attributes directly.
@@ -100,7 +104,6 @@ class StubConcurrentBuilder(ConcurrentGenerationDataBuilder):
         self._task_locks = {}
 
         self._max_workers = max_workers
-        self._items_per_worker = items_per_worker
 
         # responses_per_task[task_name] is a list of return values, one per
         # __call__ invocation for that task. Cycles when exhausted.
@@ -145,16 +148,13 @@ def make_dp(task_name: str, value: int = 0) -> StubDataPoint:
 class TestConcurrentGenerationDataBuilderDefaults:
     def test_defaults(self):
         task = StubTask("A", num_outputs=1)
-        # Explicitly pass the framework defaults to verify they are stored correctly.
-        builder = StubConcurrentBuilder([task], {"A": [[]]}, max_workers=4, items_per_worker=4)
+        builder = StubConcurrentBuilder([task], {"A": [[]]}, max_workers=4)
         assert builder.max_workers == 4
-        assert builder.items_per_worker == 4
 
     def test_custom_values(self):
         task = StubTask("A", num_outputs=1)
-        builder = StubConcurrentBuilder([task], {"A": [[]]}, max_workers=8, items_per_worker=16)
+        builder = StubConcurrentBuilder([task], {"A": [[]]}, max_workers=8)
         assert builder.max_workers == 8
-        assert builder.items_per_worker == 16
 
 
 # ===========================================================================
@@ -219,7 +219,7 @@ class TestConcurrentExecution:
     def test_single_task_completes(self):
         task = StubTask("A", num_outputs=3)
         responses = {"A": [[make_dp("A"), make_dp("A"), make_dp("A")]]}
-        builder = StubConcurrentBuilder([task], responses, max_workers=2, items_per_worker=4)
+        builder = StubConcurrentBuilder([task], responses, max_workers=2)
         builder.execute_tasks()
         assert task.is_complete()
         assert task.finished
@@ -231,9 +231,7 @@ class TestConcurrentExecution:
             "A": [[make_dp("A"), make_dp("A")]],
             "B": [[make_dp("B"), make_dp("B")]],
         }
-        builder = StubConcurrentBuilder(
-            [task_a, task_b], responses, max_workers=2, items_per_worker=4
-        )
+        builder = StubConcurrentBuilder([task_a, task_b], responses, max_workers=2)
         builder.execute_tasks()
         assert task_a.is_complete()
         assert task_b.is_complete()
@@ -256,7 +254,7 @@ class TestConcurrentExecution:
         task = StubTask("A", num_outputs=2)
         # Each __call__ returns 2 data points.
         responses = {"A": [[make_dp("A"), make_dp("A")]]}
-        builder = StubConcurrentBuilder([task], responses, max_workers=1, items_per_worker=4)
+        builder = StubConcurrentBuilder([task], responses, max_workers=1)
 
         wipe_count = {"n": 0}
 
@@ -278,7 +276,7 @@ class TestConcurrentExecution:
         task = StubTask("A", num_outputs=20)
         # Each call returns 2 data points.
         responses = {"A": [[make_dp("A"), make_dp("A")]]}
-        builder = StubConcurrentBuilder([task], responses, max_workers=4, items_per_worker=4)
+        builder = StubConcurrentBuilder([task], responses, max_workers=4)
         builder.execute_tasks()
         # All appends must have landed; no duplicates from race conditions.
         assert len(task.machine_data) >= 20
@@ -293,9 +291,7 @@ class TestStallDetection:
         task = StubTask("A", num_outputs=10)
         # Always returns empty — will stall.
         responses = {"A": [[]]}
-        builder = StubConcurrentBuilder(
-            [task], responses, max_workers=1, items_per_worker=4, max_stalled_attempts=3
-        )
+        builder = StubConcurrentBuilder([task], responses, max_workers=1, max_stalled_attempts=3)
         builder.execute_tasks()
         # Task should be terminated (finished) even though incomplete.
         assert task.finished
@@ -307,9 +303,7 @@ class TestStallDetection:
         responses = {
             "A": [[], [], [make_dp("A"), make_dp("A"), make_dp("A")]],
         }
-        builder = StubConcurrentBuilder(
-            [task], responses, max_workers=1, items_per_worker=4, max_stalled_attempts=3
-        )
+        builder = StubConcurrentBuilder([task], responses, max_workers=1, max_stalled_attempts=3)
         builder.execute_tasks()
         assert task.is_complete()
 
@@ -319,9 +313,7 @@ class TestStallDetection:
         responses = {
             "A": [[make_dp("A")], [make_dp("A")]],
         }
-        builder = StubConcurrentBuilder(
-            [task], responses, max_workers=1, items_per_worker=4, max_stalled_attempts=2
-        )
+        builder = StubConcurrentBuilder([task], responses, max_workers=1, max_stalled_attempts=2)
         builder.execute_tasks()
         assert task.is_complete()
 
@@ -336,7 +328,6 @@ class TestStallDetection:
             [task_stall, task_ok],
             responses,
             max_workers=2,
-            items_per_worker=4,
             max_stalled_attempts=3,
         )
         builder.execute_tasks()
