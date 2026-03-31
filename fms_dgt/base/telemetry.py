@@ -230,6 +230,9 @@ class Span:
         self._attributes["error"] = str(exc)
         self._attributes["error_type"] = type(exc).__name__
 
+    def set_cancelled(self) -> None:
+        self._status = "cancelled"
+
     def __enter__(self) -> "Span":
         self._start = datetime.now(tz=timezone.utc)
         return self

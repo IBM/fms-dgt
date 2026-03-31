@@ -186,6 +186,62 @@ def load_log(path: str) -> str | None:
     return None
 
 
+def load_log_since(path: str, offset: int) -> tuple[str, int]:
+    """Return only log content written after ``offset`` bytes, plus the new offset.
+
+    Works for logs.jsonl (structured) and plain-text .log fallback.  The offset
+    is a byte position in the underlying source file so seeks are O(1).  Returns
+    ("", offset) when nothing new is available.
+    """
+    # Try logs.jsonl first.
+    logs_jsonl = os.path.join(path, "logs.jsonl")
+    try:
+        with open(logs_jsonl, "rb") as fh:
+            fh.seek(0, 2)
+            end = fh.tell()
+            if offset >= end:
+                return "", offset
+            fh.seek(offset)
+            new_bytes = fh.read()
+        lines = []
+        for raw in new_bytes.decode("utf-8", errors="replace").splitlines():
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                e = json.loads(raw)
+                lines.append(
+                    f"{e['timestamp']} {e['level'].ljust(8)} [{e['logger']}:{e['lineno']}] {e['message']}"
+                )
+            except Exception:
+                lines.append(raw)
+        return "\n".join(lines), end
+    except FileNotFoundError:
+        pass
+    except Exception:
+        return "", offset
+
+    # Fall back to plain-text .log files — concatenate all, seek within combined content.
+    try:
+        logs_dir = os.path.join(path, "logs")
+        log_files = sorted(
+            [f for f in os.listdir(logs_dir) if f.endswith(".log")],
+            key=lambda f: os.path.getmtime(os.path.join(logs_dir, f)),
+        )
+        if not log_files:
+            return "", offset
+        # Build combined bytes lazily to find the right position.
+        combined = b""
+        for f in log_files:
+            with open(os.path.join(logs_dir, f), "rb") as fh:
+                combined += fh.read()
+        new_bytes = combined[offset:]
+        text = new_bytes.decode("utf-8", errors="replace")
+        return text, len(combined)
+    except Exception:
+        return "", offset
+
+
 def load_results(path: str) -> dict[str, dict]:
     return {str(r["PID"]): r for r in read_jsonl(os.path.join(path, "task_results.jsonl"))}
 
@@ -204,6 +260,114 @@ def load_data_points(path: str) -> dict:
                     data["final"] = read_jsonl(fp)
                 elif filename == "formatted_data.jsonl":
                     data["formatted"] = read_jsonl(fp)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return data
+
+
+def _tail_jsonl(filepath: str, n: int) -> list:
+    """Return the last ``n`` records from a JSONL file without reading the whole file."""
+    try:
+        with open(filepath, "rb") as fh:
+            # Walk backwards collecting complete lines.
+            fh.seek(0, 2)
+            remaining = fh.tell()
+            buf = b""
+            lines: list[bytes] = []
+            chunk = 4096
+            while remaining > 0 and len(lines) <= n:
+                read_size = min(chunk, remaining)
+                remaining -= read_size
+                fh.seek(remaining)
+                buf = fh.read(read_size) + buf
+                lines = buf.splitlines()
+            # Keep only the last n non-empty lines.
+            tail = [line for line in lines if line.strip()][-n:]
+        return [json.loads(line) for line in tail]
+    except Exception:
+        return []
+
+
+def _count_jsonl_lines(filepath: str) -> int:
+    with open(filepath, "rb") as fh:
+        return sum(1 for line in fh if line.strip())
+
+
+def load_data_points_tail(path: str, n: int = 25) -> dict:
+    """Return the last ``n`` records from each data file, plus total counts."""
+    data: dict = {
+        "intermediate": [],
+        "intermediateTotal": 0,
+        "postprocessed": {},
+        "postprocessedTotal": {},
+        "final": [],
+        "finalTotal": 0,
+        "formatted": [],
+        "formattedTotal": 0,
+    }
+    try:
+        for filename in os.listdir(path):
+            fp = os.path.join(path, filename)
+            try:
+                if filename == "data.jsonl":
+                    data["intermediate"] = _tail_jsonl(fp, n)
+                    data["intermediateTotal"] = _count_jsonl_lines(fp)
+                elif filename.startswith("postproc_data_") and filename.endswith(".jsonl"):
+                    key = filename[14:-6]
+                    data["postprocessed"][key] = _tail_jsonl(fp, n)
+                    data["postprocessedTotal"][key] = _count_jsonl_lines(fp)
+                elif filename == "final_data.jsonl":
+                    data["final"] = _tail_jsonl(fp, n)
+                    data["finalTotal"] = _count_jsonl_lines(fp)
+                elif filename == "formatted_data.jsonl":
+                    data["formatted"] = _tail_jsonl(fp, n)
+                    data["formattedTotal"] = _count_jsonl_lines(fp)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return data
+
+
+def load_data_points_page(path: str, page: int, page_size: int) -> dict:
+    """Return a paginated slice from each data file, plus total counts."""
+    data: dict = {
+        "intermediate": [],
+        "intermediateTotal": 0,
+        "postprocessed": {},
+        "postprocessedTotal": {},
+        "final": [],
+        "finalTotal": 0,
+        "formatted": [],
+        "formattedTotal": 0,
+    }
+    try:
+        for filename in os.listdir(path):
+            fp = os.path.join(path, filename)
+            try:
+                if filename == "data.jsonl":
+                    all_records = read_jsonl(fp)
+                    data["intermediateTotal"] = len(all_records)
+                    start = page * page_size
+                    data["intermediate"] = all_records[start : start + page_size]
+                elif filename.startswith("postproc_data_") and filename.endswith(".jsonl"):
+                    key = filename[14:-6]
+                    all_records = read_jsonl(fp)
+                    data["postprocessedTotal"][key] = len(all_records)
+                    start = page * page_size
+                    data["postprocessed"][key] = all_records[start : start + page_size]
+                elif filename == "final_data.jsonl":
+                    all_records = read_jsonl(fp)
+                    data["finalTotal"] = len(all_records)
+                    start = page * page_size
+                    data["final"] = all_records[start : start + page_size]
+                elif filename == "formatted_data.jsonl":
+                    all_records = read_jsonl(fp)
+                    data["formattedTotal"] = len(all_records)
+                    start = page * page_size
+                    data["formatted"] = all_records[start : start + page_size]
             except Exception:
                 pass
     except Exception:

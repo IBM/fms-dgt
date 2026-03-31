@@ -72,16 +72,27 @@ def list_runs(path: str = Query(...)):
 
 
 @app.get("/api/data/run")
-def get_run(path: str = Query(...)):
+def get_run(
+    path: str = Query(...),
+    log_offset: int = Query(default=0, ge=0),
+    page: int = Query(default=0, ge=0),
+    page_size: int = Query(default=25, ge=1, le=200),
+):
     if not os.path.isdir(path):
         raise HTTPException(status_code=400, detail='Invalid "path" in request.')
     try:
         task_cards = utils.load_task_cards(path)
         task_card = task_cards[-1]
-        log = utils.load_log(path)
         results = utils.load_results(path)
-        data_points = utils.load_data_points(path)
         pid = utils.resolve_pid(task_card, results)
+        is_running = results.get(pid, {}).get("status") == "running"
+
+        log_delta, new_log_offset = utils.load_log_since(path, log_offset)
+
+        if is_running:
+            data_points = utils.load_data_points_tail(path, n=25)
+        else:
+            data_points = utils.load_data_points_page(path, page=page, page_size=page_size)
 
         generation_stats = None
         transformation_stats = None
@@ -94,9 +105,11 @@ def get_run(path: str = Query(...)):
 
         return {
             "card": task_card,
-            "log": log,
+            "logDelta": log_delta,
+            "logOffset": new_log_offset,
             "result": results.get(pid),
             "datapoints": data_points,
+            "isRunning": is_running,
             "generationStats": generation_stats,
             "transformationStats": transformation_stats,
         }

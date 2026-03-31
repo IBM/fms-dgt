@@ -3,7 +3,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tile, Tooltip } from '@carbon/react';
 import { Information } from '@carbon/icons-react';
 import { StackedBarChart } from '@carbon/charts-react';
@@ -118,49 +118,54 @@ export default function TokenMetrics({ usage }: { usage: TokenUsage | null }) {
 
   // Build chart data only when telemetry is available.
   // Prompt + Completion stack naturally; the top of the bar = total tokens for that bucket.
-  const chartData: ChartTabularData = usage
-    ? usage.series.flatMap((bucket) => [
-        {
-          group: 'Prompt tokens',
-          date: bucket.timestamp,
-          value: bucket.prompt_tokens,
-        },
-        {
-          group: 'Completion tokens',
-          date: bucket.timestamp,
-          value: bucket.completion_tokens,
-        },
-      ])
-    : [];
+  const chartData: ChartTabularData = useMemo(
+    () =>
+      usage
+        ? usage.series.flatMap((bucket) => [
+            {
+              group: 'Prompt tokens',
+              date: bucket.timestamp,
+              value: bucket.prompt_tokens,
+            },
+            {
+              group: 'Completion tokens',
+              date: bucket.timestamp,
+              value: bucket.completion_tokens,
+            },
+          ])
+        : [],
+    [usage],
+  );
 
   // Pin Y axis to max total + 10% so the top bar segment is never clipped.
-  const maxTotal = usage
-    ? Math.max(
-        ...usage.series.map((b) => b.prompt_tokens + b.completion_tokens),
-      )
-    : 0;
-
-  const chartOptions: StackedBarChartOptions = {
-    title: 'Token usage over time',
-    axes: {
-      bottom: {
-        title: 'Time',
-        mapsTo: 'date',
-        scaleType: ScaleTypes.TIME,
+  const chartOptions: StackedBarChartOptions = useMemo(() => {
+    const maxTotal = usage
+      ? Math.max(
+          ...usage.series.map((b) => b.prompt_tokens + b.completion_tokens),
+        )
+      : 0;
+    return {
+      title: 'Token usage over time',
+      axes: {
+        bottom: {
+          title: 'Time',
+          mapsTo: 'date',
+          scaleType: ScaleTypes.TIME,
+        },
+        left: {
+          title: 'Tokens',
+          mapsTo: 'value',
+          scaleType: ScaleTypes.LINEAR,
+          domain: [0, Math.ceil(maxTotal * 1.1)],
+        },
       },
-      left: {
-        title: 'Tokens',
-        mapsTo: 'value',
-        scaleType: ScaleTypes.LINEAR,
-        domain: [0, Math.ceil(maxTotal * 1.1)],
-      },
-    },
-    theme,
-    height: '300px',
-    toolbar: { enabled: false },
-    legend: { enabled: true },
-    tooltip: { enabled: true },
-  };
+      theme,
+      height: '300px',
+      toolbar: { enabled: false },
+      legend: { enabled: true },
+      tooltip: { enabled: true },
+    };
+  }, [usage, theme]);
 
   return (
     <div className={classes.tokenMetrics}>

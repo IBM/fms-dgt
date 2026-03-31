@@ -394,7 +394,7 @@ class DataBuilder:
 
         self.logger.info("*" * 99)
 
-    def close(self):
+    def close(self, cancelled: bool = False, errored: bool = False):
         # Step 1: Report profiling information
         self._report_profiling_information()
 
@@ -402,10 +402,17 @@ class DataBuilder:
         for block in self._blocks:
             block.close()
 
-        # Step 3: Record run completion
-        self.record_run_results(
-            update={"status": "completed", "end_time": int(datetime.now().timestamp())}
-        )
+        # Step 3: Record terminal status.
+        # errored status is already written in generate_data.py before close().
+        # cancelled vs completed is determined by the caller via flags.
+        if cancelled:
+            self.record_run_results(
+                update={"status": "cancelled", "end_time": int(datetime.now().timestamp())}
+            )
+        elif not errored:
+            self.record_run_results(
+                update={"status": "completed", "end_time": int(datetime.now().timestamp())}
+            )
 
         # Step 4: Unregister and close task log handlers now that all run-level
         # events (run_finished / run_errored) have been written by the caller.

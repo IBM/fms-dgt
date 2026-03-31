@@ -3,7 +3,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tile, Tooltip } from '@carbon/react';
 import { Information } from '@carbon/icons-react';
 import { LineChart, StackedBarChart } from '@carbon/charts-react';
@@ -94,9 +94,13 @@ export default function StatsTab({
 }: {
   datapoints: {
     intermediate: DataPoint[];
+    intermediateTotal: number;
     postprocessed: { [key: string]: DataPoint[] };
+    postprocessedTotal: { [key: string]: number };
     final: DataPoint[];
+    finalTotal: number;
     formatted: DataPoint[];
+    formattedTotal: number;
   };
   tokenUsage: TokenUsage | null;
   generationStats: GenerationStats | null;
@@ -212,80 +216,93 @@ export default function StatsTab({
         : null;
 
     // Chart: cumulative generated vs survived over time (adaptive buckets)
-    const chartData: ChartTabularData = timeSeries.flatMap((b) => [
-      { group: 'Generated', date: b.timestamp, value: b.cumGenerated },
-      {
-        group: 'Survived postprocessing',
-        date: b.timestamp,
-        value: b.cumSurvived,
-      },
-    ]);
+    const chartData: ChartTabularData = useMemo(
+      () =>
+        timeSeries.flatMap((b) => [
+          { group: 'Generated', date: b.timestamp, value: b.cumGenerated },
+          {
+            group: 'Survived postprocessing',
+            date: b.timestamp,
+            value: b.cumSurvived,
+          },
+        ]),
+      [timeSeries],
+    );
 
-    const maxCumGenerated = Math.max(...timeSeries.map((b) => b.cumGenerated));
-
-    const chartOptions: LineChartOptions = {
-      title: 'Data points over time',
-      axes: {
-        bottom: {
-          title: 'Time',
-          mapsTo: 'date',
-          scaleType: ScaleTypes.TIME,
+    const chartOptions: LineChartOptions = useMemo(() => {
+      const maxCumGenerated = Math.max(
+        ...timeSeries.map((b) => b.cumGenerated),
+      );
+      return {
+        title: 'Data points over time',
+        axes: {
+          bottom: {
+            title: 'Time',
+            mapsTo: 'date',
+            scaleType: ScaleTypes.TIME,
+          },
+          left: {
+            title: 'Cumulative data points',
+            mapsTo: 'value',
+            scaleType: ScaleTypes.LINEAR,
+            domain: [0, Math.ceil(maxCumGenerated * 1.1)],
+          },
         },
-        left: {
-          title: 'Cumulative data points',
-          mapsTo: 'value',
-          scaleType: ScaleTypes.LINEAR,
-          domain: [0, Math.ceil(maxCumGenerated * 1.1)],
-        },
-      },
-      curve: 'curveStepAfter',
-      theme,
-      height: '300px',
-      toolbar: { enabled: false },
-      legend: { enabled: true },
-      tooltip: { enabled: true },
-    };
+        curve: 'curveStepAfter',
+        theme,
+        height: '300px',
+        toolbar: { enabled: false },
+        legend: { enabled: true },
+        tooltip: { enabled: true },
+      };
+    }, [timeSeries, theme]);
 
     // Chart: generation vs postprocessing time per epoch (stacked bar)
     const hasTimingData = series.some(
       (b) => b.generationMs > 0 || b.postprocessingMs > 0,
     );
-    const epochChartData: ChartTabularData = series.flatMap((b) => [
-      {
-        group: 'Generation',
-        key: `Epoch ${b.epoch}`,
-        value: Math.round(b.generationMs / 100) / 10,
-      },
-      {
-        group: 'Postprocessing',
-        key: `Epoch ${b.epoch}`,
-        value: Math.round(b.postprocessingMs / 100) / 10,
-      },
-    ]);
-    const maxEpochSecs = Math.max(
-      ...series.map((b) => (b.generationMs + b.postprocessingMs) / 1000),
+    const epochChartData: ChartTabularData = useMemo(
+      () =>
+        series.flatMap((b) => [
+          {
+            group: 'Generation',
+            key: `Epoch ${b.epoch}`,
+            value: Math.round(b.generationMs / 100) / 10,
+          },
+          {
+            group: 'Postprocessing',
+            key: `Epoch ${b.epoch}`,
+            value: Math.round(b.postprocessingMs / 100) / 10,
+          },
+        ]),
+      [series],
     );
-    const epochChartOptions: StackedBarChartOptions = {
-      title: 'Time per epoch',
-      axes: {
-        bottom: {
-          title: 'Epoch',
-          mapsTo: 'key',
-          scaleType: ScaleTypes.LABELS,
+    const epochChartOptions: StackedBarChartOptions = useMemo(() => {
+      const maxEpochSecs = Math.max(
+        ...series.map((b) => (b.generationMs + b.postprocessingMs) / 1000),
+      );
+      return {
+        title: 'Time per epoch',
+        axes: {
+          bottom: {
+            title: 'Epoch',
+            mapsTo: 'key',
+            scaleType: ScaleTypes.LABELS,
+          },
+          left: {
+            title: 'Seconds',
+            mapsTo: 'value',
+            scaleType: ScaleTypes.LINEAR,
+            domain: [0, Math.ceil(maxEpochSecs * 1.1)],
+          },
         },
-        left: {
-          title: 'Seconds',
-          mapsTo: 'value',
-          scaleType: ScaleTypes.LINEAR,
-          domain: [0, Math.ceil(maxEpochSecs * 1.1)],
-        },
-      },
-      theme,
-      height: '300px',
-      toolbar: { enabled: false },
-      legend: { enabled: true },
-      tooltip: { enabled: true },
-    };
+        theme,
+        height: '300px',
+        toolbar: { enabled: false },
+        legend: { enabled: true },
+        tooltip: { enabled: true },
+      };
+    }, [series, theme]);
 
     return (
       <div className={classes.statsTab}>

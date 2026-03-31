@@ -1,4 +1,8 @@
 # Project-specific
+fms_dgt/core/blocks/llm/private_*.py
+configs/**/private_*.yaml
+
+
 output*
 telemetry/
 offload
@@ -25,6 +29,7 @@ studio/.next/
 studio/next-env.d.ts
 studio/tsconfig.tsbuildinfo
 !studio/dist/
+studio/.env.local
 
 # Environments
 .env
@@ -61,4 +66,3 @@ dmypy.json
 # Claude Code
 .claude/
 CLAUDE.md
-studio/.env.local

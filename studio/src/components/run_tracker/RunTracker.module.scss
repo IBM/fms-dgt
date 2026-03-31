@@ -144,6 +144,10 @@
   background-color: var(--cds-support-success);
 }
 
+.statusDotCancelled {
+  background-color: var(--cds-support-warning);
+}
+
 .statusDotErrored {
   background-color: var(--cds-support-error);
 }

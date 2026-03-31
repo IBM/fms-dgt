@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 import gc
 import logging
 import os
+import signal
 
 # Third Party
 from dotenv import load_dotenv
@@ -283,10 +284,25 @@ def generate_data(
             resumed=_resumed,
         )
         _run_span.__enter__()
+
+        # Install a SIGTERM handler so VSCode stop (which sends SIGTERM) flows
+        # through the same KeyboardInterrupt path as Ctrl+C and UI Cancel.
+        def _sigterm_handler(*_):
+            raise KeyboardInterrupt("SIGTERM received")
+
+        _prev_sigterm = signal.getsignal(signal.SIGTERM)
+        signal.signal(signal.SIGTERM, _sigterm_handler)
+
+        _cancelled = False
+        _errored = False
         try:
             data_builder.execute_tasks()
+        except KeyboardInterrupt:
+            _cancelled = True
+            raise
         # pylint: disable=broad-exception-caught
         except Exception as e:
+            _errored = True
             _run_span.set_error(e)
             data_builder.record_run_results(
                 update={
@@ -318,10 +334,22 @@ def generate_data(
                 },
             )
         finally:
+            signal.signal(signal.SIGTERM, _prev_sigterm)
+            if _cancelled:
+                _run_span.set_cancelled()
+                data_builder.logger.info(
+                    "Run cancelled for builder '%s'",
+                    data_builder.name,
+                    extra={
+                        "event": "run_cancelled",
+                        "builder_name": data_builder.name,
+                        "status": "cancelled",
+                    },
+                )
             _run_span.__exit__(None, None, None)
             # Step 8.f: Cleanup databuilder — always runs, even on exception,
             # so log handlers and file resources are never leaked.
-            data_builder.close()
+            data_builder.close(cancelled=_cancelled, errored=_errored)
             del data_builder
             _run_ctx_mgr.__exit__(None, None, None)
 
