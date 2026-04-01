@@ -8,13 +8,11 @@
       
       
       
-        <link rel="canonical" href="https://ibm.github.io/fms-dgt/concepts/dataloaders/">
+        <link rel="canonical" href="https://ibm.github.io/fms-dgt/examples/chit_chat/">
       
       
-        <link rel="prev" href="../datastores/">
+        <link rel="prev" href="../time_series/">
       
-      
-        <link rel="next" href="../observability/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +20,7 @@
     
     
       
-        <title>Dataloaders - DiGiT</title>
+        <title>Chit-Chat Conversations - DiGiT</title>
       
     
     
@@ -74,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#dataloaders" class="md-skip">
+        <a href="#chit-chat-conversations" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dataloaders
+              Chit-Chat Conversations
             
           </span>
         </div>
@@ -249,13 +247,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../concepts/architecture/" class="md-tabs__link">
           
   
   
@@ -291,11 +287,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../examples/simple_reasoning/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../simple_reasoning/" class="md-tabs__link">
           
   
   
@@ -498,31 +496,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -535,7 +528,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Concepts
@@ -549,7 +542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../../concepts/architecture/" class="md-nav__link">
         
   
   
@@ -572,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tasks/" class="md-nav__link">
+      <a href="../../concepts/tasks/" class="md-nav__link">
         
   
   
@@ -595,7 +588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../databuilders/" class="md-nav__link">
+      <a href="../../concepts/databuilders/" class="md-nav__link">
         
   
   
@@ -618,7 +611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../blocks/" class="md-nav__link">
+      <a href="../../concepts/blocks/" class="md-nav__link">
         
   
   
@@ -641,7 +634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../datastores/" class="md-nav__link">
+      <a href="../../concepts/datastores/" class="md-nav__link">
         
   
   
@@ -661,32 +654,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Dataloaders
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../concepts/dataloaders/" class="md-nav__link">
         
   
   
@@ -697,71 +668,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
-    <span class="md-ellipsis">
-      How dataloaders are used
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
-    <span class="md-ellipsis">
-      Default dataloader
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      Field remapping
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
-    <span class="md-ellipsis">
-      Resuming from a checkpoint
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
-    <span class="md-ellipsis">
-      Implementing a custom dataloader
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -774,7 +680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
+      <a href="../../concepts/observability/" class="md-nav__link">
         
   
   
@@ -966,26 +872,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -998,7 +909,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Examples
@@ -1012,7 +923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/simple_reasoning/" class="md-nav__link">
+      <a href="../simple_reasoning/" class="md-nav__link">
         
   
   
@@ -1035,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/instructlab/" class="md-nav__link">
+      <a href="../instructlab/" class="md-nav__link">
         
   
   
@@ -1058,7 +969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/time_series/" class="md-nav__link">
+      <a href="../time_series/" class="md-nav__link">
         
   
   
@@ -1078,10 +989,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../examples/chit_chat/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Chit-Chat Conversations
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1092,6 +1025,113 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#run-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run it
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-stage-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      The stage pipeline
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The stage pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Iteration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#turn-bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      Turn bounds
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Patterns
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output format
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1131,45 +1171,87 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
+  <a href="#run-it" class="md-nav__link">
     <span class="md-ellipsis">
-      How dataloaders are used
+      Run it
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
+  <a href="#the-stage-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
-      Default dataloader
+      The stage pipeline
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The stage pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Iteration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#turn-bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      Turn bounds
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
+  <a href="#patterns" class="md-nav__link">
     <span class="md-ellipsis">
-      Field remapping
+      Patterns
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
+  <a href="#output-format" class="md-nav__link">
     <span class="md-ellipsis">
-      Resuming from a checkpoint
+      Output format
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
+  <a href="#data-files" class="md-nav__link">
     <span class="md-ellipsis">
-      Implementing a custom dataloader
+      Data files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next steps
     </span>
   </a>
   
@@ -1194,54 +1276,85 @@
   
 
 
-<h1 id="dataloaders">Dataloaders</h1>
-<p>A Dataloader is a stateful iterator over a datastore. Where a datastore handles persistence (reading and writing files), a dataloader handles iteration: yielding one record at a time, tracking position, and optionally looping indefinitely or resuming from a checkpoint.</p>
-<p>You do not typically instantiate dataloaders directly. The framework creates them internally when a task starts iterating over its seed or input data. Understanding dataloaders is useful when you need to control iteration behavior, apply field remapping at load time, or resume a long-running run.</p>
-<h2 id="how-dataloaders-are-used">How dataloaders are used</h2>
-<p>For generation tasks, DiGiT wraps the seed datastore in a dataloader that loops continuously. Each iteration of the generation loop draws the next batch of seed examples from the dataloader, ensuring seeds are recycled as many times as needed until the target record count is reached.</p>
-<p>For transformation tasks, the input datastore is wrapped in a dataloader that does not loop. When the dataloader is exhausted, the task is complete.</p>
-<h2 id="default-dataloader">Default dataloader</h2>
-<p>The <code>default</code> dataloader (<code>type: default</code>) wraps a datastore and yields its records one at a time:</p>
+<h1 id="chit-chat-conversations">Chit-Chat Conversations</h1>
+<p>This example generates multi-turn chit-chat conversations using the <code>core/conversation</code> databuilder. It demonstrates DiGiT's stage pipeline: a sequence of initialization and iteration stages that produce fully synthetic, persona-driven conversations ready for SFT fine-tuning.</p>
+<p>The full task configuration is at <a href="https://github.com/IBM/fms-dgt/tree/main/tasks/public/examples/chit_chat/task.yaml"><code>tasks/public/examples/chit_chat/task.yaml</code></a>.</p>
+<h2 id="run-it">Run it</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ollama<span class="w"> </span>pull<span class="w"> </span>granite4:3b
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>python<span class="w"> </span>-m<span class="w"> </span>fms_dgt.public<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--task-paths<span class="w"> </span>./tasks/public/examples/chit_chat/task.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--num-outputs-to-generate<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--restart
+</code></pre></div>
+<p>Two output files are written under <code>output/public/examples/chit_chat/</code>:</p>
 <ul>
-<li>Tracks position as <code>(iterator_index, row_index)</code> so iteration can be resumed after a restart.</li>
-<li>Supports optional field remapping via the <code>fields</code> parameter.</li>
-<li>Loops back to the start when <code>loop_over: true</code> (the default for seed data).</li>
+<li><code>final_data.jsonl</code>: full internal representation with all pipeline steps</li>
+<li><code>formatted_output.jsonl</code>: clean <code>messages</code> format ready for SFT fine-tuning</li>
 </ul>
-<p>The <code>simple</code> dataloader (<code>type: simple</code>) wraps an in-memory list directly, using a single integer index as state. It is used internally for seed examples provided inline in the task YAML.</p>
-<h2 id="field-remapping">Field remapping</h2>
-<p>The <code>fields</code> parameter lets you rename or select fields as records are loaded, without modifying the source file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">seed_datastore</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">data_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DGT_DATA_DIR}/public/examples/qa/seeds.jsonl</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># rename &quot;question&quot; to &quot;instruction&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span><span class="w"> </span><span class="c1"># rename &quot;answer&quot; to &quot;output&quot;</span>
+<h2 id="the-stage-pipeline">The stage pipeline</h2>
+<p>The <code>core/conversation</code> databuilder runs each conversation through two phases.</p>
+<h3 id="initialization">Initialization</h3>
+<p>Initialization stages run once per conversation before any turns are generated. This example uses two:</p>
+<p><strong><code>lm/scenario</code></strong> generates a scenario that sets the context for the conversation. It uses in-context learning from seed examples to produce a short description like: "A curious student wants to learn about space exploration."</p>
+<p><strong><code>sample/persona</code></strong> samples a persona from <code>data/public/examples/chit_chat/personas.jsonl</code> and assigns it to the user: role, expertise level, domain, goals, and personality traits. The persona is injected into the user stage each turn so the simulated user stays consistent throughout.</p>
+<p>To use custom personas, replace or extend <code>personas.jsonl</code> with your own records, or point <code>data_path</code> at a different file:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample/persona</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">persona_store</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">data_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/your/personas.jsonl</span>
 </code></pre></div>
-<p>Wildcard syntax keeps all fields while renaming specific ones:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="s">&quot;*&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span><span class="w"> </span><span class="c1"># keep all fields as-is</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># also rename this one</span>
+<p>Each record must have at minimum a <code>role</code> field. See <code>data/public/examples/chit_chat/personas.jsonl</code> for the full schema.</p>
+<h3 id="iteration">Iteration</h3>
+<p>Iteration stages run in a loop, one turn at a time, until the conversation ends.</p>
+<p><strong><code>lm/flow_controller</code></strong> runs first each turn. It reads the conversation history and selects a pattern that determines what the user should do next. Patterns are defined in the task YAML with a name, description, and a hint passed to the user stage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">patterns</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">chit_chat/follow_up</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;User</span><span class="nv"> </span><span class="s">follows</span><span class="nv"> </span><span class="s">up</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">previous</span><span class="nv"> </span><span class="s">assistant</span><span class="nv"> </span><span class="s">turn</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">related</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">comment.&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">hint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Generate</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">user</span><span class="nv"> </span><span class="s">message</span><span class="nv"> </span><span class="s">that</span><span class="nv"> </span><span class="s">naturally</span><span class="nv"> </span><span class="s">follows</span><span class="nv"> </span><span class="s">up</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">what</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">just</span><span class="nv"> </span><span class="s">discussed.&quot;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.35</span>
 </code></pre></div>
-<p>Nested fields are accessed with dot notation:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="s">&quot;meta.language&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="w"> </span><span class="c1"># extract nested field to top level</span>
+<p>When the flow controller selects a termination pattern, it signals the pipeline to end the conversation. The conversation is only kept if it has reached <code>min_turns</code>.</p>
+<p><strong><code>lm/user/guided</code></strong> generates the user's next message. It receives the scenario, the persona, the conversation history, and the hint from the flow controller.</p>
+<p><strong><code>lm/assistant/naive</code></strong> generates the assistant's response given the scenario and conversation history.</p>
+<h2 id="turn-bounds">Turn bounds</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">max_turns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">min_turns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 </code></pre></div>
-<h2 id="resuming-from-a-checkpoint">Resuming from a checkpoint</h2>
-<p>Dataloaders expose <code>get_state()</code> and <code>set_state(state)</code> for checkpointing. The state is a small dictionary recording the current position in the iteration sequence:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">dataloader</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># {&quot;_ITER_INDEX&quot;: 0, &quot;_ROW_INDEX&quot;: 142}</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">dataloader</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>  <span class="c1"># resume from row 142</span>
-</code></pre></div>
-<p>DiGiT persists dataloader state automatically during a run. If a run is interrupted and restarted without <code>--restart</code>, seed iteration resumes from where it left off rather than starting over from the first example.</p>
-<h2 id="implementing-a-custom-dataloader">Implementing a custom dataloader</h2>
-<p>All dataloaders inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/dataloader.py"><code>Dataloader</code></a> and must implement:</p>
+<p><code>max_turns</code> caps how long a conversation can run. <code>min_turns</code> sets the minimum number of turns a conversation must complete before it is accepted as output. Conversations terminated by the flow controller or dropped by a stage before <code>min_turns</code> are silently discarded.</p>
+<h2 id="patterns">Patterns</h2>
+<p>Patterns define the space of conversational moves available to the flow controller. Each pattern has:</p>
 <ul>
-<li><code>__next__()</code>: yield the next record, raise <code>StopIteration</code> when exhausted</li>
-<li><code>get_state()</code>: return a serializable state object</li>
-<li><code>set_state(state)</code>: restore position from a previously saved state</li>
+<li><code>name</code>: a unique identifier used in logs and seed data</li>
+<li><code>description</code>: what this move represents</li>
+<li><code>hint</code>: the instruction passed to the user stage</li>
+<li><code>weight</code>: relative sampling probability</li>
 </ul>
-<p>Register with <code>@register_dataloader("my_type")</code> and reference by type in the task YAML datastore configuration.</p>
+<p>The flow controller selects a pattern each turn (weighted by <code>weight</code>), then generates the user's instruction. Adding, removing, or reweighting patterns changes the character of the generated conversations without touching any code.</p>
+<h2 id="output-format">Output format</h2>
+<p>The formatter strips internal pipeline steps and writes only user and assistant turns:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;conversation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a3f2c1d8&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I was reading about the James Webb Space Telescope. What&#39;s the most exciting discovery so far?&quot;</span><span class="p">},</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;One of the most exciting findings is the first clear detection of carbon dioxide in an exoplanet atmosphere...&quot;</span><span class="p">},</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Could Webb actually find signs of life on another planet?&quot;</span><span class="p">},</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;It&#39;s possible. Webb can analyze atmospheric chemistry by measuring which wavelengths of starlight are absorbed...&quot;</span><span class="p">}</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
+</code></pre></div>
+<p>The <code>conversation_id</code> matches the corresponding record in <code>final_data.jsonl</code> for cross-referencing.</p>
+<h2 id="data-files">Data files</h2>
+<p>Two data files drive this example:</p>
+<ul>
+<li><strong><code>data/public/examples/chit_chat/seed_examples.jsonl</code></strong>: complete conversations used as in-context learning examples by the scenario stage. Each seed includes a scenario, persona, flow controller decisions, and user and assistant turns.</li>
+<li><strong><code>data/public/examples/chit_chat/personas.jsonl</code></strong>: persona definitions sampled by the <code>sample/persona</code> stage. Replace or extend this file to change the user personas generated.</li>
+</ul>
+<h2 id="next-steps">Next steps</h2>
+<ul>
+<li>Swap the LM engine: see <a href="../../tutorials/changing_lm_engine/">Changing the Language Model Engine</a>.</li>
+<li>To build a custom stage, see the <code>core/conversation</code> databuilder source at <code>fms_dgt/core/databuilders/conversation/</code>.</li>
+</ul>
 
 
 
