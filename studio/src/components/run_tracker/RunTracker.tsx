@@ -31,7 +31,9 @@ function StatusDot({ status }: { status: string }) {
       ? classes.statusDotRunning
       : status === 'completed'
         ? classes.statusDotCompleted
-        : classes.statusDotErrored; // errored, cancelled, or anything unexpected
+        : status === 'cancelled'
+          ? classes.statusDotCancelled
+          : classes.statusDotErrored;
 
   return <span className={cx(classes.statusDot, dotClass)} />;
 }
@@ -93,33 +95,35 @@ export default function RunTracker({
   const [runOrder, setRunOrder] = useState<string>('latest');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const { activeRuns, completedRuns, erroredRuns } = useMemo(() => {
-    const filtered = searchQuery
-      ? runs.filter((r) =>
-          r.name.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
-      : runs;
+  const { activeRuns, completedRuns, erroredRuns, cancelledRuns } =
+    useMemo(() => {
+      const filtered = searchQuery
+        ? runs.filter((r) =>
+            r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
+        : runs;
 
-    const sort = (list: RunInformationCard[]) => {
-      if (runOrder === 'a-z')
-        return list.toSorted((a, b) => a.name.localeCompare(b.name));
-      if (runOrder === 'z-a')
-        return list.toSorted((a, b) => b.name.localeCompare(a.name));
-      if (runOrder === 'oldest')
+      const sort = (list: RunInformationCard[]) => {
+        if (runOrder === 'a-z')
+          return list.toSorted((a, b) => a.name.localeCompare(b.name));
+        if (runOrder === 'z-a')
+          return list.toSorted((a, b) => b.name.localeCompare(a.name));
+        if (runOrder === 'oldest')
+          return list.toSorted(
+            (a, b) => a.startTime.getTime() - b.startTime.getTime(),
+          );
         return list.toSorted(
-          (a, b) => a.startTime.getTime() - b.startTime.getTime(),
+          (a, b) => b.startTime.getTime() - a.startTime.getTime(),
         );
-      return list.toSorted(
-        (a, b) => b.startTime.getTime() - a.startTime.getTime(),
-      );
-    };
+      };
 
-    return {
-      activeRuns: sort(filtered.filter((r) => r.status === 'running')),
-      completedRuns: sort(filtered.filter((r) => r.status === 'completed')),
-      erroredRuns: sort(filtered.filter((r) => r.status === 'errored')),
-    };
-  }, [runs, runOrder, searchQuery]);
+      return {
+        activeRuns: sort(filtered.filter((r) => r.status === 'running')),
+        erroredRuns: sort(filtered.filter((r) => r.status === 'errored')),
+        cancelledRuns: sort(filtered.filter((r) => r.status === 'cancelled')),
+        completedRuns: sort(filtered.filter((r) => r.status === 'completed')),
+      };
+    }, [runs, runOrder, searchQuery]);
 
   return (
     <div className={classes.page}>
@@ -164,6 +168,19 @@ export default function RunTracker({
             {erroredRuns.map((run, index) => (
               <RunTile
                 key={`run-errored-${index}`}
+                run={run}
+                selected={selectedRun?.name === run.name}
+                onSelect={setSelectedRun}
+              />
+            ))}
+          </>
+        )}
+        {cancelledRuns.length > 0 && (
+          <>
+            <SectionLabel label="Cancelled" />
+            {cancelledRuns.map((run, index) => (
+              <RunTile
+                key={`run-cancelled-${index}`}
                 run={run}
                 selected={selectedRun?.name === run.name}
                 onSelect={setSelectedRun}

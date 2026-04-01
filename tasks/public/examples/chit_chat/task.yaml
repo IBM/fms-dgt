@@ -1,0 +1,77 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: public/examples/chit_chat
+task_description: >
+  Generate multi-turn chit-chat conversations between a user and an AI assistant.
+  Uses a scenario + persona initialization pipeline followed by a flow-controller-guided
+  iteration loop (user turn, then assistant turn) until the flow controller signals
+  termination.
+created_by: IBM Research
+data_builder: core/conversation
+
+######################################################
+#                   CONVERSATION PIPELINE
+######################################################
+max_turns: 4
+min_turns: 2
+
+initialization_stages:
+  - name: lm/scenario
+    generator: generator
+    num_icl_examples: 2
+
+  - name: sample/persona
+    persona_store:
+      type: default
+      data_path: ${DGT_DATA_DIR}/public/examples/chit_chat/personas.jsonl
+
+iteration_stages:
+  - name: lm/flow_controller
+    generator: generator
+    max_turns: 6
+    termination_patterns:
+      - chit_chat/termination
+    patterns:
+      - name: chit_chat/new_topic
+        description: "User introduces a new topic or asks an open-ended question."
+        hint: "Generate a user message that introduces a new topic or asks a fresh open-ended question."
+        weight: 0.25
+      - name: chit_chat/follow_up
+        description: "User follows up on the previous assistant turn with a related question or comment."
+        hint: "Generate a user message that naturally follows up on what was just discussed."
+        weight: 0.35
+      - name: chit_chat/share_opinion
+        description: "User shares a personal opinion or experience and invites the assistant to respond."
+        hint: "Generate a user message where the user shares a personal view or experience."
+        weight: 0.15
+      - name: chit_chat/clarification
+        description: "User asks for clarification or elaboration on something the assistant said."
+        hint: "Generate a user message asking for clarification or more detail."
+        weight: 0.15
+      - name: chit_chat/termination
+        description: "The conversation has reached a natural end. The user wraps up or says goodbye."
+        hint: "Generate a user message that naturally closes the conversation."
+        weight: 0.10
+
+  - name: lm/user/guided
+    generator: generator
+
+  - name: lm/assistant/naive
+    generator: generator
+
+######################################################
+#                   OUTPUT FORMATTING
+######################################################
+formatter:
+  type: formatters/conversation/messages
+
+runner_config:
+  save_formatted_output: true
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_datastore:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/examples/chit_chat/seed_examples.jsonl

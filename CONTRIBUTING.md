@@ -60,6 +60,13 @@ Improvements to existing functionality are tracked as [GitHub issues using the U
 
 ## Development
 
+### Private LLM providers and configs
+
+If your organization uses an internal or proprietary inference service, you can add a custom LLM provider and its configs without committing them to the public repo. Two conventions are gitignored automatically:
+
+- **Provider**: name the file `private_<name>.py` and place it in `fms_dgt/core/blocks/llm/`. The provider only needs to extend `LMProvider` (or `OpenAI` for OpenAI-compatible APIs) and register itself with `@register_block("your_name")`; the framework discovers it automatically at runtime.
+- **Config**: name the file `private_<name>.yaml` anywhere under `configs/`. Use it to point an existing task at your private provider block.
+
 ### Set up your dev environment
 
 The following tools are required:

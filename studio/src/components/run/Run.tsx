@@ -8,7 +8,7 @@ import yaml from 'js-yaml';
 import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { EditorView } from '@codemirror/view';
 
 import {
@@ -20,6 +20,7 @@ import {
   ProgressIndicator,
   ProgressStep,
   Button,
+  Pagination,
 } from '@carbon/react';
 import {
   WarningAlt,
@@ -41,6 +42,7 @@ import {
   TransformationStats,
   TokenUsage,
 } from '@/types/custom';
+import { DATA_PAGE_SIZE } from '@/src/common/constants';
 import { useTheme } from '@/src/common/state/theme';
 import { useNotification } from '@/src/components/notification/Notification';
 import DataPointsTable from '@/src/components/datapoints_table/DataPointsTable';
@@ -54,15 +56,25 @@ import classes from './Run.module.scss';
 // ===================================================================================
 async function fetchRun(
   path: string,
+  logOffset: number,
+  page: number,
+  pageSize: number,
   setTaskCard: Function,
-  setLog: Function,
+  appendLog: (delta: string, newOffset: number) => void,
   setResult: Function,
   setDataPoints: Function,
+  setIsRunning: (v: boolean) => void,
   setGenerationStats: Function,
   setTransformationStats: Function,
   createNotification: Function,
-) {
-  await fetch(`/api/data/run?path=${path}`, {
+): Promise<void> {
+  const params = new URLSearchParams({
+    path,
+    log_offset: String(logOffset),
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  await fetch(`/api/data/run?${params}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     next: { revalidate: 0 },
@@ -77,9 +89,10 @@ async function fetchRun(
     } else {
       const data = await response.json();
       setTaskCard(data.card);
-      setLog(data.log);
+      appendLog(data.logDelta ?? '', data.logOffset ?? 0);
       setResult(data.result);
       setDataPoints(data.datapoints);
+      setIsRunning(data.isRunning ?? false);
       setGenerationStats(data.generationStats ?? null);
       setTransformationStats(data.transformationStats ?? null);
     }
@@ -167,17 +180,73 @@ function RunHeader({
   );
 }
 
+function DataBucket({
+  records,
+  total,
+  isRunning,
+  dataPage,
+  onPageChange,
+  emptyMessage,
+}: {
+  records: DataPoint[];
+  total: number;
+  isRunning: boolean;
+  dataPage: number;
+  onPageChange: (page: number) => void;
+  emptyMessage: string;
+}) {
+  if (isEmpty(records)) {
+    return (
+      <div className={classes.tabPanelWarning}>
+        <WarningAlt size={32} />
+        <div className={classes.tabPanelWarningText}>{emptyMessage}</div>
+      </div>
+    );
+  }
+  return (
+    <>
+      {isRunning && (
+        <p className={classes.liveDataNote}>
+          Showing last {records.length} of {total} records. Pagination available
+          after run completes.
+        </p>
+      )}
+      <DataPointsTable datapoints={records} />
+      {!isRunning && total > DATA_PAGE_SIZE && (
+        <Pagination
+          page={dataPage + 1}
+          pageSize={DATA_PAGE_SIZE}
+          totalItems={total}
+          pageSizes={[DATA_PAGE_SIZE]}
+          onChange={({ page: p }) => onPageChange(p - 1)}
+        />
+      )}
+    </>
+  );
+}
+
 function DataViewer({
   datapoints,
+  isRunning,
+  dataPage,
+  onPageChange,
 }: {
   datapoints: {
     intermediate: DataPoint[];
+    intermediateTotal: number;
     postprocessed: { [key: string]: DataPoint[] };
+    postprocessedTotal: { [key: string]: number };
     final: DataPoint[];
+    finalTotal: number;
     formatted: DataPoint[];
+    formattedTotal: number;
   };
+  isRunning: boolean;
+  dataPage: number;
+  onPageChange: (page: number) => void;
 }) {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const postprocKey = Object.keys(datapoints.postprocessed)[0];
 
   return (
     <div className={classes.dataViewer}>
@@ -200,40 +269,43 @@ function DataViewer({
       </ProgressIndicator>
       <div className={classes.stepContainer}>
         {currentIndex === 0 ? (
-          !isEmpty(datapoints.intermediate) ? (
-            <DataPointsTable datapoints={datapoints.intermediate} />
-          ) : (
-            <div className={classes.tabPanelWarning}>
-              <WarningAlt size={32} />
-              <div className={classes.tabPanelWarningText}>
-                Intermediate data is not yet available. Please try again soon.
-              </div>
-            </div>
-          )
+          <DataBucket
+            records={datapoints.intermediate}
+            total={datapoints.intermediateTotal}
+            isRunning={isRunning}
+            dataPage={dataPage}
+            onPageChange={onPageChange}
+            emptyMessage="Intermediate data is not yet available. Please try again soon."
+          />
         ) : currentIndex === 1 ? (
-          <DataPointsTable
-            datapoints={Object.values(datapoints.postprocessed)[0]}
+          <DataBucket
+            records={postprocKey ? datapoints.postprocessed[postprocKey] : []}
+            total={
+              postprocKey ? datapoints.postprocessedTotal[postprocKey] ?? 0 : 0
+            }
+            isRunning={isRunning}
+            dataPage={dataPage}
+            onPageChange={onPageChange}
+            emptyMessage="Post-processed data is not yet available. Please try again soon."
           />
         ) : currentIndex === 2 ? (
-          !isEmpty(datapoints.final) ? (
-            <DataPointsTable datapoints={datapoints.final} />
-          ) : (
-            <div className={classes.tabPanelWarning}>
-              <WarningAlt size={32} />
-              <div className={classes.tabPanelWarningText}>
-                Final data is not yet available. Please try again soon.
-              </div>
-            </div>
-          )
-        ) : !isEmpty(datapoints.formatted) ? (
-          <DataPointsTable datapoints={datapoints.formatted} />
+          <DataBucket
+            records={datapoints.final}
+            total={datapoints.finalTotal}
+            isRunning={isRunning}
+            dataPage={dataPage}
+            onPageChange={onPageChange}
+            emptyMessage="Final data is not yet available. Please try again soon."
+          />
         ) : (
-          <div className={classes.tabPanelWarning}>
-            <WarningAlt size={32} />
-            <div className={classes.tabPanelWarningText}>
-              Formatted data is not yet available. Please try again soon.
-            </div>
-          </div>
+          <DataBucket
+            records={datapoints.formatted}
+            total={datapoints.formattedTotal}
+            isRunning={isRunning}
+            dataPage={dataPage}
+            onPageChange={onPageChange}
+            emptyMessage="Formatted data is not yet available. Please try again soon."
+          />
         )}
       </div>
     </div>
@@ -252,50 +324,80 @@ export default function RunView({
 }) {
   const [selectedTabIndex, setSelectedTabIndex] = useState<number>(0);
   const [taskCard, setTaskCard] = useState<DGT_TASK_CARD>();
-  const [log, setLog] = useState<string>();
+  const [logText, setLogText] = useState<string>('');
+  const [logOffset, setLogOffset] = useState<number>(0);
   const [result, setResult] = useState<DGT_TASK_RESULT>();
   const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const [generationStats, setGenerationStats] =
     useState<GenerationStats | null>(null);
   const [transformationStats, setTransformationStats] =
     useState<TransformationStats | null>(null);
+  const [isRunning, setIsRunning] = useState<boolean>(run.status === 'running');
   const [datapoints, setDataPoints] = useState<{
     intermediate: DataPoint[];
+    intermediateTotal: number;
     postprocessed: { [key: string]: DataPoint[] };
+    postprocessedTotal: { [key: string]: number };
     final: DataPoint[];
+    finalTotal: number;
     formatted: DataPoint[];
-  }>({ intermediate: [], postprocessed: {}, final: [], formatted: [] });
+    formattedTotal: number;
+  }>({
+    intermediate: [],
+    intermediateTotal: 0,
+    postprocessed: {},
+    postprocessedTotal: {},
+    final: [],
+    finalTotal: 0,
+    formatted: [],
+    formattedTotal: 0,
+  });
+  const [dataPage, setDataPage] = useState<number>(0);
 
   const { createNotification } = useNotification();
   const theme = useTheme();
   const codeViewerTheme = theme['theme'] === 'g90' ? 'dark' : 'light';
-  const editorViewRef = useRef<EditorView | null>(null);
+  const logEditorRef = useRef<EditorView | null>(null);
+  // Scroll to bottom whenever new log text arrives.
+  useEffect(() => {
+    const view = logEditorRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: EditorView.scrollIntoView(view.state.doc.length, { y: 'end' }),
+    });
+  }, [logText]);
+  // Ref so the fetch callback always reads the latest offset without being a
+  // dependency of the fetch effect (which would re-fire on every log delta).
+  const logOffsetRef = useRef<number>(0);
+  useEffect(() => {
+    logOffsetRef.current = logOffset;
+  }, [logOffset]);
+
+  const appendLog = useCallback((delta: string, newOffset: number) => {
+    setLogOffset(newOffset);
+    if (!delta) return;
+    setLogText((prev) => (prev ? prev + '\n' + delta : delta));
+  }, []);
 
   useEffect(() => {
     if (run.path) {
       fetchRun(
         run.path,
+        logOffsetRef.current,
+        dataPage,
+        DATA_PAGE_SIZE,
         setTaskCard,
-        setLog,
+        appendLog,
         setResult,
         setDataPoints,
+        setIsRunning,
         setGenerationStats,
         setTransformationStats,
         createNotification,
       );
       fetchTokenUsage(run.path, setTokenUsage);
     }
-  }, [run.path, lastFetched, createNotification]);
-
-  // Auto-scroll log to bottom when new content arrives for a running job
-  useEffect(() => {
-    if (run.status === 'running' && editorViewRef.current) {
-      const view = editorViewRef.current;
-      view.dispatch({
-        effects: EditorView.scrollIntoView(view.state.doc.length, { y: 'end' }),
-      });
-    }
-  }, [log, run.status]);
+  }, [run.path, lastFetched, dataPage, appendLog, createNotification]);
 
   return (
     <div className={classes.page}>
@@ -327,31 +429,22 @@ export default function RunView({
               />
             </TabPanel>
             <TabPanel>
-              {log || isEmpty(log) ? (
-                <CodeMirror
-                  value={log}
-                  extensions={[langs.textile()]}
-                  basicSetup={{
-                    lineNumbers: true,
-                    foldGutter: false,
-                    highlightActiveLineGutter: false,
-                    highlightActiveLine: false,
-                  }}
-                  editable={false}
-                  readOnly={true}
-                  theme={codeViewerTheme}
-                  onCreateEditor={(view) => {
-                    editorViewRef.current = view;
-                  }}
-                />
-              ) : (
-                <div className={classes.tabPanelWarning}>
-                  <WarningAlt size={32} />
-                  <div className={classes.tabPanelWarningText}>
-                    Logs are unavailable at this moment
-                  </div>
-                </div>
-              )}
+              <CodeMirror
+                value={logText}
+                extensions={[langs.textile()]}
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: false,
+                  highlightActiveLineGutter: false,
+                  highlightActiveLine: false,
+                }}
+                editable={false}
+                readOnly={true}
+                theme={codeViewerTheme}
+                onCreateEditor={(view) => {
+                  logEditorRef.current = view;
+                }}
+              />
             </TabPanel>
             <TabPanel>
               {taskCard ? (
@@ -388,7 +481,12 @@ export default function RunView({
               ) : null}
             </TabPanel>
             <TabPanel>
-              <DataViewer datapoints={datapoints} />
+              <DataViewer
+                datapoints={datapoints}
+                isRunning={isRunning}
+                dataPage={dataPage}
+                onPageChange={setDataPage}
+              />
             </TabPanel>
             <TabPanel>
               {run.status === 'running' ? (

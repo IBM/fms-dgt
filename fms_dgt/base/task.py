@@ -689,6 +689,13 @@ class GenerationTask(Task):
             },
         )
 
+        # In-memory cache for seed examples. Populated on first call to
+        # get_seed_examples(). Avoids repeated dataloader construction and
+        # disk reads across calls to sample_examples() within a run.
+        # Pass reload=True to get_seed_examples() to bust the cache (e.g.
+        # when the seed datastore is updated mid-run).
+        self._seed_examples_cache: List[DataPoint] | None = None
+
         # Initialize seed dataloader
         self._dataloader = None
         self._seed_dataloader_config = (
@@ -718,6 +725,20 @@ class GenerationTask(Task):
             int: Number of machine examples
         """
         return self._machine_batch_size
+
+    @property
+    def batch_size(self) -> int:
+        """Total number of items returned by get_batch_examples() per call.
+
+        Combines seed examples (human-authored) and machine-generated examples
+        (synthetic data accumulated so far). This is the actual batch size each
+        worker future receives, and is used by the concurrent executor to
+        estimate how many futures are needed to cover remaining work.
+
+        Returns:
+            int: seed_batch_size + machine_batch_size
+        """
+        return self._seed_batch_size + self._machine_batch_size
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -762,6 +783,11 @@ class GenerationTask(Task):
 
         super().finish()
 
+    @property
+    def num_outputs_to_generate(self) -> int:
+        """Returns the number of outputs to generate for this task."""
+        return self._num_outputs_to_generate
+
     def is_complete(self):
         """Indicates whether task has completed.
 
@@ -783,12 +809,21 @@ class GenerationTask(Task):
         except StopIteration:
             return None
 
-    def get_seed_examples(self) -> List[DataPoint]:
+    def get_seed_examples(self, reload: bool = False) -> List[DataPoint]:
         """Gets all seed examples and returns them in a list.
+
+        Results are cached after the first load. Subsequent calls return the
+        cached list unless reload=True is passed, which forces a fresh read
+        from the datastore and updates the cache.
+
+        Args:
+            reload: If True, bypass the cache and reload from disk.
 
         Returns:
             List[DataPoint]: List of all seed examples
         """
+        if self._seed_examples_cache is not None and not reload:
+            return self._seed_examples_cache
         dataloader = get_dataloader(
             self._seed_dataloader_config.get(TYPE_KEY),
             datastore=self._seed_datastore,
@@ -801,10 +836,81 @@ class GenerationTask(Task):
                 seed_data.append(ex)
         except StopIteration:
             pass
-        return seed_data
+        self._seed_examples_cache = seed_data
+        return self._seed_examples_cache
+
+    def sample_examples(
+        self,
+        k: int,
+        seed_fraction: float | None = None,
+        reload: bool = False,
+    ) -> List[Any]:
+        """Randomly sample up to k examples from seed data and/or machine-generated data.
+
+        Safe to call from anywhere — stages, __call__ implementations, inner
+        thread pools. Does NOT advance the main dataloader. Thread-safe.
+
+        k is always the total cap. seed_fraction controls the seed/synthetic
+        split within that cap. When seed_fraction=None the split is derived
+        from the task config ratio (seed_batch_size / (seed_batch_size +
+        machine_batch_size)), so k still governs the total requested.
+
+        Sampling is random and without replacement on both sides. If either
+        pool has fewer items than its allocated quota, you get however many
+        are available — there is no backfill from the other pool. Callers
+        that strictly need k examples should check the returned length.
+
+        Args:
+            k: Total number of examples requested. Actual count may be less
+                if either pool has insufficient data.
+            seed_fraction: Fraction of k to draw from the seed datastore.
+                Remainder is drawn from machine_data.
+                - 1.0: seeds only
+                - 0.0: synthetic only
+                - None (default): split derived from seed_batch_size /
+                  (seed_batch_size + machine_batch_size) task config ratio.
+            reload: If True, bypass the seed examples cache and reload from
+                disk before sampling. Passed through to get_seed_examples().
+
+        Returns:
+            List of randomly sampled examples (INPUT_DATA_TYPE | OUTPUT_DATA_TYPE).
+            Seeds are marked is_seed=True.
+        """
+        if seed_fraction is not None and not (0.0 <= seed_fraction <= 1.0):
+            raise ValueError(f"seed_fraction must be in [0.0, 1.0], got {seed_fraction}")
+
+        if seed_fraction is None:
+            total = self._seed_batch_size + self._machine_batch_size
+            fraction = self._seed_batch_size / total if total > 0 else 0.0
+        else:
+            fraction = seed_fraction
+
+        n_seed = round(k * fraction)
+        n_synthetic = k - n_seed
+
+        results: List[Any] = []
+
+        # Random sample from seed pool (no state mutation on main dataloader).
+        if n_seed > 0:
+            pool = self.get_seed_examples(reload=reload)
+            n = min(n_seed, len(pool))
+            results.extend(random.sample(pool, k=n) if n < len(pool) else pool)
+
+        # Random sample from machine-generated data.
+        if n_synthetic > 0 and self.machine_data:
+            n = min(n_synthetic, len(self.machine_data))
+            results.extend(random.sample(self.machine_data, k=n))
+
+        return results
 
     def get_batch_examples(self) -> List[DataPoint]:
         """Returns batch of examples from dataloader. Mixes examples from seed data and machine-generated data.
+
+        FRAMEWORK-INTERNAL: Called exclusively by the framework execution loop
+        (_spawn_futures in ConcurrentGenerationDataBuilder, call_with_task_list
+        in GenerationDataBuilder). Advances the main dataloader state — do not
+        call from __call__, stages, or any user code. Use sample_examples()
+        instead for ICL sampling or any other purpose outside the framework loop.
 
         Returns:
             List[DataPoint]: List of examples to be used by SDG process.
