@@ -16,14 +16,12 @@ from fms_dgt.base.block import ValidatorBlock
 from fms_dgt.base.data_objects import ValidatorBlockData
 from fms_dgt.base.registry import register_block
 from fms_dgt.constants import TYPE_KEY
-from fms_dgt.core.tools import (
-    ARGS,
-    CALL_ID,
-    NAME,
-    OUTPUT_PARAMETERS,
-    PARAMETERS,
-    PROPERTIES,
-)
+from fms_dgt.core.tools import TOOL_CALL_ARGS as ARGS
+from fms_dgt.core.tools import TOOL_CALL_ID as CALL_ID
+from fms_dgt.core.tools import TOOL_NAME as NAME
+from fms_dgt.core.tools import TOOL_OUTPUT_PARAMETERS as OUTPUT_PARAMETERS
+from fms_dgt.core.tools import TOOL_PARAMETERS as PARAMETERS
+from fms_dgt.core.tools import TOOL_PROPERTIES as PROPERTIES
 from fms_dgt.utils import try_parse_json_string
 
 

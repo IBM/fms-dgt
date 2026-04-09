@@ -1,0 +1,18 @@
+{
+  "json_api": [
+    {
+      "name": "lookup",
+      "description": "Look up a value by key",
+      "parameters": {
+        "properties": {
+          "key": {
+            "description": "The key to look up",
+            "type": "string"
+          }
+        },
+        "required": ["key"],
+        "type": "object"
+      }
+    }
+  ]
+}

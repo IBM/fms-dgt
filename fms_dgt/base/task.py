@@ -19,7 +19,14 @@ from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
-from fms_dgt.constants import TASK_NAME_KEY, TYPE_KEY
+from fms_dgt.constants import ENGINE_KEY, TASK_NAME_KEY, TYPE_KEY
+from fms_dgt.core.tools import (
+    MultiServerToolEngine,
+    ToolEngine,
+    ToolRegistry,
+    get_tool_engine,
+    get_tool_loader,
+)
 from fms_dgt.log import LogDatastoreHandler
 from fms_dgt.utils import (
     group_data_by_attribute,
@@ -70,6 +77,7 @@ class Task:
         final_datastore: Dict | None = None,
         formatted_datastore: Dict | None = None,
         store_name: str | None = None,
+        tools: Dict | List[Dict] | None = None,
         **kwargs: Any,
     ):
         """Initializes task object.
@@ -148,6 +156,95 @@ class Task:
             else None
         )
 
+        # Configure tool registry and (optionally) engine.
+        #
+        # Supported shapes for the tools: block in task YAML:
+        #
+        # Phase-1 (flat list — registry only, backwards-compatible):
+        #   tools:
+        #     - type: file
+        #       path: ...
+        #
+        # Phase-2 (registry + engines sub-keys):
+        #   tools:
+        #     registry:
+        #       - type: file
+        #         path: ...
+        #         engine: my_engine   # optional reference into engines:
+        #     engines:               # optional — omit for registry-only tasks
+        #       my_engine:
+        #         type: lm
+        #         lm_config: {type: ollama, ...}
+        #
+        # The type: discriminator selects the loader / engine from the registry.
+        # All other keys are forwarded to the constructor.
+        self._tool_registry: ToolRegistry | None = None
+        self._tool_engine: MultiServerToolEngine | None = None
+
+        if tools:
+            # Normalise Phase-1 flat list into Phase-2 shape.
+            if isinstance(tools, list):
+                tools = {"registry": tools}
+
+            registry_cfgs: List[Dict] = tools.get("registry", [])
+            engines_cfg: Dict[str, Dict] = tools.get("engines", {})
+
+            # Validate engine references upfront so bad configs fail at
+            # Task construction time rather than at first execute() call.
+            for entry in registry_cfgs:
+                engine_name = entry.get(ENGINE_KEY)
+                if engine_name:
+                    if "namespace" not in entry:
+                        raise ValueError(
+                            f"tools.registry entry referencing engine '{engine_name}' "
+                            f"must specify a namespace."
+                        )
+                    if engine_name not in engines_cfg:
+                        raise ValueError(
+                            f"tools.registry entry references engine '{engine_name}' "
+                            f"which is not defined in tools.engines. "
+                            f"Defined engines: {list(engines_cfg.keys())}"
+                        )
+
+            # Build ToolRegistry from loaders.
+            loaders = [
+                get_tool_loader(
+                    entry[TYPE_KEY],
+                    **{k: v for k, v in entry.items() if k not in (TYPE_KEY, ENGINE_KEY)},
+                )
+                for entry in registry_cfgs
+            ]
+            self._tool_registry = ToolRegistry.from_loaders(loaders)
+
+            # Build per-namespace engines, then wrap in MultiServerToolEngine.
+            if engines_cfg:
+                # Collect all namespaces handled by each engine name.
+                engine_to_namespaces: Dict[str, List[str]] = {}
+                for entry in registry_cfgs:
+                    engine_name = entry.get(ENGINE_KEY)
+                    if engine_name:
+                        engine_to_namespaces.setdefault(engine_name, []).append(entry["namespace"])
+
+                built_engines: Dict[str, ToolEngine] = {
+                    name: get_tool_engine(
+                        cfg[TYPE_KEY],
+                        registry=self._tool_registry,
+                        namespaces=engine_to_namespaces.get(name),
+                        **{k: v for k, v in cfg.items() if k != TYPE_KEY},
+                    )
+                    for name, cfg in engines_cfg.items()
+                }
+                # Map each individual namespace to its engine for routing.
+                ns_to_engine: Dict[str, ToolEngine] = {
+                    entry["namespace"]: built_engines[entry[ENGINE_KEY]]
+                    for entry in registry_cfgs
+                    if ENGINE_KEY in entry
+                }
+                self._tool_engine = MultiServerToolEngine(
+                    registry=self._tool_registry,
+                    engines=ns_to_engine,
+                )
+
     def _post_init(self):
         """Finalise datastore configs and initialise stores + logger.
 
@@ -199,6 +296,16 @@ class Task:
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
+    @property
+    def tool_registry(self) -> "ToolRegistry | None":
+        """Returns the ToolRegistry for this task, or None if no tools are configured."""
+        return self._tool_registry
+
+    @property
+    def tool_engine(self) -> "MultiServerToolEngine | None":
+        """Returns the MultiServerToolEngine for this task, or None if no engines are configured."""
+        return self._tool_engine
+
     @property
     def runner_config(self) -> TaskRunnerConfig:
         """Returns the run config of the task.
