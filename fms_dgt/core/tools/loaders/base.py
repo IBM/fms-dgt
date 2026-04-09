@@ -9,7 +9,7 @@ import logging
 # Local
 from fms_dgt.core.tools.data_objects import ToolList
 
-logger = logging.getLogger("fms_dgt.tools.loaders")
+logger = logging.getLogger(__name__)
 
 
 # ===========================================================================

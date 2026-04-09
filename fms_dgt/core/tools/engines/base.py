@@ -13,7 +13,7 @@ import threading
 from fms_dgt.core.tools.data_objects import ToolCall, ToolResult
 from fms_dgt.core.tools.registry import ToolRegistry
 
-logger = logging.getLogger("fms_dgt.tools.engines")
+logger = logging.getLogger(__name__)
 
 
 # ===========================================================================

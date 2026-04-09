@@ -20,7 +20,7 @@ from fms_dgt.core.tools.constants import (
 from fms_dgt.core.tools.data_objects import Tool, ToolCall, ToolList
 from fms_dgt.utils import read_json, read_yaml
 
-logger = logging.getLogger("fms_dgt.tools.registry")
+logger = logging.getLogger(__name__)
 
 
 # ===========================================================================

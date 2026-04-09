@@ -5,6 +5,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 import json
+import logging
 import random
 
 # Third Party
@@ -21,6 +22,8 @@ from fms_dgt.core.tools.data_objects import Tool, ToolCall, ToolResult
 from fms_dgt.core.tools.engines.base import ToolEngine, register_tool_engine
 from fms_dgt.core.tools.registry import ToolRegistry
 from fms_dgt.utils import try_parse_json_string
+
+logger = logging.getLogger(__name__)
 
 # ===========================================================================
 #                       CONSTANTS
@@ -311,8 +314,25 @@ class LMToolEngine(ToolEngine):
     ):
         """Extract and validate tool output from the LM response.
 
+        Parsing strategy differs based on whether the tool declares
+        ``output_parameters``:
+
+        **With ``output_parameters``:**
+        1. Try ``json_obj`` as-is against the schema.
+        2. If that fails and ``"result"`` is present, is not a declared schema
+           property, and its value is a dict, try the unwrapped value.  This
+           handles models that wrap their output in a ``{"result": {...}}``
+           envelope despite structured-output mode.
+        3. Both fail → return ``(None, None)``.
+
+        **Without ``output_parameters``:**
+        Return ``json_obj`` as-is with no validation or unwrapping.  The LM
+        output shape is undefined without a schema, so the framework makes no
+        assumptions.  Override ``_parse_output`` in a subclass to add custom
+        normalization for specific models or tools.
+
         Returns:
-            Tuple of (output_dict | None, error_message | None).
+            Tuple of ``(output_dict | None, error_message | None)``.
         """
         # We always send a single request, so only the first element is relevant.
         prediction = lm_outputs[0] if lm_outputs else None
@@ -329,17 +349,30 @@ class LMToolEngine(ToolEngine):
             if error_msg:
                 return None, str(error_msg)
 
-            # Unwrap a top-level "result" key if present; otherwise use the
-            # full object. The LM may return either shape.
-            payload = json_obj.get("result", json_obj)
-            if not isinstance(payload, dict):
-                continue
+            # No output_parameters: return raw parsed dict, no assumptions.
+            if not tool.output_parameters:
+                logger.debug(
+                    "Tool '%s' has no output_parameters — returning raw LM output",
+                    tool.name,
+                )
+                return json_obj, None
 
             output_props = tool.output_parameters.get(TOOL_PROPERTIES) or {}
-            filtered = _filter_output_vals(payload, output_props)
 
+            # Try the full object first.
+            filtered = _filter_output_vals(json_obj, output_props)
             if self._is_valid_tool_result(filtered, tool):
                 return filtered, None
+
+            # Fallback: unwrap a "result" envelope if the LM added one.
+            # Only attempt when "result" is not a declared schema property and
+            # its value is a dict — scalars and legitimate "result" properties
+            # are never candidates for unwrapping.
+            unwrapped = json_obj.get("result")
+            if "result" not in output_props and isinstance(unwrapped, dict):
+                filtered_unwrapped = _filter_output_vals(unwrapped, output_props)
+                if self._is_valid_tool_result(filtered_unwrapped, tool):
+                    return filtered_unwrapped, None
 
         return None, None
 
