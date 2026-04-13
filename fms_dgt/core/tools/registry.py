@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # ===========================================================================
 
 
-def _schema_fingerprint(schema: Dict[str, Any]) -> str:
+def schema_fingerprint(schema: Dict[str, Any]) -> str:
     """Stable SHA-256 fingerprint of a normalized JSON schema dict.
 
     Normalization: serialize with sorted keys, no extra whitespace.  This is
@@ -108,6 +108,10 @@ class ToolRegistry:
         self._fingerprints: Set[str] = set()
         # Loaders retained for refresh(); empty when constructed directly
         self._loaders: List[Any] = []
+        # Enrichments retained for refresh(); empty when not enriched
+        self._enrichments: List[Any] = []
+        # Side-channel data populated by enrichments (embeddings, neighbors, …)
+        self.artifacts: Dict[str, Any] = {}
 
         for tool in tools or []:
             self._register(tool)
@@ -123,7 +127,7 @@ class ToolRegistry:
                 f"registering, or use ToolRegistry.from_file() / from_loaders() "
                 f"which assign namespace automatically."
             )
-        key = f"{tool.qualified_name}({_schema_fingerprint(tool.parameters)})"
+        key = f"{tool.qualified_name}({schema_fingerprint(tool.parameters)})"
         if key in self._fingerprints:
             raise ValueError(
                 f"Duplicate tool: {tool.qualified_name!r} with identical input schema "
@@ -261,6 +265,10 @@ class ToolRegistry:
     def refresh(self) -> None:
         """Reload all tools from the retained loaders and rebuild the index.
 
+        After reloading, all retained enrichments are re-run in their
+        original dependency order so that ``artifacts`` stays consistent with
+        the updated tool set.
+
         Only meaningful when the registry was constructed via ``from_loaders``.
         If no loaders are retained (direct construction or ``from_file``), this
         is a no-op and a warning is logged.
@@ -277,6 +285,10 @@ class ToolRegistry:
         for loader in self._loaders:
             all_tools.extend(loader.load())
         self._rebuild(all_tools)
+        # Re-run enrichments so artifacts stay in sync with the refreshed tools.
+        self.artifacts = {}
+        for enrichment in self._enrichments:
+            enrichment.enrich(self)
 
     # ------------------------------------------------------------------
     # Query interface
@@ -311,6 +323,34 @@ class ToolRegistry:
             List of matching ``Tool`` objects.
         """
         return self.get(f"{namespace}{TOOL_NAMESPACE_SEP}{tool_name}")
+
+    def get_by_fingerprint(self, qualified_name: str, fp: str) -> Tool:
+        """Return the exact tool overload identified by qualified name and input schema fingerprint.
+
+        For the common case of no overloads, returns the single registered tool
+        without computing any fingerprint.  For overloaded tools, iterates the
+        overload list and matches by ``schema_fingerprint(tool.parameters)``.
+
+        Args:
+            qualified_name: ``namespace::tool_name`` string.
+            fp: Hex-encoded SHA-256 digest produced by ``schema_fingerprint()``.
+
+        Returns:
+            The matching ``Tool`` instance.
+
+        Raises:
+            KeyError: If no tool is registered under ``qualified_name``, or no
+                overload matches the given fingerprint.
+        """
+        overloads = self.get(qualified_name)
+        if not overloads:
+            raise KeyError(f"No tool registered under {qualified_name!r}.")
+        if len(overloads) == 1:
+            return overloads[0]
+        for tool in overloads:
+            if schema_fingerprint(tool.parameters) == fp:
+                return tool
+        raise KeyError(f"No overload of {qualified_name!r} matches fingerprint {fp!r}.")
 
     def match(
         self,

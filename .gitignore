@@ -3,8 +3,9 @@ fms_dgt/core/blocks/llm/private_*.py
 configs/**/private_*.yaml
 
 
-output*
+output/
 telemetry/
+.cache/
 offload
 .vscode
 

@@ -64,10 +64,38 @@ python -m fms_dgt.public --help
 | --------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
 | `DGT_DATA_DIR`                    | `data/`      | Root directory for input data files referenced by `${DGT_DATA_DIR}` in task YAMLs                                 |
 | `DGT_OUTPUT_DIR`                  | `output/`    | Root directory for all generated output, logs, and task cards                                                     |
+| `DGT_CACHE_DIR`                   | `.cache/`    | Root directory for enrichment cache files (tool schemas, embeddings, neighbor graphs). See [Tool Enrichment Cache](#tool-enrichment-cache) |
 | `DGT_TELEMETRY_DIR`               | `telemetry/` | Directory for `events.jsonl` and `traces.jsonl` telemetry files                                                   |
 | `DGT_TELEMETRY_DISABLE`           | _(unset)_    | Set to any non-empty value to disable telemetry file writing entirely                                             |
 | `DGT_TELEMETRY_RECORD_PAYLOADS`   | _(unset)_    | Set to `1` to include prompts and completions in telemetry spans (see [Observability](concepts/observability.md)) |
 | `DGT_TELEMETRY_PAYLOAD_MAX_CHARS` | `4096`       | Maximum characters per payload field when payload recording is enabled                                            |
+
+## Tool Enrichment Cache
+
+When a task declares tool enrichments (`output_parameters`, `embeddings`, `neighbors`), DiGiT caches the results so subsequent runs do not re-pay the cost of LLM calls or embedding passes.
+
+Cache files are written under:
+
+```
+{DGT_CACHE_DIR}/enrichments/{type}/{fingerprint}.json
+```
+
+The fingerprint is a SHA-256 hash of the tool set and enrichment config (model ID, `keep_k`, etc.). Two tasks that use the same tools and the same enrichment config will hit the same cache file automatically — no explicit sharing configuration is needed. REST and MCP tools are cached identically to file-backed tools; the cache is keyed by qualified tool name, not by source URL or file path.
+
+**Delta-merge:** if you add new tools to a registry, only the new tools are computed and appended. Existing cache entries are not discarded.
+
+**Force refresh:** set `force: true` on an enrichment in the task YAML to bypass the cache load and recompute from scratch (useful when tool descriptions have changed without qualified names changing):
+
+```yaml
+enrichments:
+  - type: output_parameters
+    force: true
+    lm_config:
+      type: ollama
+      model_id_or_path: granite3.3:8b
+```
+
+Override the cache root by setting `DGT_CACHE` in your environment or `.env` file.
 
 ## Next steps
 

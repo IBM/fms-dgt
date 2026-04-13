@@ -41,6 +41,7 @@ DGT_ENV_VARS = {
     "DGT_OUTPUT_DIR": "output",
     "DGT_TELEMETRY_DIR": "telemetry",
     "DGT_TELEMETRY_DISABLE": "",
+    "DGT_CACHE_DIR": ".cache",
 }
 
 

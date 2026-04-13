@@ -26,6 +26,14 @@ from fms_dgt.core.tools.engines import (
     get_tool_engine,
     register_tool_engine,
 )
+from fms_dgt.core.tools.enrichments import (
+    EmbeddingsEnrichment,
+    NeighborsEnrichment,
+    OutputParametersEnrichment,
+    ToolEnrichment,
+    get_tool_enrichment,
+    register_tool_enrichment,
+)
 from fms_dgt.core.tools.loaders import (
     FileToolLoader,
     ToolLoader,
@@ -64,6 +72,13 @@ __all__ = [
     "FileToolLoader",
     "register_tool_loader",
     "get_tool_loader",
+    # Enrichments
+    "ToolEnrichment",
+    "OutputParametersEnrichment",
+    "EmbeddingsEnrichment",
+    "NeighborsEnrichment",
+    "register_tool_enrichment",
+    "get_tool_enrichment",
     # Engine
     "ToolEngine",
     "LMToolEngine",

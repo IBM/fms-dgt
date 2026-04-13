@@ -112,3 +112,33 @@ def test_run_context_filter_always_returns_true():
     assert f.filter(record) is True
     with run_context("b", "r"):
         assert f.filter(record) is True
+
+
+def test_run_context_filter_task_name_fallback_when_absent():
+    """task_name is backfilled to "" when not set on the record."""
+    f = RunContextFilter()
+    record = _make_record()
+    assert not hasattr(record, "task_name")
+    f.filter(record)
+    assert record.task_name == ""
+
+
+def test_run_context_filter_task_name_preserved_when_set():
+    """task_name set by a LoggerAdapter is not overwritten by the filter."""
+    f = RunContextFilter()
+    record = _make_record()
+    record.task_name = "my_task"
+    f.filter(record)
+    assert record.task_name == "my_task"
+
+
+def test_run_context_filter_task_name_preserved_inside_context():
+    """task_name set by a LoggerAdapter survives even when run_context is active."""
+    f = RunContextFilter()
+    record = _make_record()
+    record.task_name = "my_task"
+    with run_context("b", "r"):
+        f.filter(record)
+    assert record.task_name == "my_task"
+    assert record.build_id == "b"
+    assert record.run_id == "r"

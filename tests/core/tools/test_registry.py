@@ -10,7 +10,7 @@ import pytest
 # Local
 from fms_dgt.core.tools.constants import TOOL_DEFAULT_NAMESPACE, TOOL_NAMESPACE_SEP
 from fms_dgt.core.tools.data_objects import Tool, ToolCall
-from fms_dgt.core.tools.registry import ToolRegistry, _schema_fingerprint
+from fms_dgt.core.tools.registry import ToolRegistry, schema_fingerprint
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -41,17 +41,17 @@ class TestSchemaFingerprint:
     def test_identical_schemas_same_fingerprint(self):
         a = {"type": "object", "properties": {"x": {"type": "integer"}}}
         b = {"type": "object", "properties": {"x": {"type": "integer"}}}
-        assert _schema_fingerprint(a) == _schema_fingerprint(b)
+        assert schema_fingerprint(a) == schema_fingerprint(b)
 
     def test_different_schemas_different_fingerprint(self):
         a = {"type": "object", "properties": {"x": {"type": "integer"}}}
         b = {"type": "object", "properties": {"x": {"type": "string"}}}
-        assert _schema_fingerprint(a) != _schema_fingerprint(b)
+        assert schema_fingerprint(a) != schema_fingerprint(b)
 
     def test_key_order_irrelevant(self):
         a = {"b": 1, "a": 2}
         b = {"a": 2, "b": 1}
-        assert _schema_fingerprint(a) == _schema_fingerprint(b)
+        assert schema_fingerprint(a) == schema_fingerprint(b)
 
 
 # ---------------------------------------------------------------------------

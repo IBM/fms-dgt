@@ -27,7 +27,8 @@ from fms_dgt.core.tools import (
     get_tool_engine,
     get_tool_loader,
 )
-from fms_dgt.log import LogDatastoreHandler
+from fms_dgt.core.tools.enrichments import get_tool_enrichment
+from fms_dgt.log import LogDatastoreHandler, run_context
 from fms_dgt.utils import (
     group_data_by_attribute,
     init_dataclass_from_dict,
@@ -41,6 +42,73 @@ _TASK_LOGGER_PREFIX = "fms_dgt"
 #                       HELPER FUNCTIONS
 # ===========================================================================
 T = TypeVar("T")
+
+
+def _topo_sort_enrichments(enrichments: List[Any]) -> List[Any]:
+    """Return ``enrichments`` sorted so each item's ``DEPENDS_ON`` keys are
+    satisfied by items earlier in the returned list.
+
+    Args:
+        enrichments: List of ``ToolEnrichment`` instances.
+
+    Returns:
+        Topologically sorted list.
+
+    Raises:
+        ValueError: On a dependency cycle or if a declared dependency is not
+            satisfied by any enrichment in the list.
+    """
+    # Build artifact_key -> enrichment index map (None artifact_key is excluded).
+    key_to_idx: Dict[str, int] = {}
+    for i, e in enumerate(enrichments):
+        if e.artifact_key is not None:
+            if e.artifact_key in key_to_idx:
+                raise ValueError(
+                    f"Two enrichments claim the same artifact_key '{e.artifact_key}'. "
+                    f"Each artifact_key must be produced by at most one enrichment."
+                )
+            key_to_idx[e.artifact_key] = i
+
+    # Check that all declared dependencies can be satisfied.
+    for e in enrichments:
+        for dep_key in e.depends_on:
+            if dep_key not in key_to_idx:
+                raise ValueError(
+                    f"Enrichment {type(e).__name__!r} depends on artifact '{dep_key}', "
+                    f"but no enrichment in the list produces it. "
+                    f"Add the corresponding enrichment to tools.enrichments."
+                )
+
+    # Kahn's algorithm on the dependency graph.
+    n = len(enrichments)
+    # indegree[i] = number of deps not yet satisfied for enrichment i
+    indegree = [0] * n
+    # adj[i] = list of indices that depend on i (i.e. i must come before them)
+    adj: List[List[int]] = [[] for _ in range(n)]
+
+    for i, e in enumerate(enrichments):
+        for dep_key in e.depends_on:
+            producer_idx = key_to_idx[dep_key]
+            adj[producer_idx].append(i)
+            indegree[i] += 1
+
+    queue = [i for i in range(n) if indegree[i] == 0]
+    order: List[int] = []
+    while queue:
+        node = queue.pop(0)
+        order.append(node)
+        for neighbor in adj[node]:
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(order) != n:
+        raise ValueError(
+            "Cycle detected in enrichment dependencies. "
+            "Check the 'depends_on' declarations on your enrichments."
+        )
+
+    return [enrichments[i] for i in order]
 
 
 def group_data_by_task(data_list: List[T]) -> List[List[T]]:
@@ -216,6 +284,19 @@ class Task:
             ]
             self._tool_registry = ToolRegistry.from_loaders(loaders)
 
+            # Parse and retain enrichment config — actual enrichment runs in
+            # _post_init() after task identity (run_id, task_name) is finalised.
+            enrichments_cfg: List[Dict] = tools.get("enrichments", [])
+            if enrichments_cfg:
+                enrichment_instances = [
+                    get_tool_enrichment(
+                        cfg[TYPE_KEY],
+                        **{k: v for k, v in cfg.items() if k != TYPE_KEY},
+                    )
+                    for cfg in enrichments_cfg
+                ]
+                self._tool_registry._enrichments = _topo_sort_enrichments(enrichment_instances)
+
             # Build per-namespace engines, then wrap in MultiServerToolEngine.
             if engines_cfg:
                 # Collect all namespaces handled by each engine name.
@@ -292,6 +373,56 @@ class Task:
         self._save_task_card()
         self._init_datastores()
         self._init_logger()
+
+        # Run enrichment passes now that task identity is finalised.
+        # Wrapped in run_context so enrichment-phase log records carry
+        # build_id and run_id.  task_name is injected via a LoggerAdapter
+        # on each enrichment's module logger (see _run_tool_enrichments()).
+        if self._tool_registry and self._tool_registry._enrichments:
+            self._run_tool_enrichments()
+
+    def _run_tool_enrichments(self) -> None:
+        """Execute all retained enrichments with full task-identity attribution.
+
+        Called from ``_post_init()`` after ``_save_task_card()`` so that
+        ``build_id``, ``run_id``, and ``task_name`` are all finalised.
+
+        Each enrichment's module logger is temporarily wrapped in a
+        ``LoggerAdapter`` carrying ``task_name`` so enrichment-phase log
+        records are attributable to this specific task without modifying the
+        ``ToolEnrichment`` or ``ToolRegistry`` APIs.  See the three-channel
+        attribution design documented in ``fms_dgt/log/context.py``.
+        """
+        with run_context(self._task_card.build_id, self._task_card.run_id):
+            for enrichment in self._tool_registry._enrichments:
+                adapted = logging.LoggerAdapter(enrichment.logger, {"task_name": self._name})
+                original_logger = enrichment.logger
+                enrichment.logger = adapted
+                try:
+                    enrichment.enrich(self._tool_registry)
+                finally:
+                    enrichment.logger = original_logger
+
+    def refresh_tools(self) -> None:
+        """Reload tools from all retained loaders and re-run enrichments.
+
+        Re-runs loaders and enrichments with the same task-identity attribution
+        as ``_post_init()``: ``build_id`` and ``run_id`` via ``run_context``,
+        ``task_name`` via a ``LoggerAdapter`` on each enrichment's logger.
+        """
+        if self._tool_registry is None:
+            return
+        if not self._tool_registry._loaders:
+            return
+        # Reload tools from loaders and clear artifacts, matching registry.refresh().
+        all_tools = []
+        for loader in self._tool_registry._loaders:
+            all_tools.extend(loader.load())
+        self._tool_registry._rebuild(all_tools)
+        self._tool_registry.artifacts = {}
+        # Re-run enrichments with attribution.
+        if self._tool_registry._enrichments:
+            self._run_tool_enrichments()
 
     # ===========================================================================
     #                       PROPERTIES
