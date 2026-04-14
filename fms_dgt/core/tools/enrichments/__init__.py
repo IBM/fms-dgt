@@ -7,6 +7,7 @@ from fms_dgt.core.tools.enrichments.base import (
     get_tool_enrichment,
     register_tool_enrichment,
 )
+from fms_dgt.core.tools.enrichments.dataflow import DataflowEnrichment
 from fms_dgt.core.tools.enrichments.embeddings import EmbeddingsEnrichment
 from fms_dgt.core.tools.enrichments.neighbors import NeighborsEnrichment
 from fms_dgt.core.tools.enrichments.output_parameters import OutputParametersEnrichment
@@ -18,4 +19,5 @@ __all__ = [
     "OutputParametersEnrichment",
     "EmbeddingsEnrichment",
     "NeighborsEnrichment",
+    "DataflowEnrichment",
 ]

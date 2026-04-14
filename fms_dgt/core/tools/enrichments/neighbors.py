@@ -87,10 +87,35 @@ def _build_edge_data(
 class NeighborsEnrichment(ToolEnrichment):
     """Compute output-to-input compatibility scores and store a namespace-bucketed neighbor graph.
 
+    .. warning::
+        **EXPERIMENTAL — training objective not fully established.**
+
+        Two open issues:
+
+        1. **Mixed signal.** Pass 1 (candidate selection) uses full-tool
+           embeddings — name + description + inputs + outputs — which conflates
+           domain proximity with dataflow compatibility.  Pass 2 scores edges by
+           comparing composite output vectors against composite input vectors,
+           which approximates dataflow but via semantic similarity rather than
+           structural parameter matching.  The resulting scores are neither pure
+           domain proximity nor pure dataflow compatibility.
+
+        2. **No validated training objective for ``tc/neighbor``.** The sampler
+           that consumes this artifact was intended to produce "topic-coherent"
+           tool sets, but that objective is covered more cleanly by ``tc/random``
+           with namespace filtering.  No training data comparison between
+           ``tc/neighbor`` and ``tc/random`` has been done.
+
+        The enrichment is retained because it is working, tested code and
+        deleting it before a validated replacement (``dataflow`` enrichment,
+        planned) exists carries risk.  Do not build new samplers on top of this
+        artifact without first resolving the above.  See the tool subsystem
+        design discussion for context.
+
     For each source tool A, this enrichment finds candidate target tools B
     whose input schema is semantically compatible with the output schema of A.
     The result captures "tool B can consume the output of tool A", which is
-    the core signal needed by the ``tc/chain`` and ``tc/neighbor`` samplers.
+    the core signal needed by the ``tc/neighbor`` sampler.
 
     The artifact written to ``registry.artifacts["neighbors"]`` is a
     ``dict[qualified_name, dict[schema_fp, dict[namespace, list[tuple[name, schema_fp, score]]]]]``
