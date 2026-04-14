@@ -1,0 +1,20 @@
+- name: lookup
+  description: Look up a value by key
+  parameters:
+    properties:
+      key:
+        description: The key to look up
+        type: string
+    required:
+      - key
+    type: object
+- name: search
+  description: Search for items matching a query
+  parameters:
+    properties:
+      query:
+        description: Search query string
+        type: string
+    required:
+      - query
+    type: object

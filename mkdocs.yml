@@ -69,6 +69,12 @@ nav:
       - concepts/datastores.md
       - concepts/dataloaders.md
       - concepts/observability.md
+  - Tools:
+      - Overview: concepts/tools/index.md
+      - Registry and Loaders: concepts/tools/registry.md
+      - Enrichments: concepts/tools/enrichments.md
+      - Samplers: concepts/tools/samplers.md
+      - Engines: concepts/tools/engines.md
   - Tutorials:
       - tutorials/generate_data.md
       - tutorials/transform_data.md

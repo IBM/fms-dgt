@@ -19,8 +19,16 @@ from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
-from fms_dgt.constants import TASK_NAME_KEY, TYPE_KEY
-from fms_dgt.log import LogDatastoreHandler
+from fms_dgt.constants import ENGINE_KEY, TASK_NAME_KEY, TYPE_KEY
+from fms_dgt.core.tools import (
+    MultiServerToolEngine,
+    ToolEngine,
+    ToolRegistry,
+    get_tool_engine,
+    get_tool_loader,
+)
+from fms_dgt.core.tools.enrichments import get_tool_enrichment
+from fms_dgt.log import LogDatastoreHandler, run_context
 from fms_dgt.utils import (
     group_data_by_attribute,
     init_dataclass_from_dict,
@@ -34,6 +42,73 @@ _TASK_LOGGER_PREFIX = "fms_dgt"
 #                       HELPER FUNCTIONS
 # ===========================================================================
 T = TypeVar("T")
+
+
+def _topo_sort_enrichments(enrichments: List[Any]) -> List[Any]:
+    """Return ``enrichments`` sorted so each item's ``DEPENDS_ON`` keys are
+    satisfied by items earlier in the returned list.
+
+    Args:
+        enrichments: List of ``ToolEnrichment`` instances.
+
+    Returns:
+        Topologically sorted list.
+
+    Raises:
+        ValueError: On a dependency cycle or if a declared dependency is not
+            satisfied by any enrichment in the list.
+    """
+    # Build artifact_key -> enrichment index map (None artifact_key is excluded).
+    key_to_idx: Dict[str, int] = {}
+    for i, e in enumerate(enrichments):
+        if e.artifact_key is not None:
+            if e.artifact_key in key_to_idx:
+                raise ValueError(
+                    f"Two enrichments claim the same artifact_key '{e.artifact_key}'. "
+                    f"Each artifact_key must be produced by at most one enrichment."
+                )
+            key_to_idx[e.artifact_key] = i
+
+    # Check that all declared dependencies can be satisfied.
+    for e in enrichments:
+        for dep_key in e.depends_on:
+            if dep_key not in key_to_idx:
+                raise ValueError(
+                    f"Enrichment {type(e).__name__!r} depends on artifact '{dep_key}', "
+                    f"but no enrichment in the list produces it. "
+                    f"Add the corresponding enrichment to tools.enrichments."
+                )
+
+    # Kahn's algorithm on the dependency graph.
+    n = len(enrichments)
+    # indegree[i] = number of deps not yet satisfied for enrichment i
+    indegree = [0] * n
+    # adj[i] = list of indices that depend on i (i.e. i must come before them)
+    adj: List[List[int]] = [[] for _ in range(n)]
+
+    for i, e in enumerate(enrichments):
+        for dep_key in e.depends_on:
+            producer_idx = key_to_idx[dep_key]
+            adj[producer_idx].append(i)
+            indegree[i] += 1
+
+    queue = [i for i in range(n) if indegree[i] == 0]
+    order: List[int] = []
+    while queue:
+        node = queue.pop(0)
+        order.append(node)
+        for neighbor in adj[node]:
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(order) != n:
+        raise ValueError(
+            "Cycle detected in enrichment dependencies. "
+            "Check the 'depends_on' declarations on your enrichments."
+        )
+
+    return [enrichments[i] for i in order]
 
 
 def group_data_by_task(data_list: List[T]) -> List[List[T]]:
@@ -70,6 +145,7 @@ class Task:
         final_datastore: Dict | None = None,
         formatted_datastore: Dict | None = None,
         store_name: str | None = None,
+        tools: Dict | List[Dict] | None = None,
         **kwargs: Any,
     ):
         """Initializes task object.
@@ -148,6 +224,108 @@ class Task:
             else None
         )
 
+        # Configure tool registry and (optionally) engine.
+        #
+        # Supported shapes for the tools: block in task YAML:
+        #
+        # Phase-1 (flat list — registry only, backwards-compatible):
+        #   tools:
+        #     - type: file
+        #       path: ...
+        #
+        # Phase-2 (registry + engines sub-keys):
+        #   tools:
+        #     registry:
+        #       - type: file
+        #         path: ...
+        #         engine: my_engine   # optional reference into engines:
+        #     engines:               # optional — omit for registry-only tasks
+        #       my_engine:
+        #         type: lm
+        #         lm_config: {type: ollama, ...}
+        #
+        # The type: discriminator selects the loader / engine from the registry.
+        # All other keys are forwarded to the constructor.
+        self._tool_registry: ToolRegistry | None = None
+        self._tool_engine: MultiServerToolEngine | None = None
+
+        if tools:
+            # Normalise Phase-1 flat list into Phase-2 shape.
+            if isinstance(tools, list):
+                tools = {"registry": tools}
+
+            registry_cfgs: List[Dict] = tools.get("registry", [])
+            engines_cfg: Dict[str, Dict] = tools.get("engines", {})
+
+            # Validate engine references upfront so bad configs fail at
+            # Task construction time rather than at first execute() call.
+            for entry in registry_cfgs:
+                engine_name = entry.get(ENGINE_KEY)
+                if engine_name:
+                    if "namespace" not in entry:
+                        raise ValueError(
+                            f"tools.registry entry referencing engine '{engine_name}' "
+                            f"must specify a namespace."
+                        )
+                    if engine_name not in engines_cfg:
+                        raise ValueError(
+                            f"tools.registry entry references engine '{engine_name}' "
+                            f"which is not defined in tools.engines. "
+                            f"Defined engines: {list(engines_cfg.keys())}"
+                        )
+
+            # Build ToolRegistry from loaders.
+            loaders = [
+                get_tool_loader(
+                    entry[TYPE_KEY],
+                    **{k: v for k, v in entry.items() if k not in (TYPE_KEY, ENGINE_KEY)},
+                )
+                for entry in registry_cfgs
+            ]
+            self._tool_registry = ToolRegistry.from_loaders(loaders)
+
+            # Parse and retain enrichment config — actual enrichment runs in
+            # _post_init() after task identity (run_id, task_name) is finalised.
+            enrichments_cfg: List[Dict] = tools.get("enrichments", [])
+            if enrichments_cfg:
+                enrichment_instances = [
+                    get_tool_enrichment(
+                        cfg[TYPE_KEY],
+                        **{k: v for k, v in cfg.items() if k != TYPE_KEY},
+                    )
+                    for cfg in enrichments_cfg
+                ]
+                self._tool_registry._enrichments = _topo_sort_enrichments(enrichment_instances)
+
+            # Build per-namespace engines, then wrap in MultiServerToolEngine.
+            if engines_cfg:
+                # Collect all namespaces handled by each engine name.
+                engine_to_namespaces: Dict[str, List[str]] = {}
+                for entry in registry_cfgs:
+                    engine_name = entry.get(ENGINE_KEY)
+                    if engine_name:
+                        engine_to_namespaces.setdefault(engine_name, []).append(entry["namespace"])
+
+                built_engines: Dict[str, ToolEngine] = {
+                    name: get_tool_engine(
+                        cfg[TYPE_KEY],
+                        registry=self._tool_registry,
+                        namespaces=engine_to_namespaces.get(name),
+                        **{k: v for k, v in cfg.items() if k != TYPE_KEY},
+                    )
+                    for name, cfg in engines_cfg.items()
+                }
+                # Map each individual namespace to its engine for routing.
+                ns_to_engine: Dict[str, ToolEngine] = {
+                    entry["namespace"]: built_engines[entry[ENGINE_KEY]]
+                    for entry in registry_cfgs
+                    if ENGINE_KEY in entry
+                }
+                self._tool_engine = MultiServerToolEngine(
+                    registry=self._tool_registry,
+                    engines=ns_to_engine,
+                )
+
     def _post_init(self):
         """Finalise datastore configs and initialise stores + logger.
 
@@ -196,9 +374,69 @@ class Task:
         self._init_datastores()
         self._init_logger()
 
+        # Run enrichment passes now that task identity is finalised.
+        # Wrapped in run_context so enrichment-phase log records carry
+        # build_id and run_id.  task_name is injected via a LoggerAdapter
+        # on each enrichment's module logger (see _run_tool_enrichments()).
+        if self._tool_registry and self._tool_registry._enrichments:
+            self._run_tool_enrichments()
+
+    def _run_tool_enrichments(self) -> None:
+        """Execute all retained enrichments with full task-identity attribution.
+
+        Called from ``_post_init()`` after ``_save_task_card()`` so that
+        ``build_id``, ``run_id``, and ``task_name`` are all finalised.
+
+        Each enrichment's module logger is temporarily wrapped in a
+        ``LoggerAdapter`` carrying ``task_name`` so enrichment-phase log
+        records are attributable to this specific task without modifying the
+        ``ToolEnrichment`` or ``ToolRegistry`` APIs.  See the three-channel
+        attribution design documented in ``fms_dgt/log/context.py``.
+        """
+        with run_context(self._task_card.build_id, self._task_card.run_id):
+            for enrichment in self._tool_registry._enrichments:
+                adapted = logging.LoggerAdapter(enrichment.logger, {"task_name": self._name})
+                original_logger = enrichment.logger
+                enrichment.logger = adapted
+                try:
+                    enrichment.enrich(self._tool_registry)
+                finally:
+                    enrichment.logger = original_logger
+
+    def refresh_tools(self) -> None:
+        """Reload tools from all retained loaders and re-run enrichments.
+
+        Re-runs loaders and enrichments with the same task-identity attribution
+        as ``_post_init()``: ``build_id`` and ``run_id`` via ``run_context``,
+        ``task_name`` via a ``LoggerAdapter`` on each enrichment's logger.
+        """
+        if self._tool_registry is None:
+            return
+        if not self._tool_registry._loaders:
+            return
+        # Reload tools from loaders and clear artifacts, matching registry.refresh().
+        all_tools = []
+        for loader in self._tool_registry._loaders:
+            all_tools.extend(loader.load())
+        self._tool_registry._rebuild(all_tools)
+        self._tool_registry.artifacts = {}
+        # Re-run enrichments with attribution.
+        if self._tool_registry._enrichments:
+            self._run_tool_enrichments()
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
+    @property
+    def tool_registry(self) -> "ToolRegistry | None":
+        """Returns the ToolRegistry for this task, or None if no tools are configured."""
+        return self._tool_registry
+
+    @property
+    def tool_engine(self) -> "MultiServerToolEngine | None":
+        """Returns the MultiServerToolEngine for this task, or None if no engines are configured."""
+        return self._tool_engine
+
     @property
     def runner_config(self) -> TaskRunnerConfig:
         """Returns the run config of the task.

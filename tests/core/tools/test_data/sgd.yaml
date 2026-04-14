@@ -1,0 +1,98 @@
+AddEvent:
+  description: Add event to the user's calendar
+  name: AddEvent
+  parameters:
+    properties:
+      event_date:
+        description: Date of event or for checking availability
+        type: string
+      event_location:
+        description: Location of event
+        type: string
+      event_name:
+        description: Title of event
+        type: string
+      event_time:
+        description: Start time of event
+        type: string
+    required:
+      - event_name
+      - event_date
+      - event_location
+      - event_time
+    type: object
+BookAppointment:
+  description: Book an appointment with a specific doctor for the given date and time
+  name: BookAppointment
+  parameters:
+    properties:
+      appointment_date:
+        description: Date for scheduling the appointment with the doctor
+        type: string
+      appointment_time:
+        description: Time for the appointment with the doctor
+        type: string
+      doctor_name:
+        description: Name of the doctor or the medical practice
+        type: string
+    required:
+      - doctor_name
+      - appointment_time
+      - appointment_date
+    type: object
+BookHouse:
+  description: Book the selected house for given dates and number of adults
+  name: BookHouse
+  parameters:
+    properties:
+      check_in_date:
+        description: Start date for the reservation or to find the house
+        type: string
+      check_out_date:
+        description: End date for the reservation or to find the house
+        type: string
+      number_of_adults:
+        description: Number of people for the reservation
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        type: integer
+      where_to:
+        description: Location of the house
+        type: string
+    required:
+      - where_to
+      - number_of_adults
+      - check_in_date
+      - check_out_date
+    type: object
+BuyBusTicket:
+  description: Buy tickets for a bus itinerary
+  name: BuyBusTicket
+  parameters:
+    properties:
+      departure_date:
+        description: Date of bus departure
+        type: string
+      departure_time:
+        description: Scheduled departure time
+        type: string
+      from_location:
+        description: Station or city the bus departs from
+        type: string
+      to_location:
+        description: Station or city the bus arrives at
+        type: string
+      travelers:
+        description: Number of travelers
+        type: integer
+    required:
+      - from_location
+      - to_location
+      - departure_date
+      - departure_time
+      - travelers
+    type: object

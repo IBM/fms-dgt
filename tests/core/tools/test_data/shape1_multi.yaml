@@ -1,0 +1,22 @@
+api:
+  - name: tool_a
+    description: Tool A
+    parameters:
+      properties:
+        x:
+          type: string
+      type: object
+  - name: tool_b
+    description: Tool B
+    parameters:
+      properties:
+        y:
+          type: integer
+      type: object
+  - name: tool_c
+    description: Tool C
+    parameters:
+      properties:
+        z:
+          type: boolean
+      type: object

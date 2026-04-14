@@ -139,7 +139,7 @@ class Ollama(OpenAI):
     def _extract_choice_content(self, choice: Any, method: str) -> str | Dict:
         # If choice is generated via chat completion
         if method == self.CHAT_COMPLETION:
-            return choice.message.dict()
+            return choice.message.model_dump()
 
         # If choice is generated via text completion
         return choice.response
@@ -177,11 +177,25 @@ class Ollama(OpenAI):
                     method=method,
                     max_tokens=params.get("num_predict", None),
                 )
+                # Map response_format (OpenAI convention) to Ollama's native
+                # format parameter.  Ollama accepts either the string "json"
+                # (JSON mode, no schema) or a raw JSON schema dict (structured
+                # outputs).  The OpenAI wrapper is never passed through as-is.
+                rf = params.pop("response_format", None)
+                ollama_format = None
+                if rf is not None:
+                    t = rf.get("type")
+                    if t == "json_schema":
+                        ollama_format = rf.get("json_schema", {}).get("schema", {})
+                    elif t == "json_object":
+                        ollama_format = "json"
+                    # type == "text" → leave ollama_format as None
                 response = await self._async_client.chat(
                     model=self.model_id_or_path,
                     messages=messages,
                     tools=instance.tools,
                     options=params,
+                    format=ollama_format,
                     stream=False,
                 )
             elif method == self.COMPLETION:

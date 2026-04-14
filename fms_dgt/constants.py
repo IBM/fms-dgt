@@ -27,6 +27,8 @@ DATABUILDER_KEY = "data_builder"
 BLOCKS_KEY = "blocks"
 DATASTORES_KEY = "datastores"
 RAY_CONFIG_KEY = "ray_config"
+TOOLS_KEY = "tools"
+ENGINE_KEY = "engine"
 
 DGT_DIR = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
 
@@ -39,6 +41,7 @@ DGT_ENV_VARS = {
     "DGT_OUTPUT_DIR": "output",
     "DGT_TELEMETRY_DIR": "telemetry",
     "DGT_TELEMETRY_DISABLE": "",
+    "DGT_CACHE_DIR": ".cache",
 }
 
 

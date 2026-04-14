@@ -66,6 +66,8 @@ class AnthropicChatCompletionParameters(Parameters):
     temperature: float | NotGiven = NOT_GIVEN
     top_k: int | NotGiven = NOT_GIVEN
     top_p: float | NotGiven = NOT_GIVEN
+    response_format: Dict | NotGiven = NOT_GIVEN
+    output_config: Dict | NotGiven = NOT_GIVEN
 
     @classmethod
     def from_dict(cls, params: Dict):
@@ -154,6 +156,23 @@ async def invoke_chat_completion(
             tool_choice = {"type": "none"}
         else:
             tool_choice = {"type": "auto"}
+
+    # Map response_format (OpenAI convention) to output_config as per Anthropic requirements.
+    # output_config takes precedence if both are set (caller used native Anthropic API).
+    # Anthropic only supports json_schema; json_object and text have no equivalent and are dropped.
+    if "response_format" in kwargs and "output_config" not in kwargs:
+        rf = kwargs.pop("response_format")
+        if rf.get("type") == "json_schema":
+            # OpenAI wraps the schema under json_schema.schema — Anthropic expects it directly.
+            kwargs["output_config"] = {
+                "format": {
+                    "type": "json_schema",
+                    "schema": rf.get("json_schema", {}).get("schema", {}),
+                }
+            }
+        # type == "json_object" or "text": no Anthropic equivalent, omit output_config entirely.
+    else:
+        kwargs.pop("response_format", None)
 
     # Invoke completion
     return await client.messages.create(
