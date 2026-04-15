@@ -14,4 +14,7 @@ V32_LABEL_RE = re.compile(r"\b(yes|no)\b", re.IGNORECASE)
 # Required inference settings enforced regardless of caller config
 REQUIRED_TEMPERATURE = 0.0
 REQUIRED_MAX_TOKENS = 20  # sufficient for <score>yes</score> plus optional whitespace
+REQUIRED_MAX_TOKENS_WITH_THINK = (
+    1024  # fallback when think=True and user does not specify max_tokens
+)
 REQUIRED_LOGPROBS = 4

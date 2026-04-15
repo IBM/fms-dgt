@@ -402,12 +402,21 @@ def process_yaml_config(
 # ===========================================================================
 
 
-def group_data_by_attribute(data_list: List[T], attr: str) -> List[List[T]]:
-    attr_values = set([getattr(data_item, attr) for data_item in data_list])
-    return [
-        [data_item for data_item in data_list if getattr(data_item, attr) == attr_value]
-        for attr_value in attr_values
-    ]
+def group_by(data: List[T], key: Callable[[T], Any]) -> Dict[Any, List[T]]:
+    """Group a list of items by an arbitrary key function.
+
+    Args:
+        data: List of items to group.
+        key: Callable that returns the grouping key for each item.
+
+    Returns:
+        Dict mapping each distinct key value to the list of items that produced it.
+        Insertion order of first occurrence is preserved.
+    """
+    result: Dict[Any, List[T]] = {}
+    for item in data:
+        result.setdefault(key(item), []).append(item)
+    return result
 
 
 # ===========================================================================

@@ -614,17 +614,19 @@ class ValidatorBlock(Block):
         # Turn filtering ON/OFF, if requested
         filter = filter and self._filter_invalids
 
+        inputs = list(inputs)
+        validation_outputs = self._validate_batch(inputs)
+
         # Validate instances
         retained_instances, filtered_instances = [], []
-        for x in inputs:
-            validation_output = self._validate(x)
+        for x, validation_output in zip(inputs, validation_outputs):
             if isinstance(validation_output, bool):
                 x.is_valid = validation_output
             elif isinstance(validation_output, tuple) and len(validation_output) == 2:
                 x.is_valid, x.metadata = validation_output
             else:
                 raise RuntimeError(
-                    '"_validate" function must return a bool or tuple of [bool, Dict]',
+                    '"_validate_batch" must return a list of bool or tuple of [bool, Dict]',
                 )
 
             if x.is_valid or not filter:
@@ -649,12 +651,35 @@ class ValidatorBlock(Block):
         # Return retained instances
         return retained_instances
 
-    @abstractmethod
-    def _validate(self, *args: Any, **kwargs: Any) -> bool | Tuple[bool, Dict | None]:
-        """Derived validators must implement _validate with their core logic.
+    def _validate_batch(
+        self, inputs: List[ValidatorBlockData]
+    ) -> List[bool | Tuple[bool, Dict | None]]:
+        """Validate a batch of inputs.
+
+        The default implementation calls ``_validate`` per item. Subclasses that
+        can process a batch more efficiently (e.g. by making a single LM call)
+        should override this method instead of ``_validate``.
+
+        Args:
+            inputs: List of ``ValidatorBlockData`` instances to validate.
 
         Returns:
-            Tuple[bool, Dict | None]: a boolean (True or False) to reflect whether an input was valid or not and optional second entry to reflect any additional metadata
+            List of per-input results, each either a ``bool`` or a
+            ``(bool, Dict | None)`` tuple — same contract as ``_validate``.
+        """
+        return [self._validate(x) for x in inputs]
+
+    @abstractmethod
+    def _validate(self, *args: Any, **kwargs: Any) -> bool | Tuple[bool, Dict | None]:
+        """Validate a single input instance.
+
+        Implement this for simple per-item validation logic. For batch-capable
+        validators (e.g. those making LM calls), override ``_validate_batch``
+        instead and raise ``NotImplementedError`` here.
+
+        Returns:
+            A ``bool`` or ``(bool, Dict | None)`` tuple where the bool indicates
+            whether the input is valid.
         """
         raise NotImplementedError(
             f"Missing implementation in {self.__module__}.{self.__class__.__name__}"

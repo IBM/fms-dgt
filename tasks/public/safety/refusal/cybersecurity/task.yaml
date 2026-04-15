@@ -1,0 +1,38 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: public/safety/refusal/cybersecurity/spam_phishing
+task_description: >-
+  A task for generating (harmful spam/phishing prompt, calibrated refusal) pairs to train
+  a model to refuse requests that violate policies against spam, phishing, and sextortion campaigns.
+created_by: IBM
+data_builder: public/safety/refusal
+
+######################################################
+#                   RISK POLICY
+######################################################
+risk_policy:
+  path: ${DGT_DATA_DIR}/public/safety/resources/policies/cybersecurity_risks.yaml
+  risk: spam_phishing_sextortion_campaigns
+
+######################################################
+#                   FORMATTER
+######################################################
+formatter:
+  type: formatters/safety/refusal
+
+######################################################
+#                   TASK SPECIFIC
+######################################################
+# Number of seed examples used as ICL context per generation batch.
+num_icl_examples: 3
+
+# Number of new instructions to request per generation.
+num_samples_per_batch: 5
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_datastore:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/safety/refusal/cybersecurity/seed_examples.jsonl

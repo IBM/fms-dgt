@@ -395,7 +395,7 @@ class Anthropic(LMProvider):
             {
                 "completion_tokens": response.usage.output_tokens,
                 "prompt_tokens": response.usage.input_tokens,
-                "token_logprobs": [],
+                "token_logprobs": [[]],
             },
         )
 

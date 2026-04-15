@@ -19,7 +19,7 @@ from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
-from fms_dgt.constants import ENGINE_KEY, TASK_NAME_KEY, TYPE_KEY
+from fms_dgt.constants import ENGINE_KEY, TYPE_KEY
 from fms_dgt.core.tools import (
     MultiServerToolEngine,
     ToolEngine,
@@ -29,10 +29,7 @@ from fms_dgt.core.tools import (
 )
 from fms_dgt.core.tools.enrichments import get_tool_enrichment
 from fms_dgt.log import LogDatastoreHandler, run_context
-from fms_dgt.utils import (
-    group_data_by_attribute,
-    init_dataclass_from_dict,
-)
+from fms_dgt.utils import init_dataclass_from_dict
 
 # Logger name prefix for all task-scoped loggers; child of dgt_logger so records
 # propagate to its stdout handler automatically.
@@ -109,18 +106,6 @@ def _topo_sort_enrichments(enrichments: List[Any]) -> List[Any]:
         )
 
     return [enrichments[i] for i in order]
-
-
-def group_data_by_task(data_list: List[T]) -> List[List[T]]:
-    """Utility function that groups input data by task name.
-
-    Args:
-        data_list (List[T]): List of DataPoint to group into tasks
-
-    Returns:
-        List[List[T]]: DataPoint that has been grouped into tasks
-    """
-    return group_data_by_attribute(data_list, TASK_NAME_KEY)
 
 
 # ===========================================================================

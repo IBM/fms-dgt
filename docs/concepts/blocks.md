@@ -101,6 +101,7 @@ The block must already be declared in `blocks`. Postprocessors run over the full
 | `lm_judge`                                                                        | Validator    | Uses an LLM to judge whether a generated record meets a quality criterion                                       |
 | `tool_call_validator`                                                             | Validator    | Validates tool-calling sequences in multi-turn data                                                             |
 | `noop`                                                                            | Validator    | Always passes. Useful as a placeholder or for testing                                                           |
+| `validators/granite_guardian`                                                     | Validator    | Wraps IBM Granite Guardian 3.3/3.2 for safety and risk assessment; supports custom risk policies                |
 | `field_map`                                                                       | Utility      | Renames or copies fields between dictionary keys                                                                |
 | `flatten_field`                                                                   | Utility      | Explodes a list-valued field into separate records                                                              |
 
@@ -108,7 +109,9 @@ The block must already be declared in `blocks`. Postprocessors run over the full
 
 ### Choosing a base class
 
-All blocks inherit from [`Block`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L89). For the most common case of filtering or validating records, inherit from [`ValidatorBlock`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421) instead. `ValidatorBlock` handles the iteration, filtering, and rejected-record storage loop for you. You only implement `_validate`.
+All blocks inherit from [`Block`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L89). For the most common case of filtering or validating records, inherit from [`ValidatorBlock`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421) instead. `ValidatorBlock` handles the iteration, filtering, and rejected-record storage loop for you.
+
+For simple per-item logic, implement `_validate`. For validators that call an LM or external API internally, override `_validate_batch` instead: it receives the full input list and returns a list of results, allowing the underlying provider's concurrency to be fully utilized. The base class provides a default `_validate_batch` that calls `_validate` per item, so most validators only need to implement one of the two.
 
 ### Define DATA_TYPE
 
