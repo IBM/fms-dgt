@@ -240,7 +240,7 @@ class Ollama(OpenAI):
             {
                 "completion_tokens": response.eval_count,
                 "prompt_tokens": response.prompt_eval_count,
-                "token_logprobs": [],
+                "token_logprobs": [[]],
             },
         )
 

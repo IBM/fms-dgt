@@ -8,7 +8,7 @@ import math
 import re
 
 # Local
-from fms_dgt.base.block import ValidatorBlock
+from fms_dgt.base.block import ValidatorBlock, get_row_name
 from fms_dgt.base.data_objects import ValidatorBlockData
 from fms_dgt.base.registry import get_block, register_block
 from fms_dgt.constants import TYPE_KEY
@@ -16,6 +16,7 @@ from fms_dgt.public.blocks.validators.granite_guardian.constants import (
     GUARDIAN_MODEL_FAMILY,
     REQUIRED_LOGPROBS,
     REQUIRED_MAX_TOKENS,
+    REQUIRED_MAX_TOKENS_WITH_THINK,
     REQUIRED_TEMPERATURE,
     V32_LABEL_RE,
     V33_SCORE_RE,
@@ -61,12 +62,21 @@ class GraniteGuardianValidator(ValidatorBlock):
 
     The block supports Granite Guardian 3.3 (default) and 3.2, handling the
     API differences between versions transparently.  It enforces greedy
-    decoding and logprob extraction regardless of the ``lm_config`` supplied,
-    overriding any conflicting values with a warning.
+    decoding regardless of the ``lm_config`` supplied, overriding any
+    conflicting values with a warning.
+
+    Rating is always derived from the model's text output (``<score>yes</score>``
+    / ``<score>no</score>`` for 3.3; bare ``Yes``/``No`` for 3.2).
+
+    Confidence is derived from logprobs only for model_version ``"3.2"``, where
+    the first output token is ``Yes`` or ``No`` and the logprob at that position
+    is a well-defined probability over the rating.  For 3.3 the first token is
+    ``<score>`` (not the rating token), so logprob-based confidence is not
+    meaningful and is omitted from the metadata.
 
     Args:
         lm_config (Dict): LMProvider configuration.  Must contain a ``type``
-            key (e.g. ``"vllm"`` or ``"ollama"``).  ``model_id_or_path``
+            key (e.g. ``"vllm"`` or ``"openai"``).  ``model_id_or_path``
             should reference a ``granite-guardian`` model; a warning is
             emitted if it does not.
         model_version (str): ``"3.3"`` (default) or ``"3.2"``.  Controls
@@ -134,22 +144,34 @@ class GraniteGuardianValidator(ValidatorBlock):
         lm_config["temperature"] = REQUIRED_TEMPERATURE
 
         max_tok = lm_config.get("max_tokens")
-        if max_tok is not None and max_tok != REQUIRED_MAX_TOKENS:
-            self.logger.warning(
-                "GraniteGuardianValidator: overriding max_tokens %s -> %s.",
-                max_tok,
-                REQUIRED_MAX_TOKENS,
-            )
-        lm_config["max_tokens"] = REQUIRED_MAX_TOKENS
+        if self._think:
+            # In think mode the model generates a reasoning trace before the
+            # score tag; 20 tokens would truncate it. Use the caller-supplied
+            # value if present, otherwise fall back to REQUIRED_MAX_TOKENS_THINK.
+            if max_tok is None:
+                lm_config["max_tokens"] = REQUIRED_MAX_TOKENS_WITH_THINK
+            # else: keep whatever the user specified
+        else:
+            if max_tok is not None and max_tok != REQUIRED_MAX_TOKENS:
+                self.logger.warning(
+                    "GraniteGuardianValidator: overriding max_tokens %s -> %s.",
+                    max_tok,
+                    REQUIRED_MAX_TOKENS,
+                )
+            lm_config["max_tokens"] = REQUIRED_MAX_TOKENS
 
-        logprobs = lm_config.get("logprobs")
-        if logprobs is not None and logprobs != REQUIRED_LOGPROBS:
-            self.logger.warning(
-                "GraniteGuardianValidator: overriding logprobs %s -> %s.",
-                logprobs,
-                REQUIRED_LOGPROBS,
-            )
-        lm_config["logprobs"] = REQUIRED_LOGPROBS
+        # Logprobs are only meaningful for 3.2 where the first output token is
+        # Yes/No. For 3.3 the first token is <score>, so logprob-based confidence
+        # is not valid and we do not request logprobs.
+        if self._model_version == "3.2":
+            logprobs = lm_config.get("logprobs")
+            if logprobs is not None and logprobs != REQUIRED_LOGPROBS:
+                self.logger.warning(
+                    "GraniteGuardianValidator: overriding logprobs %s -> %s.",
+                    logprobs,
+                    REQUIRED_LOGPROBS,
+                )
+            lm_config["logprobs"] = REQUIRED_LOGPROBS
 
     def _build_guardian_config(self, risk_policy: Dict[str, Any]) -> Dict[str, Any]:
         """Returns the guardian_config dict for the chat template kwargs."""
@@ -167,34 +189,31 @@ class GraniteGuardianValidator(ValidatorBlock):
                 raise ValueError("For model_version='3.2', risk_policy must contain 'risk_name'.")
             return {"risk_definition": risk_policy["risk_name"]}
 
-    def _confidence_from_logprobs(self, token_logprobs: List[Dict[str, Any]]) -> Tuple[str, float]:
-        """Derives rating and calibrated confidence from top-k token log-probs.
+    def _confidence_from_logprobs(self, token_logprobs: List[Dict[str, Any]]) -> Optional[float]:
+        """Derives calibrated confidence from top-k token log-probs.
 
         Looks at the first output token's top-k log-probabilities and extracts
         the probability mass on the yes/no (or Yes/No) tokens, normalising to
         produce a confidence score in [0, 1] where 1 == maximally unsafe.
 
         Returns:
-            Tuple[str, float]: (rating, confidence) where rating is "yes" or
-            "no" and confidence is the normalised probability of "yes".
+            Optional[float]: Normalised probability of "yes" (unsafe), or
+            ``None`` if logprobs are absent or unusable.
         """
-        safe_token, unsafe_token = "no", "yes"
-        confidence = 0.0
+        if not (isinstance(token_logprobs, list) and token_logprobs):
+            return None
 
-        if isinstance(token_logprobs, list) and token_logprobs:
-            first_token_lp = token_logprobs[0]
+        first_token_lp = token_logprobs[0]
+        logp_safe = first_token_lp.get("no", first_token_lp.get("No", -math.inf))
+        logp_unsafe = first_token_lp.get("yes", first_token_lp.get("Yes", -math.inf))
 
-            logp_safe = first_token_lp.get(safe_token, first_token_lp.get("No", -math.inf))
-            logp_unsafe = first_token_lp.get(unsafe_token, first_token_lp.get("Yes", -math.inf))
+        p_safe = math.exp(logp_safe)
+        p_unsafe = math.exp(logp_unsafe)
+        total = p_safe + p_unsafe
+        if total <= 0:
+            return None
 
-            p_safe = math.exp(logp_safe)
-            p_unsafe = math.exp(logp_unsafe)
-            total = p_safe + p_unsafe
-            if total > 0:
-                confidence = p_unsafe / total
-
-        rating = unsafe_token if confidence > 0.5 else safe_token
-        return rating, round(confidence, 4)
+        return round(p_unsafe / total, 4)
 
     def _parse_response_text(self, text: str) -> Tuple[Optional[str], Optional[str]]:
         """Extracts (rating, reasoning) from a raw model response string.
@@ -232,17 +251,16 @@ class GraniteGuardianValidator(ValidatorBlock):
     def _validate_rating(
         self,
         rating: Optional[str],
-        confidence: float,
+        confidence: Optional[float],
         reasoning: Optional[str],
     ) -> Tuple[bool, Dict[str, Any]]:
         """Converts a Guardian rating into (is_valid, metadata).
 
         ``is_valid=True`` means the content is safe (rating == "no").
         """
-        metadata: Dict[str, Any] = {
-            "rating": rating,
-            "confidence": confidence,
-        }
+        metadata: Dict[str, Any] = {"rating": rating}
+        if confidence is not None:
+            metadata["confidence"] = confidence
         if reasoning is not None:
             metadata["reasoning"] = reasoning
 
@@ -254,32 +272,54 @@ class GraniteGuardianValidator(ValidatorBlock):
         is_safe = rating == "no"
         return is_safe, metadata
 
-    def _validate(self, x: GraniteGuardianData) -> Tuple[bool, Dict[str, Any]]:
-        """Run Guardian on a single instance and return (is_valid, metadata)."""
-        guardian_config = self._build_guardian_config(x.risk_policy)
-        chat_template_kwargs: Dict[str, Any] = {"guardian_config": guardian_config}
-        if self._model_version == "3.3":
-            chat_template_kwargs["think"] = self._think
-
-        lm_outputs = self._lm(
-            [
+    def _validate_batch(
+        self, inputs: List[GraniteGuardianData]
+    ) -> List[Tuple[bool, Dict[str, Any]]]:
+        """Run Guardian on a batch of instances in a single LM call."""
+        # All items in a batch share the same risk_policy (task-homogeneous input
+        # from the safety databuilder), but we build per-item chat_template_kwargs
+        # in case risk_policy differs across items.
+        lm_inputs = []
+        for x in inputs:
+            guardian_config = self._build_guardian_config(x.risk_policy)
+            chat_template_kwargs: Dict[str, Any] = {"guardian_config": guardian_config}
+            if self._model_version == "3.3":
+                chat_template_kwargs["think"] = self._think
+            lm_inputs.append(
                 {
                     "input": [{"role": "user", "content": x.text}],
+                    "task_name": get_row_name(x),
                     "gen_kwargs": {
                         "extra_body": {"chat_template_kwargs": chat_template_kwargs},
                     },
                 }
-            ],
-            method=self._lm.CHAT_COMPLETION,
+            )
+
+        lm_outputs = self._lm(lm_inputs, method=self._lm.CHAT_COMPLETION)
+
+        results = []
+        for x, lm_output in zip(inputs, lm_outputs):
+            result = lm_output.get("result") or {}
+            response_text: str = result.get("content", "") if isinstance(result, dict) else result
+            rating, reasoning = self._parse_response_text(response_text)
+
+            # Confidence is only meaningful for 3.2 where the first output token
+            # is Yes/No. For 3.3 the first token is <score>, so we skip it.
+            confidence: Optional[float] = None
+            if self._model_version == "3.2":
+                token_logprobs = (lm_output.get("addtl") or {}).get("token_logprobs", [[]])[0]
+                confidence = self._confidence_from_logprobs(token_logprobs)
+
+            x.reasoning = reasoning
+            results.append(
+                self._validate_rating(rating=rating, confidence=confidence, reasoning=reasoning)
+            )
+
+        return results
+
+    def _validate(self, x: GraniteGuardianData) -> Tuple[bool, Dict[str, Any]]:
+        """Not used — GraniteGuardianValidator overrides _validate_batch instead."""
+        raise NotImplementedError(
+            "GraniteGuardianValidator uses _validate_batch for batch LM calls. "
+            "Do not call _validate directly."
         )
-
-        lm_output = lm_outputs[0]
-        token_logprobs = (lm_output.get("addtl") or {}).get("token_logprobs", [[]])[0]
-        logprob_rating, confidence = self._confidence_from_logprobs(token_logprobs)
-
-        response_text: str = lm_output.get("result", "") or ""
-        text_rating, reasoning = self._parse_response_text(response_text)
-
-        rating = logprob_rating if logprob_rating else text_rating
-        x.reasoning = reasoning
-        return self._validate_rating(rating=rating, confidence=confidence, reasoning=reasoning)

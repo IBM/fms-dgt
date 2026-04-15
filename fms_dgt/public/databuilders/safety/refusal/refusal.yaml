@@ -1,0 +1,36 @@
+name: public/safety/refusal
+
+blocks:
+  # LM that generates new harmful instructions via ICL from seed examples.
+  - name: instruction_generator
+    type: ollama
+    model_id_or_path: granite4:3b
+    temperature: 0.7
+    max_tokens: 1024
+
+  # ROUGE deduplicator to filter near-duplicate generated instructions.
+  - name: dedup
+    type: rouge_scorer
+    filter: true
+    threshold: 0.7
+
+  # LM that generates calibrated refusal responses.
+  - name: response_generator
+    type: ollama
+    model_id_or_path: granite4:3b
+    temperature: 0.0
+    max_tokens: 512
+
+  # Granite Guardian 3.3-8b for validating instructions (harmful) and responses (safe).
+  # Pull the model first: ollama run hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
+  # Use type: openai (not type: ollama) so chat_template_kwargs in extra_body reaches the model.
+  # The native Ollama client silently drops extra_body; the OpenAI-compatible endpoint forwards it.
+  - name: granite_guardian
+    type: validators/granite_guardian
+    model_version: "3.3"
+    filter: false
+    lm_config:
+      type: openai
+      base_url: http://localhost:11434/v1
+      api_key: ollama
+      model_id_or_path: hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M

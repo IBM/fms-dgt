@@ -6,9 +6,9 @@ This tutorial extends the misconceptions databuilder built in [Building a Genera
 
 Blocks are single-operation components that can be reused across databuilders. A `ValidatorBlock` takes a list of items, evaluates each one, and returns only the items that pass. Rejected items are optionally written to a separate store for inspection.
 
-Each block has a [`DATA_TYPE`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L235) dataclass that maps incoming dictionary fields to typed attributes. The block's `_validate` method receives one instance and returns `(is_valid, reason_dict)`.
+Each block has a [`DATA_TYPE`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L235) dataclass that maps incoming dictionary fields to typed attributes. The block's `_validate` method receives one instance and returns `(is_valid, reason_dict)`. For validators that call an LM or external API, override `_validate_batch` instead to process the full input list in one call.
 
-Blocks also accept [`input_map` and `output_map`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L65) arguments that rename fields at the boundary between the caller and the block, and a [`ValidatorBlock`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421) base class handles the filtering loop so you only need to implement `_validate`.
+Blocks also accept [`input_map` and `output_map`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L65) arguments that rename fields at the boundary between the caller and the block, and a [`ValidatorBlock`](https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421) base class handles the filtering loop so you only need to implement `_validate` or `_validate_batch`.
 
 For full details, see [Blocks](../concepts/blocks.md).
 

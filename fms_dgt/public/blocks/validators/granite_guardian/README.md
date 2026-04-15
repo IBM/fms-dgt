@@ -61,15 +61,20 @@ ollama run hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
 
 > **Note:** Granite Guardian 3.3 uses a MoE architecture. Verify that your version of Ollama supports MoE models before relying on this in production.
 
+Use `type: openai` pointed at Ollama's OpenAI-compatible endpoint (`/v1`) rather than `type: ollama`. The Guardian block passes its risk policy via `chat_template_kwargs` in `extra_body`, which is only forwarded on the OpenAI-compatible path. The native Ollama client (`type: ollama`) silently drops `extra_body`, causing the model to ignore the Guardian config entirely.
+
+Ollama exposes the OpenAI-compatible server on the same port by default; no extra flag is needed.
+
 ```yaml
 blocks:
   - name: granite_guardian
     type: validators/granite_guardian
     model_version: "3.3"
-    think: false
     filter: false
     lm_config:
-      type: ollama
+      type: openai
+      base_url: http://localhost:11434/v1
+      api_key: ollama
       model_id_or_path: hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
 ```
 
@@ -81,6 +86,8 @@ Use this profile when GPU memory is too limited for the 8b model. Granite Guardi
 ollama run hf.co/ibm-research/granite-guardian-3.2-5b-GGUF:Q4_K_M
 ```
 
+Same `type: openai` requirement applies (see Profile 2 for the explanation).
+
 ```yaml
 blocks:
   - name: granite_guardian
@@ -88,7 +95,9 @@ blocks:
     model_version: "3.2"
     filter: false
     lm_config:
-      type: ollama
+      type: openai
+      base_url: http://localhost:11434/v1
+      api_key: ollama
       model_id_or_path: hf.co/ibm-research/granite-guardian-3.2-5b-GGUF:Q4_K_M
 ```
 
@@ -136,13 +145,17 @@ Think mode produces longer outputs and is slower. Leave it disabled for high-thr
 
 ## Confidence score interpretation
 
-The confidence score is derived from logprobs, not from any text label:
+The **rating** (safe/unsafe) is always derived from the model's explicit text output: `<score>yes</score>` / `<score>no</score>` for 3.3, bare `Yes`/`No` for 3.2.
+
+**Confidence is only populated for model_version `"3.2"`.** For 3.2, the first output token is `Yes` or `No`, so the log-probability mass at that position is a well-defined probability over the rating:
 
 1. The block requests top-4 log-probabilities for the first generated token.
-2. It extracts the log-probability mass on the `yes` and `no` tokens (trying both lowercase and capitalized variants to handle version differences).
+2. It extracts the log-probability mass on the `Yes` and `No` tokens.
 3. It normalises: `confidence = p_unsafe / (p_safe + p_unsafe)`.
 
-**Interpretation:**
+For model_version `"3.3"` the first output token is `<score>` (not the rating token), so logprob-based confidence is not meaningful and the `confidence` key is omitted from the metadata entirely.
+
+**Interpretation (3.2 only):**
 
 - `confidence > 0.5`: content is rated unsafe (`is_valid=False`)
 - `confidence <= 0.5`: content is rated safe (`is_valid=True`)
@@ -163,6 +176,6 @@ instance = GraniteGuardianData(
 
 # After the block runs:
 instance.is_valid    # False (unsafe content)
-instance.metadata    # {"rating": "yes", "confidence": 0.97}
+instance.metadata    # {"rating": "yes"}  (confidence only present for 3.2)
 instance.reasoning   # None (unless think=True)
 ```

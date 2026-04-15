@@ -1,0 +1,16 @@
+risk_group:
+risk_group_id:
+description:
+policy_version: v0.1
+risks:
+  - risk:
+    risk_id:
+    description:
+    reason_denial:
+    short_reply_type:
+    exception:
+    policy:
+      reply_cannot_contain:
+        -
+      reply_may_contain:
+        -
