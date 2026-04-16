@@ -8,31 +8,31 @@
       
       
       
-        <link rel="canonical" href="https://ibm.github.io/fms-dgt/concepts/dataloaders/">
+        <link rel="canonical" href="https://ibm.github.io/fms-dgt/concepts/tools/samplers/">
       
       
-        <link rel="prev" href="../datastores/">
+        <link rel="prev" href="../enrichments/">
       
       
-        <link rel="next" href="../observability/">
+        <link rel="next" href="../engines/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Dataloaders - DiGiT</title>
+        <title>Samplers - DiGiT</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#dataloaders" class="md-skip">
+        <a href="#samplers" class="md-skip">
           Skip to content
         </a>
       
@@ -90,7 +90,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="DiGiT" class="md-header__button md-logo" aria-label="DiGiT" data-md-component="logo">
+    <a href="../../.." title="DiGiT" class="md-header__button md-logo" aria-label="DiGiT" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dataloaders
+              Samplers
             
           </span>
         </div>
@@ -235,11 +235,31 @@
     
     
       <li class="md-tabs__item">
-        <a href="../.." class="md-tabs__link">
+        <a href="../../.." class="md-tabs__link">
           
   
   
   Home
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
+          
+  
+  
+  Concepts
 
         </a>
       </li>
@@ -257,27 +277,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../architecture/" class="md-tabs__link">
-          
-  
-  
-  Concepts
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../tools/" class="md-tabs__link">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -297,7 +297,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../tutorials/generate_data/" class="md-tabs__link">
+        <a href="../../../tutorials/generate_data/" class="md-tabs__link">
           
   
   
@@ -317,7 +317,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/simple_reasoning/" class="md-tabs__link">
+        <a href="../../../examples/simple_reasoning/" class="md-tabs__link">
           
   
   
@@ -351,7 +351,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="DiGiT" class="md-nav__button md-logo" aria-label="DiGiT" data-md-component="logo">
+    <a href="../../.." title="DiGiT" class="md-nav__button md-logo" aria-label="DiGiT" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -433,7 +433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -461,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/" class="md-nav__link">
+      <a href="../../../installation/" class="md-nav__link">
         
   
   
@@ -489,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/" class="md-nav__link">
+      <a href="../../../usage/" class="md-nav__link">
         
   
   
@@ -517,7 +517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../studio/" class="md-nav__link">
+      <a href="../../../studio/" class="md-nav__link">
         
   
   
@@ -525,6 +525,261 @@
     
   
     Studio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../databuilders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Builders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blocks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blocks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datastores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datastores
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dataloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataloaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
   
 
     
@@ -570,17 +825,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Concepts
+    Tools
   
 
     
@@ -591,12 +846,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Concepts
+    Tools
   
 
           </label>
@@ -609,14 +864,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Architecture
+    Overview
   
 
     
@@ -637,14 +892,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../tasks/" class="md-nav__link">
+      <a href="../registry/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Tasks
+    Registry and Loaders
   
 
     
@@ -665,70 +920,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../databuilders/" class="md-nav__link">
+      <a href="../enrichments/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Data Builders
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../blocks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Blocks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../datastores/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Datastores
+    Enrichments
   
 
     
@@ -765,7 +964,7 @@
   <span class="md-ellipsis">
     
   
-    Dataloaders
+    Samplers
   
 
     
@@ -783,7 +982,7 @@
   <span class="md-ellipsis">
     
   
-    Dataloaders
+    Samplers
   
 
     
@@ -809,10 +1008,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
+  <a href="#base-class" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How dataloaders are used
+        Base class
       
     </span>
   </a>
@@ -820,10 +1019,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
+  <a href="#sampling-strategies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Default dataloader
+        Sampling strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sampling strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tcrandom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tc/random
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#topology-aware-samplers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Topology-aware samplers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#samplingerror-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SamplingError contract
       
     </span>
   </a>
@@ -831,10 +1069,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
+  <a href="#concurrency-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Field remapping
+        Concurrency rules
       
     </span>
   </a>
@@ -842,21 +1080,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
+  <a href="#yaml-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resuming from a checkpoint
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implementing a custom dataloader
+        YAML shape
       
     </span>
   </a>
@@ -879,206 +1106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Observability
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Tools
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Tools
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tools/registry/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Registry and Loaders
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tools/enrichments/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Enrichments
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tools/samplers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Samplers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tools/engines/" class="md-nav__link">
+      <a href="../engines/" class="md-nav__link">
         
   
   
@@ -1165,7 +1193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/generate_data/" class="md-nav__link">
+      <a href="../../../tutorials/generate_data/" class="md-nav__link">
         
   
   
@@ -1193,7 +1221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/transform_data/" class="md-nav__link">
+      <a href="../../../tutorials/transform_data/" class="md-nav__link">
         
   
   
@@ -1221,7 +1249,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/changing_lm_engine/" class="md-nav__link">
+      <a href="../../../tutorials/changing_lm_engine/" class="md-nav__link">
         
   
   
@@ -1249,7 +1277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/loading_seed_examples_from_file/" class="md-nav__link">
+      <a href="../../../tutorials/loading_seed_examples_from_file/" class="md-nav__link">
         
   
   
@@ -1277,7 +1305,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/creating_validator/" class="md-nav__link">
+      <a href="../../../tutorials/creating_validator/" class="md-nav__link">
         
   
   
@@ -1364,7 +1392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/simple_reasoning/" class="md-nav__link">
+      <a href="../../../examples/simple_reasoning/" class="md-nav__link">
         
   
   
@@ -1392,7 +1420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/instructlab/" class="md-nav__link">
+      <a href="../../../examples/instructlab/" class="md-nav__link">
         
   
   
@@ -1420,7 +1448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/time_series/" class="md-nav__link">
+      <a href="../../../examples/time_series/" class="md-nav__link">
         
   
   
@@ -1448,7 +1476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/chit_chat/" class="md-nav__link">
+      <a href="../../../examples/chit_chat/" class="md-nav__link">
         
   
   
@@ -1503,10 +1531,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
+  <a href="#base-class" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How dataloaders are used
+        Base class
       
     </span>
   </a>
@@ -1514,10 +1542,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
+  <a href="#sampling-strategies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Default dataloader
+        Sampling strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sampling strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tcrandom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tc/random
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#topology-aware-samplers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Topology-aware samplers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#samplingerror-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SamplingError contract
       
     </span>
   </a>
@@ -1525,10 +1592,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
+  <a href="#concurrency-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Field remapping
+        Concurrency rules
       
     </span>
   </a>
@@ -1536,21 +1603,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
+  <a href="#yaml-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resuming from a checkpoint
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implementing a custom dataloader
+        YAML shape
       
     </span>
   </a>
@@ -1583,54 +1639,131 @@
   
 
 
-<h1 id="dataloaders">Dataloaders</h1>
-<p>A Dataloader is a stateful iterator over a datastore. Where a datastore handles persistence (reading and writing files), a dataloader handles iteration: yielding one record at a time, tracking position, and optionally looping indefinitely or resuming from a checkpoint.</p>
-<p>You do not typically instantiate dataloaders directly. The framework creates them internally when a task starts iterating over its seed or input data. Understanding dataloaders is useful when you need to control iteration behavior, apply field remapping at load time, or resume a long-running run.</p>
-<h2 id="how-dataloaders-are-used">How dataloaders are used</h2>
-<p>For generation tasks, DiGiT wraps the seed datastore in a dataloader that loops continuously. Each iteration of the generation loop draws the next batch of seed examples from the dataloader, ensuring seeds are recycled as many times as needed until the target record count is reached.</p>
-<p>For transformation tasks, the input datastore is wrapped in a dataloader that does not loop. When the dataloader is exhausted, the task is complete.</p>
-<h2 id="default-dataloader">Default dataloader</h2>
-<p>The <code>default</code> dataloader (<code>type: default</code>) wraps a datastore and yields its records one at a time:</p>
-<ul>
-<li>Tracks position as <code>(iterator_index, row_index)</code> so iteration can be resumed after a restart.</li>
-<li>Supports optional field remapping via the <code>fields</code> parameter.</li>
-<li>Loops back to the start when <code>loop_over: true</code> (the default for seed data).</li>
-</ul>
-<p>The <code>simple</code> dataloader (<code>type: simple</code>) wraps an in-memory list directly, using a single integer index as state. It is used internally for seed examples provided inline in the task YAML.</p>
-<h2 id="field-remapping">Field remapping</h2>
-<p>The <code>fields</code> parameter lets you rename or select fields as records are loaded, without modifying the source file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">seed_datastore</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">data_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DGT_DATA_DIR}/public/examples/qa/seeds.jsonl</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># rename &quot;question&quot; to &quot;instruction&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span><span class="w"> </span><span class="c1"># rename &quot;answer&quot; to &quot;output&quot;</span>
+<h1 id="samplers">Samplers</h1>
+<p>A <code>ToolSampler</code> selects a subset of tools for one generated scenario. Selection strategy determines what kind of reasoning the model must learn: breadth across many tools, sequential dataflow between dependent calls, parallel dispatch, aggregation. Different strategies produce qualitatively different training signal.</p>
+<h2 id="base-class">Base class</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ToolSampler</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">required_artifacts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># artifact keys this sampler needs</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">ToolRegistry</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="nd">@abstractmethod</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tool</span><span class="p">]:</span> <span class="o">...</span>
 </code></pre></div>
-<p>Wildcard syntax keeps all fields while renaming specific ones:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="s">&quot;*&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span><span class="w"> </span><span class="c1"># keep all fields as-is</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># also rename this one</span>
+<p><code>required_artifacts</code> is checked at construction time against <code>registry.artifacts</code>. A missing artifact raises immediately with a message pointing to the enrichment that produces it. Samplers are safe to construct early (at stage initialization) and fail loudly before generation begins rather than silently during it.</p>
+<p><code>**kwargs</code> on <code>sample()</code> is the per-call override channel. Any constructor parameter can be overridden at call time. Samplers ignore kwargs they do not recognize, so callers can pass a uniform argument set across sampler types.</p>
+<h2 id="sampling-strategies">Sampling strategies</h2>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Training signal</th>
+<th>Required enrichment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tc/random</code></td>
+<td>Breadth, coverage</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>tc/chain</code></td>
+<td>Sequential dataflow: each call depends on the previous</td>
+<td><code>dataflow</code></td>
+</tr>
+<tr>
+<td><code>tc/fan_out</code></td>
+<td>Parallel dispatch: one seed feeds N independent downstream calls</td>
+<td><code>dataflow</code></td>
+</tr>
+<tr>
+<td><code>tc/fan_in</code></td>
+<td>Aggregation: N predecessors feed one sink tool</td>
+<td><code>dataflow</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="tcrandom"><code>tc/random</code></h3>
+<p>Baseline. Draws <code>k</code> tools uniformly at random. Supports namespace filtering and per-namespace weighting when the registry spans multiple sources.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tc/random</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 </code></pre></div>
-<p>Nested fields are accessed with dot notation:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="s">&quot;meta.language&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="w"> </span><span class="c1"># extract nested field to top level</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tc/random</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">weather_api</span><span class="w">          </span><span class="c1"># restrict to one namespace</span>
 </code></pre></div>
-<h2 id="resuming-from-a-checkpoint">Resuming from a checkpoint</h2>
-<p>Dataloaders expose <code>get_state()</code> and <code>set_state(state)</code> for checkpointing. The state is a small dictionary recording the current position in the iteration sequence:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">dataloader</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># {&quot;_ITER_INDEX&quot;: 0, &quot;_ROW_INDEX&quot;: 142}</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">dataloader</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>  <span class="c1"># resume from row 142</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tc/random</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proportional</span><span class="w">          </span><span class="c1"># weight namespaces by their tool counts</span>
 </code></pre></div>
-<p>DiGiT persists dataloader state automatically during a run. If a run is interrupted and restarted without <code>--restart</code>, seed iteration resumes from where it left off rather than starting over from the first example.</p>
-<h2 id="implementing-a-custom-dataloader">Implementing a custom dataloader</h2>
-<p>All dataloaders inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/dataloader.py"><code>Dataloader</code></a> and must implement:</p>
-<ul>
-<li><code>__next__()</code>: yield the next record, raise <code>StopIteration</code> when exhausted</li>
-<li><code>get_state()</code>: return a serializable state object</li>
-<li><code>set_state(state)</code>: restore position from a previously saved state</li>
-</ul>
-<p>Register with <code>@register_dataloader("my_type")</code> and reference by type in the task YAML datastore configuration.</p>
+<p>Zero required enrichments. This is the starting point for any recipe. Use it to validate your pipeline before adding topology-aware strategies.</p>
+<h3 id="topology-aware-samplers">Topology-aware samplers</h3>
+<p>The four topology-aware samplers each produce a qualitatively different call structure:</p>
+<table>
+<thead>
+<tr>
+<th>Sampler</th>
+<th>Topology</th>
+<th>List ordering</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tc/chain</code></td>
+<td>A→B→C→D</td>
+<td>A first; each tool depends on the previous</td>
+</tr>
+<tr>
+<td><code>tc/fan_out</code></td>
+<td>Seed→{B,C,D}</td>
+<td>Seed first; remaining tools are independent successors</td>
+</tr>
+<tr>
+<td><code>tc/fan_in</code></td>
+<td>{A,B,C}→Sink</td>
+<td>Sink last; all predecessors before it</td>
+</tr>
+<tr>
+<td><code>tc/dag</code></td>
+<td>Connected DAG subgraph</td>
+<td>Topological order; tools at same depth may run in parallel</td>
+</tr>
+</tbody>
+</table>
+<p>Return order is meaningful. The caller knows which sampler was used and interprets list position accordingly. No separate topology descriptor is returned.</p>
+<p>Each sampler exposes a <code>sampler_name</code> class attribute set by the <code>@register_tool_sampler</code> decorator. A stage that selects a prompt template based on topology reads <code>sampler.sampler_name</code> rather than storing that information separately.</p>
+<p>All four read from <code>registry.artifacts</code>. <code>tc/chain</code>, <code>tc/fan_out</code>, and <code>tc/dag</code> use the forward index; <code>tc/fan_in</code> uses the reverse index. Both are produced in a single <code>DataflowEnrichment</code> pass.</p>
+<p>Additional strategies targeting distractor robustness (<code>tc/sparse</code>), tool discrimination (<code>tc/conflict</code>), and full dependency-graph sampling (<code>tc/dag</code>) are in development.</p>
+<h2 id="samplingerror-contract"><code>SamplingError</code> contract</h2>
+<p><code>k</code> is a hard requirement. If a sampler cannot return exactly <code>k</code> tools (chain dead-ends, graph is too sparse, <code>min_score</code> filters eliminate all candidates), it raises <code>SamplingError</code> rather than returning a short list silently:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">SamplingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">requested</span><span class="p">:</span> <span class="nb">int</span>        <span class="c1"># the k that was requested</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tool</span><span class="p">]</span>     <span class="c1"># partial list collected before the dead end; may be empty</span>
+</code></pre></div>
+<p>The caller catches <code>SamplingError</code> and decides: retry with a different seed, use the partial list in <code>e.tools</code>, or propagate. The partial list is explicitly typed and documented as potentially incomplete.</p>
+<p><code>k</code> means exactly <code>k</code>. A <code>min_k</code> soft lower bound was considered and rejected: it would add a second knob that interacts with <code>k</code> in non-obvious ways. The <code>SamplingError</code> model is simpler and gives the caller the partial result to make its own recovery decision.</p>
+<h2 id="concurrency-rules">Concurrency rules</h2>
+<p>Stage instances are shared across all inner thread pool workers. A sampler stored on a stage is called from multiple threads simultaneously. Two rules follow:</p>
+<ol>
+<li><strong>All derived state must be built in <code>__init__</code>, never lazily in <code>sample()</code>.</strong> Lazy initialization creates a write-after-check race when two threads simultaneously find the attribute unset.</li>
+<li><strong><code>sample()</code> must be stateless across calls.</strong> No instance variable may be written during <code>sample()</code>. All call-specific state lives in local variables.</li>
+</ol>
+<p>These rules apply to all sampler implementations.</p>
+<h2 id="yaml-shape">YAML shape</h2>
+<p>Samplers are constructed via <code>get_tool_sampler(type, registry=..., **kwargs)</code>. The config block follows the same shape whether it lives in a task YAML, a stage config, or is constructed programmatically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tc/chain</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">min_score</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tc/fan_out</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tc/random</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">weather_api</span>
+</code></pre></div>
+<p>All constructor parameters accept call-site overrides via <code>sample(**kwargs)</code>. A stage that wants to vary <code>k</code> per scenario does not need to rebuild the sampler.</p>
 
 
 
@@ -1690,10 +1823,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

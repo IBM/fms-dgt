@@ -277,6 +277,26 @@
     
     
       <li class="md-tabs__item">
+        <a href="../concepts/tools/" class="md-tabs__link">
+          
+  
+  
+  Tools
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../tutorials/generate_data/" class="md-tabs__link">
           
   
@@ -591,6 +611,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-enrichment-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool Enrichment Cache
+      
+    </span>
+  </a>
   
 </li>
       
@@ -934,7 +965,7 @@
   <span class="md-ellipsis">
     
   
-    Tutorials
+    Tools
   
 
     
@@ -947,6 +978,205 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/tools/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry and Loaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/tools/enrichments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enrichments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/tools/samplers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/tools/engines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1123,10 +1353,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1144,8 +1374,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1362,6 +1592,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tool-enrichment-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool Enrichment Cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1489,6 +1730,11 @@
 <td>Root directory for all generated output, logs, and task cards</td>
 </tr>
 <tr>
+<td><code>DGT_CACHE_DIR</code></td>
+<td><code>.cache/</code></td>
+<td>Root directory for enrichment cache files (tool schemas, embeddings, neighbor graphs). See <a href="#tool-enrichment-cache">Tool Enrichment Cache</a></td>
+</tr>
+<tr>
 <td><code>DGT_TELEMETRY_DIR</code></td>
 <td><code>telemetry/</code></td>
 <td>Directory for <code>events.jsonl</code> and <code>traces.jsonl</code> telemetry files</td>
@@ -1510,6 +1756,22 @@
 </tr>
 </tbody>
 </table>
+<h2 id="tool-enrichment-cache">Tool Enrichment Cache</h2>
+<p>When a task declares tool enrichments (<code>output_parameters</code>, <code>embeddings</code>, <code>neighbors</code>), DiGiT caches the results so subsequent runs do not re-pay the cost of LLM calls or embedding passes.</p>
+<p>Cache files are written under:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>{DGT_CACHE_DIR}/enrichments/{type}/{fingerprint}.json
+</code></pre></div>
+<p>The fingerprint is a SHA-256 hash of the tool set and enrichment config (model ID, <code>keep_k</code>, etc.). Two tasks that use the same tools and the same enrichment config will hit the same cache file automatically — no explicit sharing configuration is needed. REST and MCP tools are cached identically to file-backed tools; the cache is keyed by qualified tool name, not by source URL or file path.</p>
+<p><strong>Delta-merge:</strong> if you add new tools to a registry, only the new tools are computed and appended. Existing cache entries are not discarded.</p>
+<p><strong>Force refresh:</strong> set <code>force: true</code> on an enrichment in the task YAML to bypass the cache load and recompute from scratch (useful when tool descriptions have changed without qualified names changing):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">enrichments</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output_parameters</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">force</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">lm_config</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">model_id_or_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">granite3.3:8b</span>
+</code></pre></div>
+<p>Override the cache root by setting <code>DGT_CACHE</code> in your environment or <code>.env</code> file.</p>
 <h2 id="next-steps">Next steps</h2>
 <ul>
 <li>Read the <a href="../concepts/architecture/">Architecture</a> overview to understand Tasks, Databuilders, and Blocks.</li>

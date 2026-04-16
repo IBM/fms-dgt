@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://ibm.github.io/fms-dgt/concepts/dataloaders/">
+        <link rel="canonical" href="https://ibm.github.io/fms-dgt/concepts/tools/">
       
       
-        <link rel="prev" href="../datastores/">
+        <link rel="prev" href="../observability/">
       
       
-        <link rel="next" href="../observability/">
+        <link rel="next" href="registry/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Dataloaders - DiGiT</title>
+        <title>Overview - DiGiT</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#dataloaders" class="md-skip">
+        <a href="#tools" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dataloaders
+              Overview
             
           </span>
         </div>
@@ -251,12 +251,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../architecture/" class="md-tabs__link">
           
   
@@ -273,11 +271,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../tools/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -549,31 +549,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -591,7 +586,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -746,37 +741,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dataloaders
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../dataloaders/" class="md-nav__link">
         
   
   
@@ -792,81 +760,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How dataloaders are used
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Default dataloader
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Field remapping
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resuming from a checkpoint
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implementing a custom dataloader
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -911,26 +804,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -948,7 +846,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -963,10 +861,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -982,6 +907,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#components-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components at a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#yaml-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading path
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -994,7 +972,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/registry/" class="md-nav__link">
+      <a href="registry/" class="md-nav__link">
         
   
   
@@ -1022,7 +1000,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/enrichments/" class="md-nav__link">
+      <a href="enrichments/" class="md-nav__link">
         
   
   
@@ -1050,7 +1028,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/samplers/" class="md-nav__link">
+      <a href="samplers/" class="md-nav__link">
         
   
   
@@ -1078,7 +1056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/engines/" class="md-nav__link">
+      <a href="engines/" class="md-nav__link">
         
   
   
@@ -1503,10 +1481,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-dataloaders-are-used" class="md-nav__link">
+  <a href="#components-at-a-glance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How dataloaders are used
+        Components at a glance
       
     </span>
   </a>
@@ -1514,10 +1492,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#default-dataloader" class="md-nav__link">
+  <a href="#yaml-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Default dataloader
+        YAML integration
       
     </span>
   </a>
@@ -1525,32 +1503,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-remapping" class="md-nav__link">
+  <a href="#reading-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Field remapping
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resuming-from-a-checkpoint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resuming from a checkpoint
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementing-a-custom-dataloader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implementing a custom dataloader
+        Reading path
       
     </span>
   </a>
@@ -1583,54 +1539,109 @@
   
 
 
-<h1 id="dataloaders">Dataloaders</h1>
-<p>A Dataloader is a stateful iterator over a datastore. Where a datastore handles persistence (reading and writing files), a dataloader handles iteration: yielding one record at a time, tracking position, and optionally looping indefinitely or resuming from a checkpoint.</p>
-<p>You do not typically instantiate dataloaders directly. The framework creates them internally when a task starts iterating over its seed or input data. Understanding dataloaders is useful when you need to control iteration behavior, apply field remapping at load time, or resume a long-running run.</p>
-<h2 id="how-dataloaders-are-used">How dataloaders are used</h2>
-<p>For generation tasks, DiGiT wraps the seed datastore in a dataloader that loops continuously. Each iteration of the generation loop draws the next batch of seed examples from the dataloader, ensuring seeds are recycled as many times as needed until the target record count is reached.</p>
-<p>For transformation tasks, the input datastore is wrapped in a dataloader that does not loop. When the dataloader is exhausted, the task is complete.</p>
-<h2 id="default-dataloader">Default dataloader</h2>
-<p>The <code>default</code> dataloader (<code>type: default</code>) wraps a datastore and yields its records one at a time:</p>
+<h1 id="tools">Tools</h1>
+<p>Generating tool-calling training data requires answering three questions for every scenario:</p>
 <ul>
-<li>Tracks position as <code>(iterator_index, row_index)</code> so iteration can be resumed after a restart.</li>
-<li>Supports optional field remapping via the <code>fields</code> parameter.</li>
-<li>Loops back to the start when <code>loop_over: true</code> (the default for seed data).</li>
+<li><strong>What tools exist?</strong> Tool definitions must come from somewhere, be organized, and be available at generation time.</li>
+<li><strong>Which tools should appear in this scenario?</strong> Random selection produces coverage, but targeted selection produces richer training signal.</li>
+<li><strong>What happens when the model calls a tool?</strong> The framework needs to simulate or execute the call and return a result the assistant stage can use.</li>
 </ul>
-<p>The <code>simple</code> dataloader (<code>type: simple</code>) wraps an in-memory list directly, using a single integer index as state. It is used internally for seed examples provided inline in the task YAML.</p>
-<h2 id="field-remapping">Field remapping</h2>
-<p>The <code>fields</code> parameter lets you rename or select fields as records are loaded, without modifying the source file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">seed_datastore</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">data_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DGT_DATA_DIR}/public/examples/qa/seeds.jsonl</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># rename &quot;question&quot; to &quot;instruction&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span><span class="w"> </span><span class="c1"># rename &quot;answer&quot; to &quot;output&quot;</span>
+<p>These three concerns map to three component families with a clear dependency structure:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ToolLoader ──► ToolRegistry ◄── ToolEnrichment
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                    │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>              ┌─────┴──────┐
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>              ▼            ▼
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>         ToolSampler   ToolEngine
 </code></pre></div>
-<p>Wildcard syntax keeps all fields while renaming specific ones:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="s">&quot;*&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span><span class="w"> </span><span class="c1"># keep all fields as-is</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instruction</span><span class="w"> </span><span class="c1"># also rename this one</span>
+<p><code>ToolRegistry</code> is the central store. Loaders populate it; enrichments augment it; samplers and engines consume it. Neither sampler nor engine modifies the registry after construction.</p>
+<h2 id="components-at-a-glance">Components at a glance</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Role</th>
+<th>When you need it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="registry/#loaders">ToolLoader</a></td>
+<td>Reads tool definitions from a source (file, MCP, REST)</td>
+<td>Always</td>
+</tr>
+<tr>
+<td><a href="registry/">ToolRegistry</a></td>
+<td>Stores, validates, and exposes tool definitions</td>
+<td>Always</td>
+</tr>
+<tr>
+<td><a href="enrichments/">ToolEnrichment</a></td>
+<td>Augments tools with output schemas, embeddings, or dataflow edges</td>
+<td>When using topology-aware or embedding-based samplers</td>
+</tr>
+<tr>
+<td><a href="samplers/">ToolSampler</a></td>
+<td>Selects a subset of tools per scenario</td>
+<td>In every generation stage that builds tool-calling scenarios</td>
+</tr>
+<tr>
+<td><a href="engines/">ToolEngine</a></td>
+<td>Executes or simulates tool calls at runtime</td>
+<td>In every generation stage that produces tool call/result pairs</td>
+</tr>
+</tbody>
+</table>
+<h2 id="yaml-integration">YAML integration</h2>
+<p>The <code>tools:</code> block is a first-class field on any task, at the same level as <code>datastore:</code> and <code>formatter:</code>. Its three sub-keys map directly to the components above:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">tools</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">registry</span><span class="p">:</span><span class="w">                         </span><span class="c1"># required — one or more loader entries</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DGT_DATA_PATH}/weather_tools.yaml</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">weather_api</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">enrichments</span><span class="p">:</span><span class="w">                      </span><span class="c1"># optional — omit if not needed</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output_parameters</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">lm_config</span><span class="p">:</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">        </span><span class="nt">model_id_or_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">granite3.3:8b</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dataflow</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sentence-transformers/all-mpnet-base-v2</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span><span class="nt">engines</span><span class="p">:</span><span class="w">                          </span><span class="c1"># optional — omit for registry-only tasks</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="nt">lm_sim</span><span class="p">:</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lm</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">      </span><span class="nt">lm_config</span><span class="p">:</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">        </span><span class="nt">model_id_or_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">granite3.3:8b</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">        </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">        </span><span class="nt">max_new_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
 </code></pre></div>
-<p>Nested fields are accessed with dot notation:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">fields</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="s">&quot;meta.language&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="w"> </span><span class="c1"># extract nested field to top level</span>
-</code></pre></div>
-<h2 id="resuming-from-a-checkpoint">Resuming from a checkpoint</h2>
-<p>Dataloaders expose <code>get_state()</code> and <code>set_state(state)</code> for checkpointing. The state is a small dictionary recording the current position in the iteration sequence:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">state</span> <span class="o">=</span> <span class="n">dataloader</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># {&quot;_ITER_INDEX&quot;: 0, &quot;_ROW_INDEX&quot;: 142}</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">dataloader</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>  <span class="c1"># resume from row 142</span>
-</code></pre></div>
-<p>DiGiT persists dataloader state automatically during a run. If a run is interrupted and restarted without <code>--restart</code>, seed iteration resumes from where it left off rather than starting over from the first example.</p>
-<h2 id="implementing-a-custom-dataloader">Implementing a custom dataloader</h2>
-<p>All dataloaders inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/dataloader.py"><code>Dataloader</code></a> and must implement:</p>
-<ul>
-<li><code>__next__()</code>: yield the next record, raise <code>StopIteration</code> when exhausted</li>
-<li><code>get_state()</code>: return a serializable state object</li>
-<li><code>set_state(state)</code>: restore position from a previously saved state</li>
-</ul>
-<p>Register with <code>@register_dataloader("my_type")</code> and reference by type in the task YAML datastore configuration.</p>
+<p>At runtime, <code>Task.__init__</code> builds the registry from the loader entries, runs enrichments in dependency order, and constructs the engine. The resulting <code>task.tool_registry</code> and <code>task.tool_engine</code> are ready for stages to consume.</p>
+<h2 id="reading-path">Reading path</h2>
+<table>
+<thead>
+<tr>
+<th>I want to...</th>
+<th>Go to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Define tools and load them from files or external servers</td>
+<td><a href="registry/">Registry and Loaders</a></td>
+</tr>
+<tr>
+<td>Understand enrichments and when to enable them</td>
+<td><a href="enrichments/">Enrichments</a></td>
+</tr>
+<tr>
+<td>Choose a sampling strategy for my recipe</td>
+<td><a href="samplers/">Samplers</a></td>
+</tr>
+<tr>
+<td>Understand how tool calls are executed or simulated</td>
+<td><a href="engines/">Engines</a></td>
+</tr>
+</tbody>
+</table>
 
 
 
