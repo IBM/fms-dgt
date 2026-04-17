@@ -1480,6 +1480,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/safety_refusal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Safety Refusal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1609,8 +1637,8 @@
 <p>This tutorial extends the misconceptions databuilder built in <a href="../generate_data/">Building a Generation Databuilder</a> with a custom validator block. The validator filters out generated outputs that are malformed: questions instead of statements, empty strings, or outputs that are implausibly short to be a real misconception.</p>
 <h2 id="recap-blocks">Recap: Blocks</h2>
 <p>Blocks are single-operation components that can be reused across databuilders. A <code>ValidatorBlock</code> takes a list of items, evaluates each one, and returns only the items that pass. Rejected items are optionally written to a separate store for inspection.</p>
-<p>Each block has a <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L235"><code>DATA_TYPE</code></a> dataclass that maps incoming dictionary fields to typed attributes. The block's <code>_validate</code> method receives one instance and returns <code>(is_valid, reason_dict)</code>.</p>
-<p>Blocks also accept <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L65"><code>input_map</code> and <code>output_map</code></a> arguments that rename fields at the boundary between the caller and the block, and a <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421"><code>ValidatorBlock</code></a> base class handles the filtering loop so you only need to implement <code>_validate</code>.</p>
+<p>Each block has a <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L235"><code>DATA_TYPE</code></a> dataclass that maps incoming dictionary fields to typed attributes. The block's <code>_validate</code> method receives one instance and returns <code>(is_valid, reason_dict)</code>. For validators that call an LM or external API, override <code>_validate_batch</code> instead to process the full input list in one call.</p>
+<p>Blocks also accept <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L65"><code>input_map</code> and <code>output_map</code></a> arguments that rename fields at the boundary between the caller and the block, and a <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421"><code>ValidatorBlock</code></a> base class handles the filtering loop so you only need to implement <code>_validate</code> or <code>_validate_batch</code>.</p>
 <p>For full details, see <a href="../../concepts/blocks/">Blocks</a>.</p>
 <h2 id="step-1-create-the-block-file">Step 1: Create the block file</h2>
 <p>Create <code>fms_dgt/public/databuilders/examples/misconceptions/blocks/statement_check/block.py</code>:</p>

@@ -1569,6 +1569,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/safety_refusal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Safety Refusal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1881,6 +1909,11 @@
 <td>Always passes. Useful as a placeholder or for testing</td>
 </tr>
 <tr>
+<td><code>validators/granite_guardian</code></td>
+<td>Validator</td>
+<td>Wraps IBM Granite Guardian 3.3/3.2 for safety and risk assessment; supports custom risk policies</td>
+</tr>
+<tr>
 <td><code>field_map</code></td>
 <td>Utility</td>
 <td>Renames or copies fields between dictionary keys</td>
@@ -1894,7 +1927,8 @@
 </table>
 <h2 id="implementing-a-new-block">Implementing a new block</h2>
 <h3 id="choosing-a-base-class">Choosing a base class</h3>
-<p>All blocks inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L89"><code>Block</code></a>. For the most common case of filtering or validating records, inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421"><code>ValidatorBlock</code></a> instead. <code>ValidatorBlock</code> handles the iteration, filtering, and rejected-record storage loop for you. You only implement <code>_validate</code>.</p>
+<p>All blocks inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L89"><code>Block</code></a>. For the most common case of filtering or validating records, inherit from <a href="https://github.com/IBM/fms-dgt/blob/main/fms_dgt/base/block.py#L421"><code>ValidatorBlock</code></a> instead. <code>ValidatorBlock</code> handles the iteration, filtering, and rejected-record storage loop for you.</p>
+<p>For simple per-item logic, implement <code>_validate</code>. For validators that call an LM or external API internally, override <code>_validate_batch</code> instead: it receives the full input list and returns a list of results, allowing the underlying provider's concurrency to be fully utilized. The base class provides a default <code>_validate_batch</code> that calls <code>_validate</code> per item, so most validators only need to implement one of the two.</p>
 <h3 id="define-data_type">Define DATA_TYPE</h3>
 <p><code>DATA_TYPE</code> declares the fields your block needs. The framework extracts these from incoming dictionaries automatically:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
