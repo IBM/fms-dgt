@@ -22,7 +22,7 @@ blocks:
     max_tokens: 512
 
   # Granite Guardian 3.3-8b for validating instructions (harmful) and responses (safe).
-  # Pull the model first: ollama run hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
+  # Pull the model first: ollama pull hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
   # Use type: openai (not type: ollama) so chat_template_kwargs in extra_body reaches the model.
   # The native Ollama client silently drops extra_body; the OpenAI-compatible endpoint forwards it.
   - name: granite_guardian

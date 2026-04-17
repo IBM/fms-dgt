@@ -56,7 +56,7 @@ blocks:
 Granite Guardian 3.3 is not in the official Ollama registry. Pull it via the HuggingFace GGUF path:
 
 ```bash
-ollama run hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
+ollama pull hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
 ```
 
 > **Note:** Granite Guardian 3.3 uses a MoE architecture. Verify that your version of Ollama supports MoE models before relying on this in production.
@@ -83,7 +83,7 @@ blocks:
 Use this profile when GPU memory is too limited for the 8b model. Granite Guardian 3.2 is also not in the official Ollama registry:
 
 ```bash
-ollama run hf.co/ibm-research/granite-guardian-3.2-5b-GGUF:Q4_K_M
+ollama pull hf.co/ibm-research/granite-guardian-3.2-5b-GGUF:Q4_K_M
 ```
 
 Same `type: openai` requirement applies (see Profile 2 for the explanation).
