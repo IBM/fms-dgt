@@ -17,7 +17,7 @@ ollama pull granite4:3b
 **Granite Guardian 3.3** for safety validation. Pull it via the HuggingFace GGUF path:
 
 ```bash
-ollama run hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
+ollama pull hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
 ```
 
 > **Note:** The Guardian block must use `type: openai` pointed at Ollama's OpenAI-compatible endpoint (`http://localhost:11434/v1`). This is already configured in `refusal.yaml`. See the [Granite Guardian README](https://github.com/IBM/fms-dgt/tree/main/fms_dgt/public/blocks/validators/granite_guardian/README.md) for details.
@@ -25,12 +25,9 @@ ollama run hf.co/ibm-granite/granite-guardian-3.3-8b-GGUF:Q4_K_M
 ## Run it
 
 ```bash
-export DGT_DATA_DIR=./data
-
 python -m fms_dgt.public \
-  --config-path ./fms_dgt/public/databuilders/safety/refusal/refusal.yaml \
   --task-paths ./tasks/public/safety/refusal/cybersecurity/task.yaml \
-  --num-outputs-to-generate 50 \
+  --num-outputs-to-generate 10 \
   --restart
 ```
 
@@ -67,6 +64,8 @@ The formatter writes clean instruction and response pairs:
 The full `final_data.jsonl` includes policy provenance metadata: `risk`, `risk_description`, `risk_group`, `policy_version`, and `mode` (whether the Guardian pass was on the instruction or response).
 
 ## Risk policies
+
+The pipeline generates synthetic data according to the content of the Granite Actionable Policy format provided as input. Details about the format, tutorials, and additional policy tools can be found [here](https://github.com/ibm-granite/granite-actionable-policy).
 
 Each task points at a risk policy YAML file that defines what the model should refuse and how. The policy for the cybersecurity example is at `data/public/safety/resources/policies/cybersecurity_risks.yaml`:
 
@@ -135,7 +134,7 @@ If GPU memory is too limited for the 8b Guardian model, use Granite Guardian 3.2
 Pull the model first:
 
 ```bash
-ollama run hf.co/ibm-research/granite-guardian-3.2-5b-GGUF:Q4_K_M
+ollama pull hf.co/ibm-research/granite-guardian-3.2-5b-GGUF:Q4_K_M
 ```
 
 Note that 3.2 uses a different risk policy format (`risk_name` instead of `criteria_id`/`custom_criteria`). See the [Granite Guardian README](https://github.com/IBM/fms-dgt/tree/main/fms_dgt/public/blocks/validators/granite_guardian/README.md) for details.
