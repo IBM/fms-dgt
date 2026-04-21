@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Standard
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 import json
 import logging
@@ -19,7 +18,11 @@ from fms_dgt.core.tools.constants import (
     TOOL_PROPERTIES,
 )
 from fms_dgt.core.tools.data_objects import Tool, ToolCall, ToolResult
-from fms_dgt.core.tools.engines.base import ToolEngine, register_tool_engine
+from fms_dgt.core.tools.engines.base import (
+    ErrorCategory,
+    ToolEngine,
+    register_tool_engine,
+)
 from fms_dgt.core.tools.registry import ToolRegistry
 from fms_dgt.utils import try_parse_json_string
 
@@ -29,6 +32,9 @@ logger = logging.getLogger(__name__)
 #                       CONSTANTS
 # ===========================================================================
 _HISTORY_KEY = "tool_executions"
+
+# Re-export for backwards compatibility
+__all__ = ["LMToolEngine", "ErrorCategory"]
 
 _SYSTEM_PROMPT = """\
 You are a tool call simulator.
@@ -44,32 +50,6 @@ The result you generate must meet the following criteria:
 "unsuccessful", or similar failure indicators.
 - Use only valid UTF-8 characters.\
 """
-
-
-# ===========================================================================
-#                       ERROR CATEGORIES
-# ===========================================================================
-
-
-@dataclass
-class ErrorCategory:
-    """Probabilistic error injection descriptor.
-
-    Attributes:
-        type: One of ``"network_error"``, ``"unparseable_result"``,
-            ``"schema_violation"``.
-        probability: Float in [0, 1] — chance this category fires on any
-            given ``simulate()`` call.
-        message: Optional human-readable error string.  Used for
-            ``"network_error"`` results.
-    """
-
-    type: str
-    probability: float
-    message: str = "Tool execution failed"
-
-    def should_fire(self) -> bool:
-        return random.random() < self.probability
 
 
 # ===========================================================================
