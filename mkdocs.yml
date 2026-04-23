@@ -75,6 +75,8 @@ nav:
       - Enrichments: concepts/tools/enrichments.md
       - Samplers: concepts/tools/samplers.md
       - Engines: concepts/tools/engines.md
+  - RAG:
+      - Overview: concepts/rag.md
   - Tutorials:
       - tutorials/generate_data.md
       - tutorials/transform_data.md
@@ -87,3 +89,4 @@ nav:
       - examples/time_series.md
       - examples/chit_chat.md
       - examples/safety_refusal.md
+      - examples/rag_multi_doc2dial.md

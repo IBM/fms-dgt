@@ -119,6 +119,7 @@ class ElasticsearchSearchEngine(SearchToolEngine):
         else:
             self._ssl_verify = os.environ.get("ES_SSL_VERIFY", "true").lower() != "false"
         self._client = None
+        self._corpus_size: int = 0
 
     # ------------------------------------------------------------------
     # Session lifecycle
@@ -129,6 +130,7 @@ class ElasticsearchSearchEngine(SearchToolEngine):
         if self._client is None:
             self._client = self._make_client()
             self._check_version_compatibility()
+            self._corpus_size = self._fetch_corpus_size()
 
     def teardown(self, session_id: str) -> None:
         super().teardown(session_id)
@@ -169,6 +171,51 @@ class ElasticsearchSearchEngine(SearchToolEngine):
     # ------------------------------------------------------------------
     # SearchToolEngine contract
     # ------------------------------------------------------------------
+
+    def corpus_size(self) -> int:
+        """Return the document count for the index, fetched once at setup."""
+        return self._corpus_size
+
+    def _fetch_corpus_size(self) -> int:
+        try:
+            resp = self._client.count(index=self._default_index)
+            return int(resp.get("count", 0))
+        except Exception:
+            return 0
+
+    def corpus(self, batch_size: int = 1000) -> List[Document]:
+        """Return all documents in the index via a scroll query.
+
+        Args:
+            batch_size: Number of documents to fetch per scroll page.
+
+        Returns:
+            All documents in ``self._default_index``.
+        """
+        if self._client is None:
+            self._client = self._make_client()
+
+        documents: List[Document] = []
+        try:
+            response = self._client.search(
+                index=self._default_index,
+                body={"query": {"match_all": {}}, "size": batch_size},
+                scroll="2m",
+            )
+            scroll_id = response.get("_scroll_id")
+            hits = response.get("hits", {}).get("hits", [])
+            while hits:
+                documents.extend(self._hit_to_document(h) for h in hits)
+                response = self._client.scroll(scroll_id=scroll_id, scroll="2m")
+                scroll_id = response.get("_scroll_id")
+                hits = response.get("hits", {}).get("hits", [])
+        finally:
+            if scroll_id:
+                try:
+                    self._client.clear_scroll(scroll_id=scroll_id)
+                except Exception:
+                    pass
+        return documents
 
     def _search(self, arguments: Dict[str, Any], limit: int, **kwargs: Any) -> List[Document]:
         if self._client is None:

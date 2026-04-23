@@ -158,3 +158,15 @@ class TestElasticsearchIntegration:
         )
         [result] = es_engine.execute("integration", [tc])
         assert result.error is not None
+
+    def test_corpus_returns_all_indexed_documents(self, es_engine):
+        docs = es_engine.corpus()
+        assert len(docs) == len(_DOCS)
+        returned_ids = {d.id for d in docs}
+        expected_ids = {d["id"] for d in _DOCS}
+        assert returned_ids == expected_ids
+
+    def test_corpus_documents_have_text(self, es_engine):
+        docs = es_engine.corpus()
+        for doc in docs:
+            assert doc.text
