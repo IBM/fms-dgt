@@ -323,6 +323,9 @@ class vLLM(LMProvider):
                     outputs, addtl = [], {"token_logprobs": []}
                     for output in response_per_input.outputs:
                         if method == self.CHAT_COMPLETION:
+                            # FIXME: tool calls are silently dropped here. vLLM RequestOutput
+                            # carries tool call information in output.tool_calls but it is never
+                            # read. Until fixed, this provider does not support tool calling.
                             outputs.append({"role": "assistant", "content": output.text})
                         else:
                             outputs.append(output.text)

@@ -5,7 +5,7 @@
 import pytest
 
 # Local
-from fms_dgt.core.tools.engines import MultiServerToolEngine
+from fms_dgt.core.tools.engines import CompositeToolEngine
 from fms_dgt.core.tools.registry import ToolRegistry
 
 # Local — shared helpers
@@ -17,18 +17,18 @@ from tests.core.tools.engines.helpers import (
 )
 
 # ---------------------------------------------------------------------------
-# MultiServerToolEngine
+# CompositeToolEngine
 # ---------------------------------------------------------------------------
 
 
-class TestMultiServerToolEngine:
+class TestCompositeToolEngine:
     def _make_multi(self):
         reg_a = _make_registry("server_a")
         reg_b = _make_registry("server_b")
         multi_reg = ToolRegistry(tools=reg_a.all_tools() + reg_b.all_tools())
         eng_a = _make_lm_engine(reg_a)
         eng_b = _make_lm_engine(reg_b)
-        multi_eng = MultiServerToolEngine(
+        multi_eng = CompositeToolEngine(
             registry=multi_reg,
             engines={"server_a": eng_a, "server_b": eng_b},
         )

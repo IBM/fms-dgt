@@ -21,7 +21,13 @@ from fms_dgt.base.telemetry import (
 from fms_dgt.constants import NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters, ToolChoice
 from fms_dgt.core.blocks.llm.executor import AsyncLLMExecutor
-from fms_dgt.core.blocks.llm.utils import Grouper, chunks, remap, retry
+from fms_dgt.core.blocks.llm.utils import (
+    Grouper,
+    chunks,
+    normalize_tool_call_arguments,
+    remap,
+    retry,
+)
 
 # Disable third party logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -219,7 +225,7 @@ class OpenAI(LMProvider):
     def _extract_choice_content(self, choice: Any, method: str) -> str | Dict:
         # If choice is generated via chat completion for vLLM Remote
         if method == self.CHAT_COMPLETION:
-            return (
+            message = (
                 choice.message.to_dict()
                 if isinstance(
                     choice.message,
@@ -227,6 +233,11 @@ class OpenAI(LMProvider):
                 )
                 else choice.message
             )
+            if isinstance(message, dict) and message.get("tool_calls"):
+                message["tool_calls"] = [
+                    normalize_tool_call_arguments(tc) for tc in message["tool_calls"]
+                ]
+            return message
 
         # If choice is generated via text completion for vLLM Remote
         return choice.text

@@ -14,15 +14,16 @@ from fms_dgt.core.databuilders.conversation.data_objects import (
 )
 from fms_dgt.core.databuilders.conversation.registry import register_stage
 from fms_dgt.core.databuilders.conversation.stages.base import Stage
+from fms_dgt.core.databuilders.conversation.utils import get_last_step_of_type
 
 
 def _render_scenario_icl(seed_data: List[ConversationDataPoint]) -> str:
     """Render ICL examples as a newline-separated list of scenario descriptions."""
     lines = []
     for ctx in seed_data:
-        scenario_steps = [s for s in ctx.steps if s.role == "scenario"]
-        if scenario_steps:
-            lines.append(scenario_steps[-1].content)
+        scenario_step = get_last_step_of_type(ctx.steps, ScenarioStep)
+        if scenario_step:
+            lines.append(scenario_step.content)
     return "\n".join(f"- {line}" for line in lines) if lines else ""
 
 
@@ -63,15 +64,15 @@ class LMScenarioStage(Stage):
 
         # Build one prompt per data point with independently sampled ICL examples.
         generator_inputs = []
-        for ctx in data_points:
+        for data_point in data_points:
             sample = random.sample(seed_data, min(self._num_icl_examples, len(seed_data)))
             icl_text = _render_scenario_icl(sample)
             generator_inputs.append(
                 {
                     "input": _build_scenario_messages(icl_text),
-                    "gen_kwargs": {"max_new_tokens": 128},
-                    "reference": ctx,
-                    "task_name": ctx.task_name,
+                    "gen_kwargs": {"max_new_tokens": 1024},
+                    "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -85,13 +86,13 @@ class LMScenarioStage(Stage):
             scenario_text = result.strip()
             if not scenario_text:
                 continue
-            ctx: ConversationDataPoint = out["reference"]
-            ctx.steps.append(
+            data_point: ConversationDataPoint = out["reference"]
+            data_point.steps.append(
                 ScenarioStep(
                     content=scenario_text,
                     stage_name=self.name,
                     scenario_family_id=str(uuid.uuid4()),
                 )
             )
-            results.append(ctx)
+            results.append(data_point)
         return results

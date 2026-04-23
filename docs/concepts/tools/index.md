@@ -36,7 +36,7 @@ The `tools:` block is a first-class field on any task, at the same level as `dat
 tools:
   registry:                         # required — one or more loader entries
     - type: file
-      path: ${DGT_DATA_PATH}/weather_tools.yaml
+      path: ${DGT_DATA_DIR}/weather_tools.yaml
       namespace: weather_api
   enrichments:                      # optional — omit if not needed
     - type: output_parameters

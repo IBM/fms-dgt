@@ -129,7 +129,7 @@ class SamplePersonaStage(Stage):
         seed_data: List[ConversationDataPoint] | None = None,
         **kwargs,
     ) -> List[ConversationDataPoint]:
-        for ctx in data_points:
+        for data_point in data_points:
             spec = random.choice(self._personas)
             step = PersonaStep(
                 content="",  # filled below after render_persona has the step
@@ -143,5 +143,5 @@ class SamplePersonaStage(Stage):
                 style_override=spec.style_override,
             )
             step.content = render_persona(step)
-            ctx.steps.append(step)
+            data_point.steps.append(step)
         return data_points

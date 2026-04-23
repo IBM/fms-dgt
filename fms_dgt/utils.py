@@ -582,12 +582,14 @@ def read_file(file_path: str, encoding: str = "utf-8"):
 
 
 def read_yaml(file_path: str, encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     with open(file_path, mode="r", encoding=encoding) as fp:
         data = yaml.safe_load(fp)
     return data
 
 
 def read_json(file_path: str, encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     with open(file_path, mode="r", encoding=encoding) as fp:
         try:
             data = json.load(fp)
@@ -597,6 +599,8 @@ def read_json(file_path: str, encoding: str = "utf-8"):
 
 
 def read_jsonl(file_path: str, encoding: str = "utf-8", lazy: bool = False):
+    file_path = os.path.expandvars(file_path)
+
     def _yield(file_path: str, encoding: str = "utf-8"):
         with open(file_path, mode="r", encoding=encoding) as fp:
             for line in fp:
@@ -690,12 +694,14 @@ def read_huggingface(dataset_args: List[str], split: str, lazy=False):
 
 
 def write_yaml(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as fp:
         yaml.safe_dump(data_to_write, fp, sort_keys=False)
 
 
 def write_json(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as f:
         json.dump(data_to_write, f, indent=4)
@@ -707,6 +713,7 @@ def write_jsonl(
     mode: str = "a",
     encoding: str = "utf-8",
 ):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as f:
         for d in data_to_write:

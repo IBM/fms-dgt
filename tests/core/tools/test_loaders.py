@@ -12,6 +12,7 @@ import yaml
 from fms_dgt.core.tools.constants import TOOL_DEFAULT_NAMESPACE, TOOL_NAMESPACE_SEP
 from fms_dgt.core.tools.loaders import (
     FileToolLoader,
+    InlineToolLoader,
     ToolLoader,
     get_tool_loader,
     register_tool_loader,
@@ -108,6 +109,79 @@ class TestFileToolLoaderErrors:
         monkeypatch.setenv("TEST_TOOLS_DIR", str(TEST_DATA_DIR))
         tools = FileToolLoader("${TEST_TOOLS_DIR}/shape2_list.yaml", namespace="ns").load()
         assert tools[0].name == "lookup"
+
+
+# ---------------------------------------------------------------------------
+# InlineToolLoader
+# ---------------------------------------------------------------------------
+
+
+class TestInlineToolLoader:
+    _SEARCH_TOOL = {
+        "name": "search_documents",
+        "description": "Search for relevant document chunks.",
+        "parameters": {
+            "type": "object",
+            "properties": {"query": {"type": "string"}},
+            "required": ["query"],
+        },
+    }
+
+    def test_loads_single_tool_with_namespace(self):
+        tools = InlineToolLoader(tools=[self._SEARCH_TOOL], namespace="retrieval").load()
+        assert len(tools) == 1
+        assert tools[0].name == "search_documents"
+        assert tools[0].namespace == "retrieval"
+
+    def test_loads_multiple_tools(self):
+        tool_dicts = [
+            {"name": "search_documents", "description": "Search."},
+            {"name": "get_document", "description": "Fetch by ID."},
+        ]
+        tools = InlineToolLoader(tools=tool_dicts, namespace="retrieval").load()
+        assert len(tools) == 2
+        assert {t.name for t in tools} == {"search_documents", "get_document"}
+        assert all(t.namespace == "retrieval" for t in tools)
+
+    def test_default_namespace_when_omitted(self):
+        tools = InlineToolLoader(tools=[self._SEARCH_TOOL]).load()
+        assert tools[0].namespace == TOOL_DEFAULT_NAMESPACE
+
+    def test_per_tool_namespace_wins_over_constructor(self):
+        tool_dict = {**self._SEARCH_TOOL, "namespace": "tool_ns"}
+        tools = InlineToolLoader(tools=[tool_dict], namespace="loader_ns").load()
+        assert tools[0].namespace == "tool_ns"
+
+    def test_non_list_tools_raises(self):
+        with pytest.raises(TypeError, match="list of tool dicts"):
+            InlineToolLoader(tools={"name": "bad"})
+
+    def test_get_tool_loader_inline(self):
+        loader = get_tool_loader("inline", tools=[self._SEARCH_TOOL], namespace="ns")
+        assert isinstance(loader, InlineToolLoader)
+        tools = loader.load()
+        assert tools[0].name == "search_documents"
+        assert tools[0].namespace == "ns"
+
+    def test_registry_from_inline_loader(self):
+        loader = InlineToolLoader(tools=[self._SEARCH_TOOL], namespace="retrieval")
+        reg = ToolRegistry.from_loaders([loader])
+        assert _qname("retrieval", "search_documents") in reg
+
+    def test_mixed_inline_and_file_loaders(self):
+        file_loader = FileToolLoader(str(TEST_DATA_DIR / "shape1_single.yaml"))
+        inline_loader = InlineToolLoader(tools=[self._SEARCH_TOOL], namespace="retrieval")
+        reg = ToolRegistry.from_loaders([file_loader, inline_loader])
+        assert _qname("my_api", "search") in reg
+        assert _qname("retrieval", "search_documents") in reg
+
+    def test_parameters_preserved(self):
+        tools = InlineToolLoader(tools=[self._SEARCH_TOOL], namespace="ns").load()
+        assert tools[0].parameters == self._SEARCH_TOOL["parameters"]
+
+    def test_description_preserved(self):
+        tools = InlineToolLoader(tools=[self._SEARCH_TOOL], namespace="ns").load()
+        assert tools[0].description == self._SEARCH_TOOL["description"]
 
 
 # ---------------------------------------------------------------------------
