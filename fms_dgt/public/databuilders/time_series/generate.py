@@ -336,7 +336,7 @@ class TimeSeriesDataBuilder(TransformationDataBuilder):
                         "".join([c, " is ", v, "," if init_value else ""]) for c, v in starter
                     ]
                     input_prompts = [
-                        s[:-1] if s.endswith(" ") else s for s in input_prompts
+                        char[:-1] if char.endswith(" ") else char for char in input_prompts
                     ]  # remove last space of the prompt if present
 
                     len_input = [len(tokenizer(prompt)["input_ids"]) for prompt in input_prompts]

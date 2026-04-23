@@ -34,7 +34,7 @@ class FileToolLoader(ToolLoader):
     file-level ``namespace`` key.
 
     Environment variables in ``path`` are expanded at ``load()`` time, so
-    paths like ``${DGT_DATA_PATH}/tools.yaml`` work correctly.
+    paths like ``${DGT_DATA_DIR}/tools.yaml`` work correctly.
 
     Args:
         path: Path to the ``.yaml``, ``.yml``, or ``.json`` file.
@@ -95,7 +95,7 @@ class FileToolLoader(ToolLoader):
                 is not recognized.
             FileNotFoundError: If the expanded path does not exist.
         """
-        path = os.path.expandvars(self._path)
+        path = self._path
 
         ext = os.path.splitext(path)[-1].lower()
         if ext in (".yaml", ".yml"):

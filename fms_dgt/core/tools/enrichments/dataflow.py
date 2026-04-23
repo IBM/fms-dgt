@@ -4,7 +4,6 @@
 # Standard
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
-import json
 
 # Third Party
 from sentence_transformers import SentenceTransformer
@@ -25,6 +24,7 @@ from fms_dgt.core.tools.enrichments.cache import (
     load_cache,
 )
 from fms_dgt.core.tools.registry import schema_fingerprint
+from fms_dgt.utils import write_json
 
 # ===========================================================================
 #                       PARAMETER TEXT HELPER
@@ -517,8 +517,7 @@ class DataflowEnrichment(ToolEnrichment):
 
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with cache_path.open("w", encoding="utf-8") as fh:
-                json.dump({"out": fwd_serial, "in": rev_serial}, fh, indent=2)
+            write_json({"out": fwd_serial, "in": rev_serial}, str(cache_path))
         except Exception as exc:
             self.logger.warning(
                 "DataflowEnrichment: could not write cache at %s: %s",

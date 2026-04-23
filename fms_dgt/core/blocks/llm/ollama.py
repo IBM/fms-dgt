@@ -22,7 +22,7 @@ from fms_dgt.constants import NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters
 from fms_dgt.core.blocks.llm.executor import AsyncLLMExecutor
 from fms_dgt.core.blocks.llm.openai import OpenAI
-from fms_dgt.core.blocks.llm.utils import remap
+from fms_dgt.core.blocks.llm.utils import normalize_tool_call_arguments, remap
 
 # Disable third party logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -139,7 +139,12 @@ class Ollama(OpenAI):
     def _extract_choice_content(self, choice: Any, method: str) -> str | Dict:
         # If choice is generated via chat completion
         if method == self.CHAT_COMPLETION:
-            return choice.message.model_dump()
+            message = choice.message.model_dump()
+            if isinstance(message, dict) and message.get("tool_calls"):
+                message["tool_calls"] = [
+                    normalize_tool_call_arguments(tc) for tc in message["tool_calls"]
+                ]
+            return message
 
         # If choice is generated via text completion
         return choice.response

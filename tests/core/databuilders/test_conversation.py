@@ -34,7 +34,7 @@ from fms_dgt.core.databuilders.conversation.task import ConversationTask
 # ===========================================================================
 #                       HELPERS
 # ===========================================================================
-def _blank_context(task_name: str = "test") -> ConversationDataPoint:
+def _blank_conversation_datapoint(task_name: str = "test") -> ConversationDataPoint:
     return ConversationDataPoint(task_name=task_name)
 
 
@@ -132,8 +132,8 @@ def _make_append_stage(stage_name: str, role: str, content: str) -> Stage:
 
     class _AppendStage(Stage):
         def __call__(self, data_points, seed_data=None, **kw):
-            for ctx in data_points:
-                ctx.steps.append(Step(role=role, content=content, stage_name=self._name))
+            for data_point in data_points:
+                data_point.steps.append(Step(role=role, content=content, stage_name=self._name))
             return data_points
 
     return _AppendStage(name=stage_name)
@@ -154,8 +154,8 @@ def _make_terminate_stage(stage_name: str) -> Stage:
 
     class _TerminateStage(Stage):
         def __call__(self, data_points, seed_data=None, **kw):
-            for ctx in data_points:
-                ctx.steps.append(
+            for data_point in data_points:
+                data_point.steps.append(
                     FlowControllerStep(
                         content="terminate",
                         stage_name=stage_name,
@@ -171,11 +171,11 @@ def _make_terminate_stage(stage_name: str) -> Stage:
 #                       _run_single_conversation TESTS
 # ===========================================================================
 class TestRunSingleConversation:
-    def _run(self, task, context=None):
+    def _run(self, task, data_point=None):
         """Run _run_single_conversation and return the result list."""
         builder = _make_builder([task])
-        ctx = context or _blank_context(task.name)
-        return builder._run_single_conversation(ctx, task, seed_data=[])
+        conversation_data_point = data_point or _blank_conversation_datapoint(task.name)
+        return builder._run_single_conversation(conversation_data_point, task, seed_data=[])
 
     def test_init_stage_appends_step(self):
         task = _make_task(max_turns=1, min_turns=1)
@@ -184,7 +184,7 @@ class TestRunSingleConversation:
 
         results = self._run(task)
         assert len(results) == 1
-        roles = [s.role for s in results[0].steps]
+        roles = [step.role for step in results[0].steps]
         assert "system" in roles
         assert "assistant" in roles
 
@@ -212,7 +212,7 @@ class TestRunSingleConversation:
 
         results = self._run(task)
         assert len(results) == 1
-        fc_steps = [s for s in results[0].steps if s.role == "flow_controller"]
+        fc_steps = [step for step in results[0].steps if step.role == "flow_controller"]
         assert fc_steps and fc_steps[-1].terminate is True
 
     def test_max_turns_caps_iteration(self):
@@ -228,8 +228,8 @@ class TestRunSingleConversation:
         task.iteration_stages = [_CountingStage(name="counter")]
 
         builder = _make_builder([task])
-        ctx = _blank_context(task.name)
-        results = builder._run_single_conversation(ctx, task, seed_data=[])
+        data_point = _blank_conversation_datapoint(task.name)
+        results = builder._run_single_conversation(data_point, task, seed_data=[])
 
         assert len(results) == 1
         assert call_count[0] == 3  # exactly max_turns iterations
@@ -251,8 +251,8 @@ class TestRunSingleConversation:
         task.iteration_stages = [_DropAfterOne(name="drop-after-one")]
 
         builder = _make_builder([task])
-        ctx = _blank_context(task.name)
-        results = builder._run_single_conversation(ctx, task, seed_data=[])
+        data_point = _blank_conversation_datapoint(task.name)
+        results = builder._run_single_conversation(data_point, task, seed_data=[])
 
         # First iteration completes (turn_count becomes 1 >= min_turns=1).
         # Second iteration drops — should return context from first turn.
@@ -273,14 +273,16 @@ class TestRunSingleConversation:
             def __call__(self, data_points, seed_data=None, **kw):
                 self._turn += 1
                 if self._turn == 1:
-                    for ctx in data_points:
-                        ctx.steps.append(
+                    for data_point in data_points:
+                        data_point.steps.append(
                             Step(role="assistant", content="turn1", stage_name=self._name)
                         )
                     return data_points
                 # Turn 2: append a partial step then drop.
-                for ctx in data_points:
-                    ctx.steps.append(Step(role="partial", content="dropped", stage_name=self._name))
+                for data_point in data_points:
+                    data_point.steps.append(
+                        Step(role="partial", content="dropped", stage_name=self._name)
+                    )
                 return []
 
         task.iteration_stages = [_AppendAndDropOnSecondTurn(name="stage")]
@@ -288,7 +290,7 @@ class TestRunSingleConversation:
         results = self._run(task)
         assert len(results) == 1
         # Rescued context should only have the step from turn 1, not the partial step from turn 2.
-        roles = [s.role for s in results[0].steps]
+        roles = [step.role for step in results[0].steps]
         assert roles == ["assistant"]
         assert "partial" not in roles
 
@@ -311,15 +313,15 @@ class TestRunSingleConversation:
         class _ForkStage(Stage):
             def __call__(self, data_points, seed_data=None, **kw):
                 forked = []
-                for ctx in data_points:
-                    ctx.steps.append(
+                for data_point in data_points:
+                    data_point.steps.append(
                         Step(role="assistant", content="branch_a", stage_name=self._name)
                     )
-                    fork = copy.deepcopy(ctx)
+                    fork = copy.deepcopy(data_point)
                     fork.steps[-1] = Step(
                         role="assistant", content="branch_b", stage_name=self._name
                     )
-                    forked.extend([ctx, fork])
+                    forked.extend([data_point, fork])
                 return forked
 
         task.iteration_stages = [_ForkStage(name="fork")]
@@ -362,8 +364,8 @@ class TestConversationDataBuilderCall:
             iter_stages=[_make_append_stage("iter", "assistant", "hello")],
             max_concurrent=4,
         )
-        contexts = [_blank_context(task.name) for _ in range(4)]
-        results = builder(request_idx=0, instruction_data=contexts)
+        data_points = [_blank_conversation_datapoint(task.name) for _ in range(4)]
+        results = builder(request_idx=0, instruction_data=data_points)
         assert len(results) == 4
 
     def test_dropped_conversations_omitted(self):
@@ -374,8 +376,8 @@ class TestConversationDataBuilderCall:
             iter_stages=[],
             max_concurrent=4,
         )
-        contexts = [_blank_context(task.name) for _ in range(3)]
-        results = builder(request_idx=0, instruction_data=contexts)
+        data_points = [_blank_conversation_datapoint(task.name) for _ in range(3)]
+        results = builder(request_idx=0, instruction_data=data_points)
         assert results == []
 
     def test_seed_data_fetched_once_per_call(self):
@@ -385,7 +387,7 @@ class TestConversationDataBuilderCall:
             init_stages=[],
             iter_stages=[_make_append_stage("iter", "assistant", "hi")],
         )
-        contexts = [_blank_context(task.name) for _ in range(4)]
+        contexts = [_blank_conversation_datapoint(task.name) for _ in range(4)]
         builder(request_idx=0, instruction_data=contexts)
         task.sample_examples.assert_called_once_with(k=3)
 
@@ -398,9 +400,9 @@ class TestConversationDataBuilderCall:
             iter_stages=[_make_append_stage("iter", "assistant", "hi")],
             max_concurrent=2,
         )
-        contexts = [_blank_context(task.name) for _ in range(10)]
+        data_points = [_blank_conversation_datapoint(task.name) for _ in range(10)]
         # Just verify it completes without error and returns all 10.
-        results = builder(request_idx=0, instruction_data=contexts)
+        results = builder(request_idx=0, instruction_data=data_points)
         assert len(results) == 10
 
     def test_stages_initialized_once_per_task(self):
@@ -418,13 +420,13 @@ class TestConversationDataBuilderCall:
 
         builder = _make_builder([task], max_concurrent=2)
 
-        contexts = [_blank_context(task.name) for _ in range(2)]
-        builder(request_idx=0, instruction_data=contexts)
+        data_points = [_blank_conversation_datapoint(task.name) for _ in range(2)]
+        builder(request_idx=0, instruction_data=data_points)
         assert task.name in builder._stages_initialized
 
         # Second call must not re-initialize (stages list length stays the same).
         stage_count_after_first = len(task.iteration_stages)
-        builder(request_idx=1, instruction_data=contexts)
+        builder(request_idx=1, instruction_data=data_points)
         assert len(task.iteration_stages) == stage_count_after_first
 
         # Clean up registry entry.
@@ -441,11 +443,11 @@ class TestConversationDataBuilderCall:
         task_a.iteration_stages = [_make_append_stage("iter_a", "assistant", "a")]
         task_b.iteration_stages = [_make_append_stage("iter_b", "assistant", "b")]
 
-        contexts_a = [_blank_context("task_a") for _ in range(2)]
-        contexts_b = [_blank_context("task_b") for _ in range(2)]
+        data_points_a = [_blank_conversation_datapoint("task_a") for _ in range(2)]
+        data_points_b = [_blank_conversation_datapoint("task_b") for _ in range(2)]
 
-        results_a = builder(request_idx=0, instruction_data=contexts_a)
-        results_b = builder(request_idx=0, instruction_data=contexts_b)
+        results_a = builder(request_idx=0, instruction_data=data_points_a)
+        results_b = builder(request_idx=0, instruction_data=data_points_b)
 
         assert len(results_a) == 2
         assert len(results_b) == 2

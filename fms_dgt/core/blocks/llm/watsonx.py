@@ -342,7 +342,13 @@ class WatsonXAI(LMProvider):
             "token_logprobs": [],
         }
         for choice in response["choices"]:
-            outputs.append(choice["message"])
+            message = choice["message"]
+            if isinstance(message, dict) and message.get("tool_calls"):
+                message["tool_calls"] = [
+                    generator_utils.normalize_tool_call_arguments(tc)
+                    for tc in message["tool_calls"]
+                ]
+            outputs.append(message)
 
             token_logprobs = self._extract_token_log_probabilities(
                 choice=choice, method=self.CHAT_COMPLETION

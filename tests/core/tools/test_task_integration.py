@@ -27,7 +27,7 @@ from fms_dgt.constants import ENGINE_KEY, TYPE_KEY
 from fms_dgt.core.tools.constants import TOOL_NAMESPACE_SEP
 from fms_dgt.core.tools.data_objects import Tool
 from fms_dgt.core.tools.engines import (
-    MultiServerToolEngine,
+    CompositeToolEngine,
     ToolEngine,
     get_tool_engine,
 )
@@ -124,7 +124,7 @@ class TestTaskToolProperties:
         reg = ToolRegistry(tools=[Tool(name="t", namespace="ns")])
         with patch("fms_dgt.core.tools.engines.lm.get_block") as mock_get_block:
             mock_get_block.return_value = MagicMock()
-            engine = MultiServerToolEngine(registry=reg, engines={})
+            engine = CompositeToolEngine(registry=reg, engines={})
         task = _make_stub_task(reg, engine)
         assert task.tool_engine is engine
 
@@ -199,7 +199,7 @@ class TestPhase2EngineWiring:
                 for entry in registry_cfgs
                 if ENGINE_KEY in entry
             }
-            tool_engine = MultiServerToolEngine(registry=registry, engines=ns_to_engine)
+            tool_engine = CompositeToolEngine(registry=registry, engines=ns_to_engine)
 
         return registry, tool_engine
 
@@ -230,7 +230,7 @@ class TestPhase2EngineWiring:
         reg, engine = self._run_task_wiring(cfg)
         assert _qname("weather_api", "get_weather") in reg
         assert engine is not None
-        assert isinstance(engine, MultiServerToolEngine)
+        assert isinstance(engine, CompositeToolEngine)
         assert "weather_api" in engine.engines
 
     def test_two_namespaces_two_engines(self, tmp_path):

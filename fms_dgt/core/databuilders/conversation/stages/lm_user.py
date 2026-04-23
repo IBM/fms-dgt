@@ -7,12 +7,22 @@ from typing import Any, List
 # Local
 from fms_dgt.core.blocks.llm.llm import LMProvider
 from fms_dgt.core.databuilders.conversation.data_objects import (
+    AssistantStep,
     ConversationDataPoint,
+    FlowControllerStep,
+    PersonaStep,
+    ScenarioStep,
+    ToolCallStep,
+    ToolResultStep,
     UserStep,
 )
 from fms_dgt.core.databuilders.conversation.registry import register_stage
 from fms_dgt.core.databuilders.conversation.stages.base import Stage
 from fms_dgt.core.databuilders.conversation.stages.sample_persona import render_persona
+from fms_dgt.core.databuilders.conversation.utils import (
+    get_last_step_of_type,
+    steps_to_messages,
+)
 
 
 def _build_user_messages(
@@ -29,13 +39,20 @@ def _build_user_messages(
     if hint:
         system_content += f"\n\nInstruction for this turn: {hint}"
     messages = [{"role": "system", "content": system_content}]
-    for step in history_steps:
-        # From the simulated user's perspective the roles are inverted:
-        # the human user's turns are "assistant" and the AI's turns are "user".
-        if step.role == "user":
-            messages.append({"role": "assistant", "content": step.content})
-        elif step.role == "assistant":
-            messages.append({"role": "user", "content": step.content})
+    # From the simulated user's perspective the roles are inverted:
+    # the human user's turns are "assistant" and the AI's turns are "user".
+    # Tool steps are serialized via steps_to_messages (OpenAI format) and
+    # kept as-is — tool_call/tool_result are context the simulated user observes.
+    for msg in steps_to_messages(history_steps):
+        role = msg["role"]
+        if role == "user":
+            messages.append({**msg, "role": "assistant"})
+        elif role == "assistant":
+            # tool_call messages also have role "assistant" — both flip to "user"
+            messages.append({**msg, "role": "user"})
+        else:
+            # "tool" results stay as-is
+            messages.append(msg)
     # Prompt the LM to produce the next user turn.
     messages.append(
         {
@@ -54,7 +71,7 @@ class GuidedUserStage(Stage):
       - The latest ScenarioStep (scenario description)
       - The latest PersonaStep with target="user" (empty string if absent)
       - The latest FlowControllerStep.hint (guidance for this turn)
-      - All prior user/assistant steps (conversation history)
+      - All prior user/assistant/tool_call/tool_result steps (conversation history)
 
     Appends a UserStep. Drops the data point if the LM returns empty output.
     """
@@ -70,23 +87,31 @@ class GuidedUserStage(Stage):
         **kwargs,
     ) -> List[ConversationDataPoint]:
         generator_inputs = []
-        for ctx in data_points:
-            scenario_steps = [s for s in ctx.steps if s.role == "scenario"]
-            scenario = scenario_steps[-1].content if scenario_steps else ""
+        for data_point in data_points:
+            scenario_step = get_last_step_of_type(data_point.steps, ScenarioStep)
+            scenario = scenario_step.content if scenario_step else ""
 
-            persona_steps = [s for s in ctx.steps if s.role == "persona" and s.target == "user"]
+            persona_steps = [
+                step
+                for step in data_point.steps
+                if isinstance(step, PersonaStep) and step.target == "user"
+            ]
             persona_text = render_persona(persona_steps[-1]) if persona_steps else ""
 
-            fc_steps = [s for s in ctx.steps if s.role == "flow_controller"]
-            hint = fc_steps[-1].hint if fc_steps else None
+            fc_step = get_last_step_of_type(data_point.steps, FlowControllerStep)
+            hint = fc_step.hint if fc_step else None
 
-            history_steps = [s for s in ctx.steps if s.role in ("user", "assistant")]
+            history_steps = [
+                step
+                for step in data_point.steps
+                if isinstance(step, (UserStep, AssistantStep, ToolCallStep, ToolResultStep))
+            ]
             generator_inputs.append(
                 {
                     "input": _build_user_messages(scenario, persona_text, hint, history_steps),
-                    "gen_kwargs": {"max_new_tokens": 128},
-                    "reference": ctx,
-                    "task_name": ctx.task_name,
+                    "gen_kwargs": {"max_new_tokens": 256},
+                    "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -103,7 +128,7 @@ class GuidedUserStage(Stage):
             user_text = result.strip()
             if not user_text:
                 continue
-            ctx: ConversationDataPoint = out["reference"]
-            ctx.steps.append(UserStep(content=user_text, stage_name=self.name))
-            results.append(ctx)
+            data_point: ConversationDataPoint = out["reference"]
+            data_point.steps.append(UserStep(content=user_text, stage_name=self.name))
+            results.append(data_point)
         return results

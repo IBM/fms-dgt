@@ -205,9 +205,9 @@ class NeighborToolSampler(ToolSampler):
         Returns:
             List of softmax weights aligned with ``neighbors``, summing to 1.0.
         """
-        scores = [s / temperature for _, s in neighbors]
+        scores = [score / temperature for _, score in neighbors]
         max_s = max(scores)
-        exps = [math.exp(s - max_s) for s in scores]
+        exps = [math.exp(score - max_s) for score in scores]
         total = sum(exps)
         return [e / total for e in exps]
 
