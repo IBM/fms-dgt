@@ -10,6 +10,8 @@ Corpus files live in test_data/ alongside this module:
 
 # Standard
 from pathlib import Path
+from unittest.mock import MagicMock
+import random as _random
 
 # Third Party
 import pytest
@@ -17,7 +19,7 @@ import pytest
 # Local
 from fms_dgt.core.tools.data_objects import Tool, ToolCall
 from fms_dgt.core.tools.engines.base import ErrorCategory
-from fms_dgt.core.tools.engines.search.base import Document
+from fms_dgt.core.tools.engines.search.base import Document, SearchToolEngine
 from fms_dgt.core.tools.engines.search.file import FileSearchEngine
 from fms_dgt.core.tools.engines.search.samplers.random import RandomDocumentSampler
 from fms_dgt.core.tools.registry import ToolRegistry
@@ -436,5 +438,258 @@ class TestRandomDocumentSampler:
             ids_1 = frozenset(d.id for d in sampler.sample(session_id="s1", k=5))
             ids_2 = frozenset(d.id for d in sampler.sample(session_id="s1", k=5))
             assert ids_1 != ids_2
+        finally:
+            engine.teardown("s1")
+
+
+# ---------------------------------------------------------------------------
+# FileSearchEngine.corpus()
+# ---------------------------------------------------------------------------
+
+
+class TestFileSearchEngineCorpus:
+    def test_corpus_returns_all_documents(self):
+        engine = _make_engine(_CORPUS_CANONICAL)
+        docs = engine.corpus()
+        assert len(docs) == _CANONICAL_SIZE
+        assert all(isinstance(d, Document) for d in docs)
+
+    def test_corpus_ids_cover_full_set(self):
+        engine = _make_engine(_CORPUS_CANONICAL)
+        ids = {d.id for d in engine.corpus()}
+        assert ids == {f"doc_{i}" for i in range(_CANONICAL_SIZE)}
+
+    def test_corpus_loads_without_prior_setup(self):
+        # corpus() must trigger lazy load even if setup() was never called.
+        engine = _make_engine(_CORPUS_CANONICAL)
+        docs = engine.corpus()
+        assert len(docs) == _CANONICAL_SIZE
+
+    def test_corpus_with_projection_remaps_fields(self):
+        engine = _make_engine(_CORPUS_PROJECTED, projection={"body": "text", "doc_id": "id"})
+        docs = engine.corpus()
+        assert len(docs) == _PROJECTED_SIZE
+        for doc in docs:
+            assert doc.id.startswith("p_")
+            assert len(doc.text) > 10
+
+    def test_corpus_metadata_preserved(self):
+        engine = _make_engine(_CORPUS_PROJECTED, projection={"body": "text", "doc_id": "id"})
+        docs = engine.corpus()
+        for doc in docs:
+            assert "category" in doc.metadata
+            assert "source_url" in doc.metadata
+
+    def test_corpus_returns_independent_list(self):
+        # Mutating the returned list must not affect subsequent calls.
+        engine = _make_engine(_CORPUS_CANONICAL)
+        docs1 = engine.corpus()
+        docs1.clear()
+        docs2 = engine.corpus()
+        assert len(docs2) == _CANONICAL_SIZE
+
+
+# ---------------------------------------------------------------------------
+# RandomDocumentSampler — grouped sampling
+# ---------------------------------------------------------------------------
+
+_PROJECTED_CATEGORIES = {"biology", "earth-science", "physics", "chemistry"}
+_BIOLOGY_IDS = {"p_1", "p_2", "p_6", "p_9"}
+_EARTH_SCIENCE_IDS = {"p_0", "p_3", "p_8"}
+_PHYSICS_IDS = {"p_4", "p_5"}
+_CHEMISTRY_IDS = {"p_7"}
+
+
+def _make_grouped_sampler(strategy="uniform") -> RandomDocumentSampler:
+    engine = _make_engine(_CORPUS_PROJECTED, projection={"body": "text", "doc_id": "id"})
+    return RandomDocumentSampler(engine, group_by="category", strategy=strategy)
+
+
+class TestRandomDocumentSamplerGrouped:
+    def test_group_pools_built_at_construction(self):
+        sampler = _make_grouped_sampler()
+        assert sampler._group_pools is not None
+        assert set(sampler._group_pools.keys()) == _PROJECTED_CATEGORIES
+
+    def test_group_pool_sizes_match_corpus(self):
+        sampler = _make_grouped_sampler()
+        assert len(sampler._group_pools["biology"]) == 4
+        assert len(sampler._group_pools["earth-science"]) == 3
+        assert len(sampler._group_pools["physics"]) == 2
+        assert len(sampler._group_pools["chemistry"]) == 1
+
+    def test_uniform_strategy_equal_probabilities(self):
+        sampler = _make_grouped_sampler(strategy="uniform")
+        probs = sampler._group_probs
+        assert set(probs.keys()) == _PROJECTED_CATEGORIES
+        for p in probs.values():
+            assert abs(p - 0.25) < 1e-9
+
+    def test_proportional_strategy_weights_by_size(self):
+        sampler = _make_grouped_sampler(strategy="proportional")
+        probs = sampler._group_probs
+        # biology=4, earth-science=3, physics=2, chemistry=1 → total=10
+        assert abs(probs["biology"] - 0.4) < 1e-9
+        assert abs(probs["earth-science"] - 0.3) < 1e-9
+        assert abs(probs["physics"] - 0.2) < 1e-9
+        assert abs(probs["chemistry"] - 0.1) < 1e-9
+
+    def test_sample_returns_single_group_documents(self):
+        sampler = _make_grouped_sampler()
+        for _ in range(30):
+            docs = sampler.sample(session_id="s1", k=2)
+            categories = {d.metadata["category"] for d in docs}
+            assert len(categories) == 1, f"Mixed categories in sample: {categories}"
+
+    def test_sample_k_capped_at_group_size(self):
+        # chemistry has only 1 doc; requesting k=5 should return 1.
+        sampler = _make_grouped_sampler()
+        # Seed random to always pick the chemistry group (size=1).
+        _random.seed(0)
+        for _ in range(50):
+            docs = sampler.sample(session_id="s1", k=5)
+            category = docs[0].metadata["category"]
+            pool_size = len(sampler._group_pools[category])
+            assert len(docs) <= pool_size
+
+    def test_sample_ids_belong_to_selected_group(self):
+        sampler = _make_grouped_sampler()
+        group_id_sets = {
+            "biology": _BIOLOGY_IDS,
+            "earth-science": _EARTH_SCIENCE_IDS,
+            "physics": _PHYSICS_IDS,
+            "chemistry": _CHEMISTRY_IDS,
+        }
+        for _ in range(20):
+            docs = sampler.sample(session_id="s1", k=2)
+            category = docs[0].metadata["category"]
+            for doc in docs:
+                assert doc.id in group_id_sets[category]
+
+    def test_no_group_by_falls_back_to_engine_path(self):
+        engine = _make_engine(_CORPUS_CANONICAL)
+        sampler = RandomDocumentSampler(engine)
+        assert sampler._group_pools is None
+        assert sampler._group_probs is None
+        engine.setup("s1")
+        try:
+            docs = sampler.sample(session_id="s1", k=3)
+            assert len(docs) == 3
+        finally:
+            engine.teardown("s1")
+
+    def test_group_by_unknown_field_buckets_to_empty_string(self):
+        # When the group_by field is absent from all docs the sampler must not
+        # crash — all documents land in a single "" bucket.
+        engine = _make_engine(_CORPUS_CANONICAL)  # canonical corpus has no "category" field
+        sampler = RandomDocumentSampler(engine, group_by="category")
+        assert list(sampler._group_pools.keys()) == [""]
+        docs = sampler.sample(session_id="s1", k=3)
+        assert len(docs) == 3
+
+    def test_corpus_called_on_non_enumerable_engine_raises(self):
+        engine = MagicMock(spec=SearchToolEngine)
+        engine.corpus = MagicMock(side_effect=NotImplementedError("no corpus"))
+        with pytest.raises(NotImplementedError):
+            RandomDocumentSampler(engine, group_by="domain")
+
+
+# ---------------------------------------------------------------------------
+# RandomDocumentSampler — exclude_groups / include_groups
+# ---------------------------------------------------------------------------
+
+
+class TestRandomDocumentSamplerGroupFilter:
+    def _sampler(self, strategy="uniform") -> RandomDocumentSampler:
+        engine = _make_engine(_CORPUS_PROJECTED, projection={"body": "text", "doc_id": "id"})
+        return RandomDocumentSampler(engine, group_by="category", strategy=strategy)
+
+    def test_exclude_groups_never_selected(self):
+        sampler = self._sampler()
+        for _ in range(50):
+            docs = sampler.sample(session_id="s1", k=2, exclude_groups=["biology"])
+            categories = {d.metadata["category"] for d in docs}
+            assert "biology" not in categories
+
+    def test_exclude_multiple_groups(self):
+        sampler = self._sampler()
+        excluded = ["biology", "earth-science"]
+        for _ in range(50):
+            docs = sampler.sample(session_id="s1", k=2, exclude_groups=excluded)
+            categories = {d.metadata["category"] for d in docs}
+            assert not categories.intersection(excluded)
+
+    def test_include_groups_only_selected(self):
+        sampler = self._sampler()
+        for _ in range(30):
+            docs = sampler.sample(session_id="s1", k=2, include_groups=["physics"])
+            categories = {d.metadata["category"] for d in docs}
+            assert categories == {"physics"}
+
+    def test_include_multiple_groups_restricted_to_those(self):
+        sampler = self._sampler()
+        allowed = {"biology", "chemistry"}
+        for _ in range(30):
+            docs = sampler.sample(session_id="s1", k=2, include_groups=list(allowed))
+            categories = {d.metadata["category"] for d in docs}
+            assert categories.issubset(allowed)
+
+    def test_include_and_exclude_together_raises(self):
+        sampler = self._sampler()
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            sampler.sample(
+                session_id="s1",
+                k=2,
+                include_groups=["biology"],
+                exclude_groups=["physics"],
+            )
+
+    def test_exclude_all_groups_raises(self):
+        sampler = self._sampler()
+        with pytest.raises(ValueError, match="no groups remain"):
+            sampler.sample(
+                session_id="s1",
+                k=2,
+                exclude_groups=list(_PROJECTED_CATEGORIES),
+            )
+
+    def test_include_unknown_group_raises(self):
+        sampler = self._sampler()
+        with pytest.raises(ValueError, match="unknown group"):
+            sampler.sample(session_id="s1", k=2, include_groups=["nonexistent"])
+
+    def test_exclude_does_not_mutate_instance_state(self):
+        sampler = self._sampler()
+        original_pools = dict(sampler._group_pools)
+        original_probs = dict(sampler._group_probs)
+        sampler.sample(session_id="s1", k=2, exclude_groups=["biology"])
+        assert sampler._group_pools == original_pools
+        assert sampler._group_probs == original_probs
+
+    def test_include_does_not_mutate_instance_state(self):
+        sampler = self._sampler()
+        original_pools = dict(sampler._group_pools)
+        original_probs = dict(sampler._group_probs)
+        sampler.sample(session_id="s1", k=2, include_groups=["physics"])
+        assert sampler._group_pools == original_pools
+        assert sampler._group_probs == original_probs
+
+    def test_no_filter_still_works_after_filtered_call(self):
+        sampler = self._sampler()
+        sampler.sample(session_id="s1", k=2, exclude_groups=["biology"])
+        # Next call without filter should still have access to all groups.
+        all_seen = set()
+        for _ in range(100):
+            docs = sampler.sample(session_id="s1", k=2)
+            all_seen.update(d.metadata["category"] for d in docs)
+        assert "biology" in all_seen
+
+    def test_exclude_on_non_grouped_sampler_has_no_effect(self):
+        engine = _make_engine(_CORPUS_CANONICAL)
+        sampler = RandomDocumentSampler(engine)
+        engine.setup("s1")
+        try:
+            docs = sampler.sample(session_id="s1", k=3, exclude_groups=["anything"])
+            assert len(docs) == 3
         finally:
             engine.teardown("s1")

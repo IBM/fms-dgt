@@ -3,7 +3,6 @@
 
 # Standard
 from typing import Any, Dict, List, Optional
-import json
 import logging
 import random
 
@@ -11,6 +10,7 @@ import random
 from fms_dgt.core.tools.engines.base import register_tool_engine
 from fms_dgt.core.tools.engines.search.base import Document, SearchToolEngine
 from fms_dgt.core.tools.registry import ToolRegistry
+from fms_dgt.utils import read_json, read_jsonl
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,7 @@ class FileSearchEngine(SearchToolEngine):
         self._limit = limit
         # Corpus is populated lazily in setup(); _corpus holds raw dicts.
         self._corpus: List[Dict[str, Any]] = []
+        self._corpus_size: int = 0
 
     # ------------------------------------------------------------------
     # Session lifecycle
@@ -69,6 +70,7 @@ class FileSearchEngine(SearchToolEngine):
         super().setup(session_id, *args, **kwargs)
         if not self._corpus:
             self._corpus = self._load_corpus()
+            self._corpus_size = len(self._corpus)
             logger.debug(
                 "FileSearchEngine loaded %d documents from %s", len(self._corpus), self._path
             )
@@ -83,6 +85,20 @@ class FileSearchEngine(SearchToolEngine):
     # ------------------------------------------------------------------
     # SearchToolEngine contract
     # ------------------------------------------------------------------
+
+    def corpus(self) -> List[Document]:
+        """Return all documents in the loaded corpus."""
+        if not self._corpus:
+            self._corpus = self._load_corpus()
+            self._corpus_size = len(self._corpus)
+        return [self._to_document(i, raw) for i, raw in enumerate(self._corpus)]
+
+    def corpus_size(self) -> int:
+        """Return the number of documents in the corpus."""
+        if not self._corpus_size and not self._corpus:
+            self._corpus = self._load_corpus()
+            self._corpus_size = len(self._corpus)
+        return self._corpus_size
 
     def _search(self, arguments: Dict[str, Any], limit: int, **kwargs: Any) -> List[Document]:
         corpus = self._corpus
@@ -100,10 +116,9 @@ class FileSearchEngine(SearchToolEngine):
     # ------------------------------------------------------------------
 
     def _load_corpus(self) -> List[Dict[str, Any]]:
-        with open(self._path, "r", encoding="utf-8") as fh:
-            if self._format == "json":
-                return json.load(fh)
-            return [json.loads(line) for line in fh if line.strip()]
+        if self._format == "json":
+            return read_json(self._path)
+        return read_jsonl(self._path)
 
     def _to_document(self, idx: int, raw: Dict[str, Any]) -> Document:
         proj = self._projection

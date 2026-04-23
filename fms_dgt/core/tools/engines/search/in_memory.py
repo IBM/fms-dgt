@@ -3,7 +3,6 @@
 
 # Standard
 from typing import Any, Dict, List, Optional
-import json
 import logging
 
 # Third Party
@@ -13,6 +12,7 @@ from sentence_transformers import SentenceTransformer
 from fms_dgt.core.tools.engines.base import register_tool_engine
 from fms_dgt.core.tools.engines.search.base import Document, SearchToolEngine
 from fms_dgt.core.tools.registry import ToolRegistry
+from fms_dgt.utils import read_json, read_jsonl
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +62,21 @@ class InMemoryVectorSearchEngine(SearchToolEngine):
         self._documents: List[Document] = []
         self._embeddings = None  # numpy array, shape (N, D)
         self._model = None
+        self._corpus_size: int = 0
 
         self._build_index()
 
     # ------------------------------------------------------------------
     # SearchToolEngine contract
     # ------------------------------------------------------------------
+
+    def corpus(self) -> List[Document]:
+        """Return all documents in the in-memory index."""
+        return list(self._documents)
+
+    def corpus_size(self) -> int:
+        """Return the number of documents in the index."""
+        return self._corpus_size
 
     def _search(self, arguments: Dict[str, Any], limit: int, **kwargs: Any) -> List[Document]:
         # Third Party
@@ -103,6 +112,7 @@ class InMemoryVectorSearchEngine(SearchToolEngine):
     def _build_index(self) -> None:
         corpus = self._load_corpus()
         self._documents = [self._to_document(i, raw) for i, raw in enumerate(corpus)]
+        self._corpus_size = len(self._documents)
         texts = [d.text for d in self._documents]
 
         logger.debug(
@@ -114,10 +124,9 @@ class InMemoryVectorSearchEngine(SearchToolEngine):
         self._embeddings = self._model.encode(texts, normalize_embeddings=True)
 
     def _load_corpus(self) -> List[Dict[str, Any]]:
-        with open(self._path, "r", encoding="utf-8") as fh:
-            if self._format == "json":
-                return json.load(fh)
-            return [json.loads(line) for line in fh if line.strip()]
+        if self._format == "json":
+            return read_json(self._path)
+        return read_jsonl(self._path)
 
     def _to_document(self, idx: int, raw: Dict[str, Any]) -> Document:
         proj = self._projection

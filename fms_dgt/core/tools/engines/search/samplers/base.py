@@ -93,6 +93,23 @@ class DocumentSampler(ABC):
     def engine(self) -> SearchToolEngine:
         return self._engine
 
+    def corpus(self) -> list[Document]:
+        """Return all documents available from the engine.
+
+        Only valid for bounded, enumerable engines (``search/file``,
+        ``search/in_memory``, ``search/elasticsearch``).  Unbounded engines
+        such as web-search backends do not support this operation.
+
+        Raises:
+            NotImplementedError: If the underlying engine does not support
+                corpus enumeration (e.g. web-search engines).
+        """
+        raise NotImplementedError(
+            f"{type(self._engine).__name__} does not support corpus enumeration. "
+            "group_by is only valid with bounded engines such as search/file, "
+            "search/in_memory, or search/elasticsearch."
+        )
+
     @abstractmethod
     def sample(
         self,
