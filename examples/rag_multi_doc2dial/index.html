@@ -8,13 +8,11 @@
       
       
       
-        <link rel="canonical" href="https://ibm.github.io/fms-dgt/examples/chit_chat/">
+        <link rel="canonical" href="https://ibm.github.io/fms-dgt/examples/rag_multi_doc2dial/">
       
       
-        <link rel="prev" href="../time_series/">
+        <link rel="prev" href="../safety_refusal/">
       
-      
-        <link rel="next" href="../safety_refusal/">
       
       
         
@@ -25,7 +23,7 @@
     
     
       
-        <title>Chit-Chat Conversations - DiGiT</title>
+        <title>RAG: Multi-Doc2Dial - DiGiT</title>
       
     
     
@@ -76,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#chit-chat-conversations" class="md-skip">
+        <a href="#rag-multi-doc2dial" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Chit-Chat Conversations
+              RAG: Multi-Doc2Dial
             
           </span>
         </div>
@@ -1450,6 +1448,62 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../chit_chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chit-Chat Conversations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../safety_refusal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Safety Refusal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1469,7 +1523,7 @@
   <span class="md-ellipsis">
     
   
-    Chit-Chat Conversations
+    RAG: Multi-Doc2Dial
   
 
     
@@ -1487,7 +1541,7 @@
   <span class="md-ellipsis">
     
   
-    Chit-Chat Conversations
+    RAG: Multi-Doc2Dial
   
 
     
@@ -1511,6 +1565,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#run-it" class="md-nav__link">
@@ -1567,17 +1632,6 @@
     <span class="md-ellipsis">
       
         Turn bounds
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Patterns
       
     </span>
   </a>
@@ -1626,62 +1680,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../safety_refusal/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Safety Refusal
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rag_multi_doc2dial/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RAG: Multi-Doc2Dial
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1714,6 +1712,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#run-it" class="md-nav__link">
@@ -1770,17 +1779,6 @@
     <span class="md-ellipsis">
       
         Turn bounds
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Patterns
       
     </span>
   </a>
@@ -1846,84 +1844,128 @@
   
 
 
-<h1 id="chit-chat-conversations">Chit-Chat Conversations</h1>
-<p>This example generates multi-turn chit-chat conversations using the <code>core/conversation</code> databuilder. It demonstrates DiGiT's stage pipeline: a sequence of initialization and iteration stages that produce fully synthetic, persona-driven conversations ready for SFT fine-tuning.</p>
-<p>The full task configuration is at <a href="https://github.com/IBM/fms-dgt/tree/main/tasks/public/examples/chit_chat/task.yaml"><code>tasks/public/examples/chit_chat/task.yaml</code></a>.</p>
-<h2 id="run-it">Run it</h2>
+<h1 id="rag-multi-doc2dial">RAG: Multi-Doc2Dial</h1>
+<p>This example generates grounded multi-turn RAG conversations using the <code>public/rag/conversation</code> databuilder in static mode. Each conversation is anchored to a set of documents pre-selected at initialization; the assistant synthesizes responses from that fixed document context without issuing retrieval calls. The output is a dataset of faithful, document-grounded conversations ready for SFT fine-tuning.</p>
+<p>The task configurations are at <a href="https://github.com/IBM/fms-dgt/tree/main/tasks/public/rag/static/multi_doc2dial/"><code>tasks/public/rag/static/multi_doc2dial/</code></a>. Four domains are available: DMV, SSA, StudentAid, and VA.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Pull a generation model via Ollama:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ollama<span class="w"> </span>pull<span class="w"> </span>granite4:3b
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>python<span class="w"> </span>-m<span class="w"> </span>fms_dgt.public<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--task-paths<span class="w"> </span>./tasks/public/examples/chit_chat/task.yaml<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--num-outputs-to-generate<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--restart
 </code></pre></div>
-<p>Two output files are written under <code>output/public/examples/chit_chat/</code>:</p>
+<blockquote>
+<p><strong>Model size recommendation:</strong> RAG conversation generation is a demanding task. The scenario stage must ground a coherent information need in multiple documents; the flow controller must reason about conversation state, pattern eligibility, and document coverage simultaneously; the assistant must synthesize faithful responses without hallucinating beyond the document set. Models smaller than roughly 30B parameters tend to produce shallow scenarios, pattern selection that ignores constraints, and assistant responses that drift from the documents. For production-quality output, use a model of 30B parameters or larger.</p>
+</blockquote>
+<p>Set the data directory environment variable (the task configs use <code>${DGT_DATA_DIR}</code> to locate the corpus and seed files):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DGT_DATA_DIR</span><span class="o">=</span>./data
+</code></pre></div>
+<h2 id="run-it">Run it</h2>
+<p>Run a single domain:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>-m<span class="w"> </span>fms_dgt.public<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--task-paths<span class="w"> </span>./tasks/public/rag/static/multi_doc2dial/dmv/task.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--num-outputs-to-generate<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--restart
+</code></pre></div>
+<p>Run all four domains in one invocation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>-m<span class="w"> </span>fms_dgt.public<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--task-paths<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>./tasks/public/rag/static/multi_doc2dial/dmv/task.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span>./tasks/public/rag/static/multi_doc2dial/ssa/task.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span>./tasks/public/rag/static/multi_doc2dial/studentaid/task.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span>./tasks/public/rag/static/multi_doc2dial/va/task.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>--num-outputs-to-generate<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--restart
+</code></pre></div>
+<p>Output is written under <code>output/public/rag/static/multi_doc2dial/&lt;domain&gt;/</code>:</p>
 <ul>
-<li><code>final_data.jsonl</code>: full internal representation with all pipeline steps</li>
-<li><code>formatted_output.jsonl</code>: clean <code>messages</code> format ready for SFT fine-tuning</li>
+<li><code>final_data.jsonl</code>: full internal representation with all pipeline steps, documents, and scores</li>
+<li><code>formatted_output.jsonl</code>: clean <code>messages</code> format with source documents attached, ready for SFT fine-tuning</li>
 </ul>
 <h2 id="the-stage-pipeline">The stage pipeline</h2>
-<p>The <code>core/conversation</code> databuilder runs each conversation through two phases.</p>
+<p>The <code>public/rag/conversation</code> databuilder runs each conversation through two phases.</p>
 <h3 id="initialization">Initialization</h3>
-<p>Initialization stages run once per conversation before any turns are generated. This example uses two:</p>
-<p><strong><code>lm/scenario</code></strong> generates a scenario that sets the context for the conversation. It uses in-context learning from seed examples to produce a short description like: "A curious student wants to learn about space exploration."</p>
-<p><strong><code>sample/persona</code></strong> samples a persona from <code>data/public/examples/chit_chat/personas.jsonl</code> and assigns it to the user: role, expertise level, domain, goals, and personality traits. The persona is injected into the user stage each turn so the simulated user stays consistent throughout.</p>
-<p>To use custom personas, replace or extend <code>personas.jsonl</code> with your own records, or point <code>data_path</code> at a different file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample/persona</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">persona_store</span><span class="p">:</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">data_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/your/personas.jsonl</span>
-</code></pre></div>
-<p>Each record must have at minimum a <code>role</code> field. See <code>data/public/examples/chit_chat/personas.jsonl</code> for the full schema.</p>
+<p>Initialization stages run once per conversation before any turns are generated.</p>
+<p><strong><code>lm/scenario/rag</code></strong> samples <code>k</code> documents from the corpus using the configured <code>DocumentSampler</code>, then generates a scenario that describes a realistic information need grounded in those documents. The sampler uses <code>group_by: domain</code> to ensure all sampled documents come from the same domain, producing coherent scenarios rather than mixing unrelated topics. The scenario and documents are carried through every subsequent stage.</p>
+<p><strong><code>sample/persona</code></strong> assigns a user persona sampled from <code>data/public/examples/chit_chat/personas.jsonl</code>. The persona shapes the simulated user's voice, goals, and expertise level throughout the conversation.</p>
 <h3 id="iteration">Iteration</h3>
-<p>Iteration stages run in a loop, one turn at a time, until the conversation ends.</p>
-<p><strong><code>lm/flow_controller</code></strong> runs first each turn. It reads the conversation history and selects a pattern that determines what the user should do next. Patterns are defined in the task YAML with a name, description, and a hint passed to the user stage:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">patterns</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">chit_chat/follow_up</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;User</span><span class="nv"> </span><span class="s">follows</span><span class="nv"> </span><span class="s">up</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">previous</span><span class="nv"> </span><span class="s">assistant</span><span class="nv"> </span><span class="s">turn</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">related</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">comment.&quot;</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">hint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Generate</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">user</span><span class="nv"> </span><span class="s">message</span><span class="nv"> </span><span class="s">that</span><span class="nv"> </span><span class="s">naturally</span><span class="nv"> </span><span class="s">follows</span><span class="nv"> </span><span class="s">up</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">what</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">just</span><span class="nv"> </span><span class="s">discussed.&quot;</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.35</span>
-</code></pre></div>
-<p>When the flow controller selects a termination pattern, it signals the pipeline to end the conversation. The conversation is only kept if it has reached <code>min_turns</code>.</p>
-<p><strong><code>lm/user/guided</code></strong> generates the user's next message. It receives the scenario, the persona, the conversation history, and the hint from the flow controller.</p>
-<p><strong><code>lm/assistant/naive</code></strong> generates the assistant's response given the scenario and conversation history.</p>
+<p>Iteration stages run in a loop, one turn at a time.</p>
+<p><strong><code>lm/flow_controller/rag</code></strong> reads the conversation history and the available documents, then selects one of eight patterns to guide the next user turn:</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>What it produces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rag/factoid</code></td>
+<td>Brief, specific factual question answerable directly from the documents</td>
+</tr>
+<tr>
+<td><code>rag/explanation</code></td>
+<td>Request to explain a concept, policy, or process described in the documents</td>
+</tr>
+<tr>
+<td><code>rag/instructional</code></td>
+<td>Request for a sequence of steps to accomplish a task from the documents</td>
+</tr>
+<tr>
+<td><code>rag/comparative</code></td>
+<td>Request to compare two or more entities or options present in the documents</td>
+</tr>
+<tr>
+<td><code>rag/follow_up</code></td>
+<td>Deeper question on a specific detail from the assistant's last response</td>
+</tr>
+<tr>
+<td><code>rag/clarification</code></td>
+<td>Request to clarify something the user found unclear in the assistant's last response</td>
+</tr>
+<tr>
+<td><code>rag/ambiguous</code></td>
+<td>Vague, keyword-style question that prompts the assistant to ask for clarification</td>
+</tr>
+<tr>
+<td><code>rag/termination</code></td>
+<td>Closing turn when the scenario is resolved or documents are exhausted</td>
+</tr>
+</tbody>
+</table>
+<p>The flow controller enforces constraints defined in the pattern descriptions (for example, <code>rag/instructional</code> fires at most twice per conversation; <code>rag/follow_up</code> cannot be selected more than twice consecutively). When <code>rag/termination</code> is selected, the pipeline ends the conversation if <code>min_turns</code> has been reached.</p>
+<p><strong><code>lm/user/rag</code></strong> generates the user's next message using the scenario, persona, conversation history, and the hint produced by the flow controller.</p>
+<p><strong><code>lm/assistant/rag/static</code></strong> generates a grounded assistant response by reasoning over the fixed document set. It does not issue a retrieval call; it synthesizes directly from the documents injected at initialization.</p>
 <h2 id="turn-bounds">Turn bounds</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">max_turns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">min_turns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">max_turns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">min_turns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
 </code></pre></div>
-<p><code>max_turns</code> caps how long a conversation can run. <code>min_turns</code> sets the minimum number of turns a conversation must complete before it is accepted as output. Conversations terminated by the flow controller or dropped by a stage before <code>min_turns</code> are silently discarded.</p>
-<h2 id="patterns">Patterns</h2>
-<p>Patterns define the space of conversational moves available to the flow controller. Each pattern has:</p>
-<ul>
-<li><code>name</code>: a unique identifier used in logs and seed data</li>
-<li><code>description</code>: what this move represents</li>
-<li><code>hint</code>: the instruction passed to the user stage</li>
-<li><code>weight</code>: relative sampling probability</li>
-</ul>
-<p>The flow controller selects a pattern each turn (weighted by <code>weight</code>), then generates the user's instruction. Adding, removing, or reweighting patterns changes the character of the generated conversations without touching any code.</p>
+<p>Conversations shorter than <code>min_turns</code> are discarded. Conversations that reach <code>max_turns</code> without a termination signal are ended and kept if they satisfy <code>min_turns</code>.</p>
 <h2 id="output-format">Output format</h2>
-<p>The formatter strips internal pipeline steps and writes only user and assistant turns:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;conversation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a3f2c1d8&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I was reading about the James Webb Space Telescope. What&#39;s the most exciting discovery so far?&quot;</span><span class="p">},</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;One of the most exciting findings is the first clear detection of carbon dioxide in an exoplanet atmosphere...&quot;</span><span class="p">},</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Could Webb actually find signs of life on another planet?&quot;</span><span class="p">},</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;It&#39;s possible. Webb can analyze atmospheric chemistry by measuring which wavelengths of starlight are absorbed...&quot;</span><span class="p">}</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
+<p>The formatter writes each conversation as a <code>messages</code> array with source documents attached:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;conversation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a3f2c1d8&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">&quot;documents&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;doc_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Registrations#3_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Registrations#3&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Your registration is the sticker placed on your windshield...&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;doc_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Registrations#5_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Registrations#5&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;You can renew your registration online...&quot;</span><span class="p">}</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;How do I renew my vehicle registration in New York?&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;You can renew your registration online and print a 10-day temporary document while the new one arrives by mail...&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Are there any situations where I cannot renew online?&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Yes. If your vehicle has been altered or stretched to increase the number of passengers, or if other special circumstances apply, you cannot renew online...&quot;</span><span class="p">}</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="p">}</span>
 </code></pre></div>
-<p>The <code>conversation_id</code> matches the corresponding record in <code>final_data.jsonl</code> for cross-referencing.</p>
+<p>The <code>conversation_id</code> matches the corresponding record in <code>final_data.jsonl</code>. The <code>documents</code> field lists only the documents injected at initialization for this conversation.</p>
 <h2 id="data-files">Data files</h2>
-<p>Two data files drive this example:</p>
 <ul>
-<li><strong><code>data/public/examples/chit_chat/seed_examples.jsonl</code></strong>: complete conversations used as in-context learning examples by the scenario stage. Each seed includes a scenario, persona, flow controller decisions, and user and assistant turns.</li>
-<li><strong><code>data/public/examples/chit_chat/personas.jsonl</code></strong>: persona definitions sampled by the <code>sample/persona</code> stage. Replace or extend this file to change the user personas generated.</li>
+<li><strong><code>data/public/rag/static/multi_doc2dial/&lt;domain&gt;/documents.jsonl</code></strong>: the document corpus for each domain. Each record has <code>id</code>, <code>title</code>, <code>domain</code>, and <code>text</code> fields.</li>
+<li><strong><code>data/public/rag/static/multi_doc2dial/&lt;domain&gt;/seed_examples.jsonl</code></strong>: complete conversations used as in-context learning examples by the scenario and stage LMs.</li>
 </ul>
+<p>See <a href="https://github.com/IBM/fms-dgt/tree/main/tasks/public/rag/static/multi_doc2dial/README.md"><code>tasks/public/rag/static/multi_doc2dial/README.md</code></a> for details on the corpus provenance and how to add a new domain.</p>
 <h2 id="next-steps">Next steps</h2>
 <ul>
 <li>Swap the LM engine: see <a href="../../tutorials/changing_lm_engine/">Changing the Language Model Engine</a>.</li>
-<li>To build a custom stage, see the <code>core/conversation</code> databuilder source at <code>fms_dgt/core/databuilders/conversation/</code>.</li>
+<li>Understand the RAG subsystem components: see <a href="../../concepts/rag/">RAG Data Generation</a>.</li>
+<li>For live retrieval (assistant issues search queries during generation): use <code>tasks/public/rag/live/task.yaml</code> with a running Elasticsearch cluster.</li>
 </ul>
 
 
