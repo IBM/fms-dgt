@@ -65,7 +65,7 @@ The full `final_data.jsonl` includes policy provenance metadata: `risk`, `risk_d
 
 ## Risk policies
 
-The pipeline generates synthetic data according to the content of the Granite Actionable Policy format provided as input. Details about the format, tutorials, and additional policy tools can be found [here](https://github.com/ibm-granite/granite-actionable-policy).
+The pipeline generates synthetic data according to the *policy* content provided as input. Details about the format, tutorials, and additional policy tools can be found [here](https://github.com/ibm-granite/granite.trust.policy-tools).
 
 Each task points at a risk policy YAML file that defines what the model should refuse and how. The [complete policy for the cybersecurity example](https://github.com/IBM/fms-dgt/blob/main/data/public/safety/resources/policies/cybersecurity_risks.yaml) contains multiple policies for sub-risks and can be found in `data/public/safety/resources/policies/cybersecurity_risks.yaml`. A *snippet* with the most relevant parts for the sample target *cyber_security_exploits* sub-risk is as follows:
 
@@ -91,7 +91,7 @@ risks:
 
 `reply_cannot_contain` constrains what the refusal may not include. `reply_may_contain` tells the response generator what is acceptable. Both are injected into the generation prompt via Jinja templates.
 
-Use `data/public/safety/resources/policies/schema_v0.1.yaml` as a template when authoring a new policy file. More example policies and tutorials can be found [here](https://github.com/ibm-granite/granite.trust.policy-tools)
+Use `data/public/safety/resources/policies/schema_v0.1.yaml` as a template when authoring a new policy file. More example policies and tutorials can be found [here](https://github.com/ibm-granite/granite.trust.policy-tools).
 
 ## Adding a new task
 
