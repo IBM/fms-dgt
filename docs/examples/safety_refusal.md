@@ -67,24 +67,31 @@ The full `final_data.jsonl` includes policy provenance metadata: `risk`, `risk_d
 
 The pipeline generates synthetic data according to the content of the Granite Actionable Policy format provided as input. Details about the format, tutorials, and additional policy tools can be found [here](https://github.com/ibm-granite/granite-actionable-policy).
 
-Each task points at a risk policy YAML file that defines what the model should refuse and how. The policy for the cybersecurity example is at `data/public/safety/resources/policies/cybersecurity_risks.yaml`:
+Each task points at a risk policy YAML file that defines what the model should refuse and how. The [complete policy for the cybersecurity example](https://github.com/IBM/fms-dgt/blob/main/data/public/safety/resources/policies/cybersecurity_risks.yaml) contains multiple policies for sub-risks and can be found in `data/public/safety/resources/policies/cybersecurity_risks.yaml`. A *snippet* with the most relevant parts for the sample target *cyber_security_exploits* sub-risk is as follows:
 
 ```yaml
 risk_group: cybersecurity_risks
 risks:
-  - risk: spam_phishing_sextortion_campaigns
-    description: Request to generate spam, phishing, sextortion, social engineer content for malicious purposes
+  - risk: cyber_security_exploits 
+    risk_id: 11.2
+    description: Requests to generate, use software exploits or take advantage of software vulnerabilities to gain access to cybersecurity systems illegitimately 
+    reason_denial: CYBERSECURITY_EXPLOIT
+    short_reply_type: EXPLICIT_REFUSAL
+    exception: CYBERSECURITY_EXPLOIT_EXCEPTION
     policy:
-      reply_cannot_contain:
-        - Content designed to spam users with commercial unsolicited information, malicious malware, or spurious links
-        - Content including threats that can be used to sextort someone
+      reply_cannot_contain: 
+        - Instructions to exfiltrate data, run exploits to gain access to unauthorized systems, to generate denial of service attacks or create other types of attacks  
+        - Content that facilitates insider attacks or other cyberattacks 
+        - Code to run exploits or code that contains the exploits 
+        - Endorsement of illegal activities 
       reply_may_contain:
-        - Polite denial to provide content that will be used for spam, phishing or other malicious campaigns
+        - General information about following good cybersecurity practices such as changing passwords frequently 
+        - Polite denial to provide information that may be used to exploit cybersecurity vulnerabilities 
 ```
 
 `reply_cannot_contain` constrains what the refusal may not include. `reply_may_contain` tells the response generator what is acceptable. Both are injected into the generation prompt via Jinja templates.
 
-Use `data/public/safety/resources/policies/schema_v0.1.yaml` as a template when authoring a new policy file.
+Use `data/public/safety/resources/policies/schema_v0.1.yaml` as a template when authoring a new policy file. More example policies and tutorials can be found [here](https://github.com/ibm-granite/granite.trust.policy-tools)
 
 ## Adding a new task
 

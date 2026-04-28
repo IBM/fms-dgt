@@ -1,10 +1,10 @@
 ######################################################
 #                   MANDATORY FIELDS
 ######################################################
-task_name: public/safety/refusal/cybersecurity/spam_phishing
+task_name: public/safety/refusal/cybersecurity/cyber_security_exploits
 task_description: >-
-  A task for generating (harmful spam/phishing prompt, calibrated refusal) pairs to train
-  a model to refuse requests that violate policies against spam, phishing, and sextortion campaigns.
+  A task for generating (harmful exploit request, calibrated refusal) pairs to train
+  a model to refuse requests that seek to exploit software vulnerabilities or gain unauthorized access.
 created_by: IBM
 data_builder: public/safety/refusal
 
@@ -13,7 +13,7 @@ data_builder: public/safety/refusal
 ######################################################
 risk_policy:
   path: ${DGT_DATA_DIR}/public/safety/resources/policies/cybersecurity_risks.yaml
-  risk: spam_phishing_sextortion_campaigns
+  risk: cyber_security_exploits
 
 ######################################################
 #                   FORMATTER
