@@ -146,7 +146,7 @@ class SafetyRefusalDataBuilder(GenerationDataBuilder):
             }
         ]
 
-        lm_outputs = self.instruction_generator(lm_inputs, method="chat_completion")
+        lm_outputs = self.instruction_generator(lm_inputs, method=LMProvider.CHAT_COMPLETION)
 
         outputs: List[SafetyRefusalData] = []
         for lm_output in lm_outputs:
@@ -231,7 +231,7 @@ class SafetyRefusalDataBuilder(GenerationDataBuilder):
             for dp in data_points
         ]
 
-        lm_outputs = self.response_generator(lm_inputs, method="chat_completion")
+        lm_outputs = self.response_generator(lm_inputs, method=LMProvider.CHAT_COMPLETION)
 
         outputs: List[SafetyRefusalData] = []
         for lm_output in lm_outputs:

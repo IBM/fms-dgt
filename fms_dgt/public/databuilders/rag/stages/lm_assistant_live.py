@@ -146,7 +146,9 @@ class LiveRetrievalAssistantStage(Stage):
         if not call1_inputs:
             return []
 
-        call1_outputs = self._generator(call1_inputs, method="chat_completion", disable_tqdm=True)
+        call1_outputs = self._generator(
+            call1_inputs, method=LMProvider.CHAT_COMPLETION, disable_tqdm=True
+        )
 
         # Partition by whether model called a tool or responded with content.
         tool_call_batch: List[tuple] = []  # (ctx, tool_calls list)
@@ -229,7 +231,9 @@ class LiveRetrievalAssistantStage(Stage):
             for ctx, _ in synthesis_batch
         ]
 
-        call2_outputs = self._generator(call2_inputs, method="chat_completion", disable_tqdm=True)
+        call2_outputs = self._generator(
+            call2_inputs, method=LMProvider.CHAT_COMPLETION, disable_tqdm=True
+        )
 
         synthesis_results: List[ConversationDataPoint] = []
         for out in call2_outputs:

@@ -1,6 +1,7 @@
 # Standard
 from dataclasses import dataclass
 from functools import partial
+from threading import Lock
 from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple
 
 # Local
@@ -60,13 +61,14 @@ class RougeDedupValidator(ValidatorBlock):
                 )
         self._rouge_types = rouge_types
 
-        self._cache = dict()
+        self._cache: Dict[str, List] = {}
+        self._cache_lock = Lock()
         self._scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=False)
 
     def tokenize(self, inp: List | str):
         if isinstance(inp, list):
             return [self.tokenize(el) for el in inp]
-        else:
+        with self._cache_lock:
             if inp not in self._cache:
                 self._cache[inp] = self._scorer._tokenizer.tokenize(inp)
             return self._cache[inp]

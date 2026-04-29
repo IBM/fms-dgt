@@ -76,7 +76,7 @@ class RatingDataBuilder(TransformationDataBuilder):
 
         # Execute block
         # LMProvider runs requests asynchronously for throughput.
-        rater_outputs = self.rater(rater_inputs, method="chat_completion")
+        rater_outputs = self.rater(rater_inputs, method=LMProvider.CHAT_COMPLETION)
 
         # Process outputs from block
         outputs = []
