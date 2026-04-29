@@ -118,7 +118,9 @@ class GuidedUserStage(Stage):
         if not generator_inputs:
             return []
 
-        outputs = self._generator(generator_inputs, method="chat_completion", disable_tqdm=True)
+        outputs = self._generator(
+            generator_inputs, method=LMProvider.CHAT_COMPLETION, disable_tqdm=True
+        )
 
         results = []
         for out in outputs:

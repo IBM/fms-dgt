@@ -8,13 +8,9 @@ import json
 # Local
 from fms_dgt.core.blocks.llm.llm import LMProvider
 from fms_dgt.core.databuilders.conversation.data_objects import (
-    AssistantStep,
     ConversationDataPoint,
     FlowControllerStep,
     PersonaStep,
-    ScenarioStep,
-    ToolCallStep,
-    ToolResultStep,
     UserStep,
 )
 from fms_dgt.core.databuilders.conversation.registry import register_stage
@@ -24,92 +20,99 @@ from fms_dgt.core.databuilders.conversation.utils import (
     get_last_step_of_type,
     steps_to_messages,
 )
+from fms_dgt.public.databuilders.rag.data_objects import RAGScenarioStep
+from fms_dgt.public.databuilders.rag.utils import render_documents
 
-_USER_RAG_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "reasoning": {
-            "type": "string",
-            "description": (
-                "Step-by-step reasoning: what does the scenario need, what has already "
-                "been covered, and how should the next utterance advance the conversation?"
-            ),
-        },
-        "proposed_utterance": {
-            "type": "string",
-            "description": "Initial draft of the user's next message.",
-        },
-        "verification": {
-            "type": "string",
-            "enum": ["yes", "no"],
-            "description": (
-                "Does the proposed utterance advance the scenario without repeating "
-                "a previous question? 'yes' or 'no'."
-            ),
-        },
-        "verification_reasoning": {
-            "type": "string",
-            "description": (
-                "Explanation of the verification decision. If 'no', explain what "
-                "needs to change."
-            ),
-        },
-        "utterance": {
-            "type": "string",
-            "description": (
-                "Final user utterance. If verification is 'yes', this may be a "
-                "sharpened version of proposed_utterance. If verification is 'no', "
-                "this must be a corrected utterance that fixes the issue identified "
-                "in verification_reasoning."
-            ),
-        },
-    },
-    "required": [
-        "reasoning",
-        "proposed_utterance",
-        "verification",
-        "verification_reasoning",
-        "utterance",
-    ],
-    "additionalProperties": False,
-}
-
+# ===========================================================================
+#                       CONSTANTS
+# ===========================================================================
 _USER_RAG_RESPONSE_FORMAT = {
     "type": "json_schema",
     "json_schema": {
         "name": "rag_user_turn",
         "strict": True,
-        "schema": _USER_RAG_SCHEMA,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "reasoning": {
+                    "type": "string",
+                    "description": (
+                        "Step-by-step reasoning: what does the scenario need, what has already "
+                        "been covered, and how should the next utterance advance the conversation?"
+                    ),
+                },
+                "proposed_utterance": {
+                    "type": "string",
+                    "description": "Initial draft of the user's next message.",
+                },
+                "verification": {
+                    "type": "string",
+                    "enum": ["yes", "no"],
+                    "description": (
+                        "Is the proposed utterance coherent with the scenario and conversation so far, "
+                        "without repeating a previous question? 'yes' or 'no'."
+                    ),
+                },
+                "verification_reasoning": {
+                    "type": "string",
+                    "description": (
+                        "Explanation of the verification decision. If 'no', explain what "
+                        "needs to change."
+                    ),
+                },
+                "utterance": {
+                    "type": "string",
+                    "description": (
+                        "Final user utterance. If verification is 'no', first correct the proposed "
+                        "utterance by addressing the issues in verification_reasoning. If verification "
+                        "is 'yes', start from proposed_utterance. Then rephrase as a user who is not "
+                        "familiar with the document texts, using natural language with no phrasing "
+                        "lifted from the documents."
+                    ),
+                },
+            },
+            "required": [
+                "reasoning",
+                "proposed_utterance",
+                "verification",
+                "verification_reasoning",
+                "utterance",
+            ],
+            "additionalProperties": False,
+        },
     },
 }
 
 
-def _render_documents(documents: List[dict]) -> str:
-    parts = []
-    for i, doc in enumerate(documents, start=1):
-        text = doc.get("text", "")
-        doc_id = doc.get("id", str(i))
-        parts.append(f"[Document {i} | id={doc_id}]\n{text}")
-    return "\n\n".join(parts) if parts else ""
+# ===========================================================================
+#                       HELPER METHODS
+# ===========================================================================
+def _build_input(data_point: ConversationDataPoint) -> list:
+    scenario_step = get_last_step_of_type(data_point.steps, RAGScenarioStep)
+    scenario = scenario_step.content if scenario_step else ""
+    documents = scenario_step.documents if scenario_step else []
 
+    persona_steps = [
+        step for step in data_point.steps if isinstance(step, PersonaStep) and step.target == "user"
+    ]
+    persona_text = render_persona(persona_steps[-1]) if persona_steps else ""
 
-def _build_user_rag_messages(
-    scenario: str,
-    persona_text: str,
-    pattern: str,
-    hint: str | None,
-    documents: List[dict],
-    history_steps: list,
-) -> list:
-    doc_text = _render_documents(documents)
+    fc_step = get_last_step_of_type(data_point.steps, FlowControllerStep)
+    pattern = fc_step.content if fc_step else ""
+    hint = fc_step.hint if fc_step else None
+
     system_content = (
         "You are simulating a user in a conversation with an AI assistant. "
-        "Your goal is to resolve the scenario described below by asking questions "
-        "grounded in the provided documents. Stay in character at all times.\n\n"
+        "Your goal is to advance the conversation by asking questions appropriate "
+        "to the current turn. Stay in character at all times.\n\n"
         "Rules:\n"
-        "- Ask only one focused question per turn.\n"
         "- Do not repeat a question you have already asked.\n"
-        "- Do not ask about information not present or inferable from the documents.\n"
+        "- Follow the hint faithfully. It encodes what kind of question is appropriate "
+        "for this turn. If no hint is provided, reason from the scenario and conversation "
+        "so far to determine what a natural next question would be. If neither a hint nor "
+        "a scenario is available, reason from the conversation history alone.\n"
+        "- Rephrase the final utterance as a user who is not familiar with the document "
+        "texts. Use natural language with no phrasing lifted from the documents.\n"
         "- Keep the utterance concise and natural.\n"
         "- Do not reveal that you are an AI or that you are simulating a user."
     )
@@ -121,15 +124,17 @@ def _build_user_rag_messages(
         system_content += f"\n\nInteraction pattern for this turn: {pattern}"
     if hint:
         system_content += f"\n\nHint: {hint}"
-    if doc_text:
-        system_content += f"\n\nDocuments available to ground your questions:\n{doc_text}"
+    if documents:
+        system_content += (
+            f"\n\nDocuments available to ground your questions:\n{render_documents(documents)}"
+        )
 
     messages = [{"role": "system", "content": system_content}]
 
     # Invert roles: from the simulated user's perspective, assistant turns are
     # "user" (the other side) and user turns are "assistant" (its own prior turns).
     # Tool call/result pairs are included so the model sees what was retrieved.
-    for msg in steps_to_messages(history_steps):
+    for msg in steps_to_messages(data_point.steps):
         role = msg["role"]
         if role == "user":
             messages.append({**msg, "role": "assistant"})
@@ -144,10 +149,11 @@ def _build_user_rag_messages(
         {
             "role": "user",
             "content": (
-                "Generate the next user utterance following the interaction pattern and hint. "
-                "First reason through what the scenario needs and what has already been covered. "
-                "Propose an utterance, verify it does not repeat a prior question and advances "
-                "the scenario, then produce the final utterance."
+                "Generate the next user utterance as a JSON object following the schema. "
+                "Follow the hint if provided. It tells you what kind of question to ask this turn. "
+                "Reason through what the scenario needs and what has already been covered, propose "
+                "an utterance, verify it does not repeat a prior question and is coherent with the scenario and "
+                "conversation so far, then rephrase it as a user who is not familiar with the document texts."
             ),
         }
     )
@@ -203,31 +209,9 @@ class RAGUserStage(Stage):
     ) -> List[ConversationDataPoint]:
         generator_inputs = []
         for data_point in data_points:
-            scenario_step = get_last_step_of_type(data_point.steps, ScenarioStep)
-            scenario = scenario_step.content if scenario_step else ""
-            documents = getattr(scenario_step, "documents", []) or []
-
-            persona_steps = [
-                step
-                for step in data_point.steps
-                if isinstance(step, PersonaStep) and step.target == "user"
-            ]
-            persona_text = render_persona(persona_steps[-1]) if persona_steps else ""
-
-            fc_step = get_last_step_of_type(data_point.steps, FlowControllerStep)
-            pattern = fc_step.content if fc_step else ""
-            hint = fc_step.hint if fc_step else None
-
-            history_steps = [
-                step
-                for step in data_point.steps
-                if isinstance(step, (UserStep, AssistantStep, ToolCallStep, ToolResultStep))
-            ]
             generator_inputs.append(
                 {
-                    "input": _build_user_rag_messages(
-                        scenario, persona_text, pattern, hint, documents, history_steps
-                    ),
+                    "input": _build_input(data_point),
                     "gen_kwargs": {
                         "max_new_tokens": 512,
                         "response_format": _USER_RAG_RESPONSE_FORMAT,
@@ -240,7 +224,9 @@ class RAGUserStage(Stage):
         if not generator_inputs:
             return []
 
-        outputs = self._generator(generator_inputs, method="chat_completion", disable_tqdm=True)
+        outputs = self._generator(
+            generator_inputs, method=LMProvider.CHAT_COMPLETION, disable_tqdm=True
+        )
 
         results = []
         for out in outputs:
