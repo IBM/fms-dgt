@@ -14,15 +14,7 @@ from fms_dgt.core.databuilders.conversation.utils import (
     get_last_step_of_type,
     steps_to_text,
 )
-
-
-def _render_documents(documents: list) -> str:
-    parts = []
-    for i, doc in enumerate(documents, start=1):
-        text = doc.get("text", "")
-        doc_id = doc.get("id", str(i))
-        parts.append(f"[Document {i} | id={doc_id}]\n{text}")
-    return "\n\n".join(parts) if parts else ""
+from fms_dgt.public.databuilders.rag.utils import render_documents
 
 
 @register_stage("lm/flow_controller/rag")
@@ -42,7 +34,7 @@ class RAGFlowControllerStage(LMFlowControllerStage):
             lines.append(f"[Scenario]\n{scenario_step.content}")
             documents = getattr(scenario_step, "documents", []) or []
             if documents:
-                doc_text = _render_documents(documents)
+                doc_text = render_documents(documents)
                 lines.append(f"\n[Documents]\n{doc_text}")
         history = steps_to_text(context.steps)
         if history:

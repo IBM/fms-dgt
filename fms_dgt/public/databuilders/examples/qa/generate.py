@@ -104,7 +104,7 @@ class GeographyQADataBuilder(GenerationDataBuilder):
         # LMProvider runs requests asynchronously for throughput.
         # Switch method="completion" and pass a plain string input (Option B above)
         # to use the text-completion endpoint instead.
-        generator_outputs = self.generator(generator_inputs, method="chat_completion")
+        generator_outputs = self.generator(generator_inputs, method=LMProvider.CHAT_COMPLETION)
 
         # Process outputs from block
         outputs = []

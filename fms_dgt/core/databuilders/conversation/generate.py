@@ -3,12 +3,16 @@
 
 # Standard
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from typing import Any, Dict, List, Set
 import contextvars
 import copy
 
 # Local
-from fms_dgt.base.databuilder.concurrent import ConcurrentGenerationDataBuilder
+from fms_dgt.base.databuilder.concurrent import (
+    ConcurrentGenerationDataBuilder,
+    ConcurrentGenerationDataBuilderConfig,
+)
 from fms_dgt.base.registry import register_data_builder
 from fms_dgt.core.databuilders.conversation.data_objects import (
     ConversationDataPoint,
@@ -17,6 +21,12 @@ from fms_dgt.core.databuilders.conversation.data_objects import (
 from fms_dgt.core.databuilders.conversation.registry import get_stage
 from fms_dgt.core.databuilders.conversation.stages.base import Stage
 from fms_dgt.core.databuilders.conversation.task import ConversationTask
+from fms_dgt.utils import init_dataclass_from_dict
+
+
+@dataclass(kw_only=True)
+class ConversationDataBuilderConfig(ConcurrentGenerationDataBuilderConfig):
+    max_concurrent_conversations: int = 8
 
 
 @register_data_builder("core/conversation")
@@ -50,7 +60,7 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
     def __init__(
         self,
         *args: Any,
-        max_concurrent_conversations: int = 8,
+        config: ConversationDataBuilderConfig | dict | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize ConversationDataBuilder.
@@ -60,10 +70,12 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
                 run in parallel within a single __call__ invocation. Controls
                 the inner thread pool size. Default: 8.
         """
-        super().__init__(*args, **kwargs)
+        config = init_dataclass_from_dict(config, ConversationDataBuilderConfig)
+        super().__init__(*args, config=config, **kwargs)
         self._max_concurrent_conversations = (
-            max_concurrent_conversations
-            if isinstance(max_concurrent_conversations, int) and max_concurrent_conversations > 0
+            config.max_concurrent_conversations
+            if isinstance(config.max_concurrent_conversations, int)
+            and config.max_concurrent_conversations > 0
             else 8
         )
         # Track which tasks have had their stages initialized.

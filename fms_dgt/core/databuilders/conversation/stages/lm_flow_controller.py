@@ -4,6 +4,7 @@
 # Standard
 from typing import Any, Dict, List
 import json
+import random
 
 # Local
 from fms_dgt.core.blocks.llm.llm import LMProvider
@@ -22,35 +23,40 @@ from fms_dgt.core.databuilders.conversation.utils import (
 )
 
 
-def _build_fc_schema(pattern_names: List[str]) -> Dict:
+def _build_eligibility_schema(pattern_names: List[str]) -> Dict:
     return {
         "type": "object",
         "properties": {
             "reasoning": {
                 "type": "string",
-                "description": "Step-by-step reasoning about which patterns are coherent given the documents and conversation state.",
+                "description": "Step-by-step reasoning about which patterns are coherent given the scenario and conversation state.",
             },
             "eligible_patterns": {
                 "type": "array",
                 "items": {"type": "string", "enum": pattern_names},
                 "description": "Patterns that are coherent and possible given the current context.",
             },
-            "pattern": {
-                "type": "string",
-                "enum": pattern_names,
-                "description": "The single pattern selected for the next turn.",
-            },
-            "hint": {
-                "type": "string",
-                "description": "A short guide for the user stage on how to frame the next question or utterance, without revealing the answer.",
-            },
         },
-        "required": ["reasoning", "eligible_patterns", "pattern", "hint"],
+        "required": ["reasoning", "eligible_patterns"],
         "additionalProperties": False,
     }
 
 
-def _build_fc_messages(
+def _build_hint_schema() -> Dict:
+    return {
+        "type": "object",
+        "properties": {
+            "hint": {
+                "type": "string",
+                "description": "A short guide for the user on how to frame their next utterance.",
+            },
+        },
+        "required": ["hint"],
+        "additionalProperties": False,
+    }
+
+
+def _build_eligibility_messages(
     conversation_summary: str,
     patterns: Dict[str, Dict[str, str]],
     termination_patterns: List[str],
@@ -58,21 +64,14 @@ def _build_fc_messages(
     max_turns: int,
     pattern_history: List[str],
 ) -> list:
-    pattern_list = "\n".join(
-        f"- {name}: {info['description']}"
-        + (
-            f"\n  Example hint (contextualize for this conversation): {info['hint']}"
-            if info.get("hint")
-            else ""
-        )
-        for name, info in patterns.items()
-    )
+    pattern_list = "\n".join(f"- {name}: {info['description']}" for name, info in patterns.items())
+
     near_end = turn_count >= max(1, max_turns - 1)
     if near_end and termination_patterns:
         names = " or ".join(f"'{p}'" for p in termination_patterns)
         termination_note = (
             f"\nIMPORTANT: the conversation is near its maximum length. "
-            f"You MUST select {names} unless it is genuinely impossible."
+            f"You MUST include {names} in eligible_patterns unless it is genuinely impossible."
         )
     else:
         termination_note = ""
@@ -87,72 +86,109 @@ def _build_fc_messages(
 
     content = (
         "You are a conversation flow controller. "
-        "Your job is to decide what interaction pattern the user should follow next.\n\n"
+        "Your job is to identify which interaction patterns are valid for the next user turn.\n\n"
         "Follow these steps:\n"
         "1. Read the scenario and conversation history carefully.\n"
-        "2. Reason through each available pattern: is it coherent and applicable given the conversation context and the pattern's description? "
+        "2. Reason through each available pattern: is it coherent and applicable given the "
+        "conversation context and the pattern's description? "
         "Only mark a pattern as eligible if it genuinely fits the current state of the conversation. "
-        "Use the pattern history below to apply any consecutive-use or frequency caps stated in the pattern descriptions.\n"
-        "3. From the eligible patterns, select the one that best moves the conversation forward without repeating previous turns.\n"
-        "4. Write a short hint for the user that guides how to frame the next question or utterance. "
-        "Use the selected pattern's example hint as a starting point, but contextualize it for the specific scenario and conversation history. "
-        "The hint must not reveal the answer and must not repeat something already asked.\n\n"
+        "Use the pattern history below to apply any consecutive-use or frequency caps stated in "
+        "the pattern descriptions.\n\n"
         f"Conversation so far:\n{conversation_summary or '(conversation not started yet)'}\n"
         f"{pattern_history_section}\n"
         f"Available patterns:\n{pattern_list}"
         f"{termination_note}\n\n"
-        "Return a JSON object with: reasoning, eligible_patterns (list of pattern names that fit), "
-        "pattern (your chosen pattern), and hint (guidance for the user stage)."
+        "Return a JSON object with: reasoning and eligible_patterns (list of pattern names that fit)."
     )
+
     return [{"role": "user", "content": content}]
 
 
-def _parse_fc_output(
-    raw: str, patterns: Dict[str, Dict[str, str]]
-) -> tuple[str | None, str | None, List[str], str | None]:
-    """Parse LM output into (pattern_name, hint, eligible_patterns, reasoning).
+def _build_hint_messages(
+    conversation_summary: str,
+    pattern_name: str,
+    static_hint: str | None,
+) -> list:
+    if static_hint:
+        hint_guidance = (
+            f"Hint template: {static_hint}\n"
+            "Contextualise the hint template for the specific scenario, and "
+            "conversation so far."
+        )
+    else:
+        hint_guidance = (
+            f"There is no hint template for this pattern. "
+            f"Write a hint that guides the user on how to frame their next utterance "
+            f"following the '{pattern_name}' pattern, contextualised to the specific "
+            "scenario and conversation so far."
+        )
 
-    Tries JSON parse first. Falls back to substring match on pattern names
-    for providers that ignore response_format, returning empty eligible list
-    and None for hint and reasoning.
+    content = (
+        "You are a conversation flow controller. "
+        "Your job is to write a hint that guides the user on how to frame their next utterance.\n\n"
+        f"Selected pattern: {pattern_name}\n"
+        f"{hint_guidance}\n\n"
+        "The hint must not reveal the answer and must not repeat something already asked.\n\n"
+        f"Conversation so far:\n{conversation_summary or '(conversation not started yet)'}\n\n"
+        "Return a JSON object with a single 'hint' field containing the hint text."
+    )
+
+    return [{"role": "user", "content": content}]
+
+
+def _parse_eligibility_output(
+    raw: str, patterns: Dict[str, Dict[str, str]]
+) -> tuple[List[str], str | None]:
+    """Parse LM output into (eligible_patterns, reasoning).
+
+    Tries JSON parse first. Falls back to treating all patterns as eligible
+    for providers that ignore response_format.
     """
     try:
         parsed = json.loads(raw)
-        pattern = parsed.get("pattern", "").strip()
-        hint = parsed.get("hint", "").strip() or None
         reasoning = parsed.get("reasoning", "").strip() or None
         eligible = [p for p in parsed.get("eligible_patterns", []) if p in patterns]
-        if pattern in patterns:
-            return pattern, hint, eligible, reasoning
+        return eligible, reasoning
     except (json.JSONDecodeError, AttributeError):
         pass
-    # Fallback: substring match
-    raw_stripped = raw.strip()
-    if raw_stripped in patterns:
-        return raw_stripped, None, [], None
-    for name in patterns:
-        if name in raw_stripped:
-            return name, None, [], None
-    return None, None, [], None
+
+    # Fallback: treat all patterns as eligible
+    return list(patterns.keys()), None
 
 
 @register_stage("lm/flow_controller")
 class LMFlowControllerStage(Stage):
     """Iteration stage that selects the next interaction pattern.
 
+    Uses two LM calls per turn:
+        - Call 1: LM reasons about which patterns are eligible given the current
+        conversation state. Returns eligible_patterns and reasoning.
+        - Code: weighted random sampling via random.choices selects the pattern
+        from the eligible set using per-pattern weights.
+        - Call 2: LM generates a contextualised hint for the selected pattern,
+        using the static hint template from config as a starting point and
+        adapting it to the specific scenario and conversation history.
+
     Appends a FlowControllerStep with:
-      - content: the chosen pattern name
-      - terminate: True when a termination pattern is selected
-      - hint: the pattern's hint text for the user stage
+        - content: the chosen pattern name
+        - terminate: True when a termination pattern is selected
+        - hint: contextualised hint text for the user stage
 
     Drops the data point on LM parse failure (returns empty list for that point).
 
     Config kwargs:
         patterns: Required. List of dicts, each with:
             - ``name``: pattern identifier (required)
-            - ``description``: shown to the LM so it can choose this pattern (required)
-            - ``hint``: passed to the user stage to guide turn generation (required)
-            - ``weight``: optional float, reserved for future weighted sampling
+            - ``description``: shown to the LM for eligibility reasoning (required)
+            - ``hint``: optional static hint template. If provided, the LM uses it
+              as a starting point and contextualises it for the specific conversation.
+              If omitted, the LM generates a hint from scratch based on the pattern
+              name and conversation context. Used as fallback if the hint LM call fails.
+            - ``weight``: optional float. Controls relative sampling probability
+              among eligible patterns. Treated as a ratio, not a probability —
+              a pattern with weight 3.0 is three times as likely to be selected
+              as one with weight 1.0. Weights do not need to sum to 1. Defaults
+              to 1.0 (uniform sampling across eligible patterns).
         termination_patterns: List of pattern names that signal conversation end.
             Must be a subset of the names listed in ``patterns``. Required.
         max_turns: Passed through from the task so the FC can signal early
@@ -170,16 +206,18 @@ class LMFlowControllerStage(Stage):
         **kwargs: Any,
     ) -> None:
         super().__init__(name=name)
+
         self._generator = generator
         self._max_turns = max_turns
         self._termination_patterns: List[str] = termination_patterns
-
         self._patterns: Dict[str, Dict[str, str]] = {}
+
         for p in patterns:
             pname = p["name"]
             self._patterns[pname] = {
                 "description": p.get("description", pname),
-                "hint": p.get("hint", f"Generate a user turn following the '{pname}' pattern."),
+                "hint": p.get("hint"),  # None if not specified; used as template for call 2
+                "weight": float(p.get("weight", 1.0)),
             }
 
         pattern_names = list(self._patterns.keys())
@@ -188,23 +226,35 @@ class LMFlowControllerStage(Stage):
             "json_schema": {
                 "name": "flow_controller",
                 "strict": True,
-                "schema": _build_fc_schema(pattern_names),
+                "schema": _build_eligibility_schema(pattern_names),
+            },
+        }
+        self._hint_response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "hint_generator",
+                "strict": True,
+                "schema": _build_hint_schema(),
             },
         }
 
     def _build_conversation_summary(self, context: ConversationDataPoint) -> str:
         """Return a condensed text representation of the conversation so far.
 
-        Override in subclasses to inject additional context (e.g. document text
-        for RAG-specific eligibility reasoning).
+        Override in subclasses to inject additional context (e.g. document text,
+        retrieved passages, or other scenario-specific state needed for eligibility
+        reasoning).
         """
         lines = []
+
         scenario_step = get_last_step_of_type(context.steps, ScenarioStep)
         if scenario_step:
             lines.append(f"[Scenario]\n{scenario_step.content}")
+
         history = steps_to_text(context.steps)
         if history:
             lines.append(history)
+
         return "\n".join(lines)
 
     def __call__(
@@ -213,11 +263,13 @@ class LMFlowControllerStage(Stage):
         seed_data: List[ConversationDataPoint] | None = None,
         **kwargs,
     ) -> List[ConversationDataPoint]:
-        generator_inputs = []
+
+        # --- Call 1: eligibility ---
+        eligibility_inputs = []
         for data_point in data_points:
-            generator_inputs.append(
+            eligibility_inputs.append(
                 {
-                    "input": _build_fc_messages(
+                    "input": _build_eligibility_messages(
                         self._build_conversation_summary(data_point),
                         self._patterns,
                         self._termination_patterns,
@@ -238,28 +290,95 @@ class LMFlowControllerStage(Stage):
                 }
             )
 
-        if not generator_inputs:
+        if not eligibility_inputs:
             return []
 
-        outputs = self._generator(generator_inputs, method="chat_completion", disable_tqdm=True)
+        eligibility_outputs = self._generator(
+            eligibility_inputs, method=LMProvider.CHAT_COMPLETION, disable_tqdm=True
+        )
 
-        results = []
-        for out in outputs:
+        # --- Weighted sampling ---
+        # Build hint inputs only for data points that parsed successfully.
+        hint_inputs = []
+
+        for out in eligibility_outputs:
             result = out.get("result") or ""
             if isinstance(result, dict):
                 result = result.get("content") or ""
             raw = result.strip()
-            pattern_name, hint, eligible_patterns, reasoning = _parse_fc_output(raw, self._patterns)
-            if pattern_name is None:
+
+            eligible_patterns, reasoning = _parse_eligibility_output(raw, self._patterns)
+
+            if not eligible_patterns:
                 continue
+
+            # Select a pattern based on stated preference
+            selected_pattern = random.choices(
+                eligible_patterns,
+                weights=[self._patterns[p]["weight"] for p in eligible_patterns],
+                k=1,
+            )[0]
+
             data_point: ConversationDataPoint = out["reference"]
-            terminate = pattern_name in self._termination_patterns
-            # LM-generated hint takes precedence; fall back to static hint from config.
+            hint_inputs.append(
+                {
+                    "input": _build_hint_messages(
+                        self._build_conversation_summary(data_point),
+                        selected_pattern,
+                        self._patterns[selected_pattern]["hint"],
+                    ),
+                    "gen_kwargs": {
+                        "max_new_tokens": 256,
+                        "response_format": self._hint_response_format,
+                    },
+                    "reference": data_point,
+                    "task_name": data_point.task_name,
+                    "eligible_patterns": eligible_patterns,
+                    "reasoning": reasoning,
+                    "selected_pattern": selected_pattern,
+                }
+            )
+
+        if not hint_inputs:
+            return []
+
+        # --- Call 2: hint generation ---
+        hint_outputs = self._generator(
+            hint_inputs, method=LMProvider.CHAT_COMPLETION, disable_tqdm=True
+        )
+
+        # --- Assemble results ---
+        results = []
+        for hint_out in hint_outputs:
+            # Extract reference fields
+            data_point = hint_out.get("reference")
+            eligible_patterns = hint_out.get("eligible_patterns")
+            reasoning = hint_out.get("reasoning")
+            selected_pattern = hint_out.get("selected_pattern")
+
+            # Parse hint result
+            hint_result = hint_out.get("result") or ""
+            if isinstance(hint_result, dict):
+                hint_result = hint_result.get("content") or ""
+            raw_hint = hint_result.strip()
+            hint = None
+            try:
+                hint = json.loads(raw_hint).get("hint", "").strip() or None
+            except (json.JSONDecodeError, AttributeError):
+                hint = raw_hint or None
+
+            # Fall back to static hint template if LM hint generation failed.
+            # If no static hint exists, fall back to a generic placeholder.
             if not hint:
-                hint = self._patterns[pattern_name].get("hint")
+                hint = self._patterns[selected_pattern]["hint"] or (
+                    f"Generate a user utterance following the '{selected_pattern}' pattern."
+                )
+
+            terminate = selected_pattern in self._termination_patterns
+
             data_point.steps.append(
                 FlowControllerStep(
-                    content=pattern_name,
+                    content=selected_pattern,
                     stage_name=self.name,
                     terminate=terminate,
                     hint=hint,
@@ -268,4 +387,5 @@ class LMFlowControllerStage(Stage):
                 )
             )
             results.append(data_point)
+
         return results

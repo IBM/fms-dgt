@@ -117,8 +117,9 @@ iteration_stages:
         hint: >
           Identify a specific detail, term, or figure from the assistant's last
           response that appears in the documents and ask a focused question about
-          it. The follow-up must be grounded in something the documents actually
-          contain, not a tangential topic.
+          it. The follow-up must build on something established in the current
+          conversation, creating a thread that links this turn to a prior
+          exchange rather than starting a fresh topic.
 
       - name: rag/clarification
         description: >
@@ -127,12 +128,14 @@ iteration_stages:
           it said. The user is not extending the topic but questioning the
           response itself. Distinct from rag/follow_up, where the user
           understands the answer and wants to go further.
+        weight: 2.0
         hint: >
           Point to a specific part of the assistant's last answer that was
           unclear or ambiguous and ask the assistant to explain it more clearly.
           Do not use this to introduce a new topic.
 
       - name: rag/ambiguous
+        weight: 1.5
         description: >
           User poses a vague, incomplete, or keyword-style question that could
           apply to multiple aspects of the documents. The assistant should ask
@@ -145,21 +148,22 @@ iteration_stages:
 
       - name: rag/termination
         description: >
-          Select this pattern in either of two conditions: (1) the scenario has
-          been substantively resolved, meaning the user's core information need
-          is covered, no meaningful open questions remain, and continuing would
-          only produce repetition; or (2) the documents have been unable to
-          answer the last two or more questions, indicating the scenario is
-          exhausted and further turns will not produce useful information.
-          Select proactively whenever either condition is met, even if the user
-          has not explicitly said thank you or goodbye.
+          Select this pattern when ANY of the following is true: (1) the
+          scenario's stated information need is fully addressed, meaning the
+          documents have answered the specific question or task the scenario
+          set out, and any further turns would only restate or marginally
+          extend what has already been covered; (2) the documents have failed
+          to answer the last two consecutive questions, indicating the
+          available information on this thread is exhausted; (3) the
+          conversation history shows three or more distinct topics have
+          already been exchanged and no new answerable topics remain in
+          the documents. Prefer termination over continuing when in doubt.
+          An extra turn that adds little is worse than a clean close.
         hint: >
-          Generate a brief closing statement from the user that acknowledges
-          the scenario is resolved or that the available information has been
-          exhausted. This may include a thank-you, a statement of what they
-          plan to do next, or an acknowledgment that they need to look
-          elsewhere. Avoid generic phrases; make the closing reflect the
-          specific scenario.
+          Generate a brief closing statement from the user that fits the
+          specific scenario: a next step they plan to take, an acknowledgment
+          that they have what they need, or that the documents do not cover
+          what they were looking for. Do not use generic thank-you phrases.
 
   - name: lm/user/rag
     generator: generator
@@ -168,3 +172,5 @@ iteration_stages:
   # No ToolCallStep/ToolResultStep in output.
   - name: lm/assistant/rag/static
     generator: generator
+    # Retry up to 3 times when the faithfulness critic rejects a response.
+    max_retries: 3
