@@ -10,11 +10,11 @@ from fms_dgt.core.tools.engines.base import ToolEngine
 from fms_dgt.core.tools.registry import ToolRegistry
 
 # ===========================================================================
-#                       MULTI-SERVER TOOL ENGINE
+#                       COMPOSITE TOOL ENGINE
 # ===========================================================================
 
 
-class MultiServerToolEngine(ToolEngine):
+class CompositeToolEngine(ToolEngine):
     """Composite engine that routes ``ToolCall`` objects by namespace.
 
     A ``ToolRegistry`` is always multi-namespace by design, so there is no

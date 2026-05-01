@@ -402,12 +402,21 @@ def process_yaml_config(
 # ===========================================================================
 
 
-def group_data_by_attribute(data_list: List[T], attr: str) -> List[List[T]]:
-    attr_values = set([getattr(data_item, attr) for data_item in data_list])
-    return [
-        [data_item for data_item in data_list if getattr(data_item, attr) == attr_value]
-        for attr_value in attr_values
-    ]
+def group_by(data: List[T], key: Callable[[T], Any]) -> Dict[Any, List[T]]:
+    """Group a list of items by an arbitrary key function.
+
+    Args:
+        data: List of items to group.
+        key: Callable that returns the grouping key for each item.
+
+    Returns:
+        Dict mapping each distinct key value to the list of items that produced it.
+        Insertion order of first occurrence is preserved.
+    """
+    result: Dict[Any, List[T]] = {}
+    for item in data:
+        result.setdefault(key(item), []).append(item)
+    return result
 
 
 # ===========================================================================
@@ -573,12 +582,14 @@ def read_file(file_path: str, encoding: str = "utf-8"):
 
 
 def read_yaml(file_path: str, encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     with open(file_path, mode="r", encoding=encoding) as fp:
         data = yaml.safe_load(fp)
     return data
 
 
 def read_json(file_path: str, encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     with open(file_path, mode="r", encoding=encoding) as fp:
         try:
             data = json.load(fp)
@@ -588,6 +599,8 @@ def read_json(file_path: str, encoding: str = "utf-8"):
 
 
 def read_jsonl(file_path: str, encoding: str = "utf-8", lazy: bool = False):
+    file_path = os.path.expandvars(file_path)
+
     def _yield(file_path: str, encoding: str = "utf-8"):
         with open(file_path, mode="r", encoding=encoding) as fp:
             for line in fp:
@@ -681,12 +694,14 @@ def read_huggingface(dataset_args: List[str], split: str, lazy=False):
 
 
 def write_yaml(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as fp:
         yaml.safe_dump(data_to_write, fp, sort_keys=False)
 
 
 def write_json(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as f:
         json.dump(data_to_write, f, indent=4)
@@ -698,6 +713,7 @@ def write_jsonl(
     mode: str = "a",
     encoding: str = "utf-8",
 ):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as f:
         for d in data_to_write:

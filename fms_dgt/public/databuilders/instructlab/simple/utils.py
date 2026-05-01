@@ -106,7 +106,7 @@ _WORD_DENYLIST = [
 def check_prompt_file(prompt_file_path, model_id_or_path, logger=None):
     """Check for prompt file."""
     try:
-        with open(prompt_file_path, encoding="utf=8") as file:
+        with open(prompt_file_path, encoding="utf-8") as file:
             prompt_template = file.read()
     except FileNotFoundError:
         (logger or _logger).info(

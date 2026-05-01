@@ -11,10 +11,11 @@ import time
 from fms_dgt.base.block import ValidatorBlock
 from fms_dgt.base.databuilder import GenerationDataBuilder
 from fms_dgt.base.registry import register_data_builder
-from fms_dgt.base.task import GenerationTask, group_data_by_task
+from fms_dgt.base.task import GenerationTask
 from fms_dgt.core.blocks.llm import LMProvider
 from fms_dgt.public.databuilders.instructlab.simple.data_objects import SimpleData
 from fms_dgt.public.databuilders.instructlab.simple.task import SimpleTask
+from fms_dgt.utils import group_by
 import fms_dgt.public.databuilders.instructlab.simple.utils as utils
 
 
@@ -56,19 +57,18 @@ class SimpleDataBuilder(GenerationDataBuilder):
     ) -> List[SimpleData]:
 
         inputs: List[Dict] = []
-        instruction_data = instruction_data + []
-        random.shuffle(instruction_data)
-        for grouped_data in group_data_by_task(instruction_data):
-            for i in range(0, len(grouped_data), self._num_prompt_instructions):
-                prompt_instructions = grouped_data[i : i + self._num_prompt_instructions]
-                prompt = self._encode_prompt(prompt_instructions)
-                inp = {
-                    "input": prompt,
-                    "gen_kwargs": {"stop": [f"* Task {len(prompt_instructions)+2}"]},
-                    "data": prompt_instructions,
-                    "task_name": prompt_instructions[0].task_name,
-                }
-                inputs.append(inp)
+        for task_name, grouped_data in group_by(
+            instruction_data, key=lambda dp: dp.task_name
+        ).items():
+            prompt_instructions = random.choices(grouped_data, k=self._num_prompt_instructions)
+            prompt = self._encode_prompt(prompt_instructions)
+            inp = {
+                "input": prompt,
+                "gen_kwargs": {"stop": [f"* Task {len(prompt_instructions)+2}"]},
+                "data": prompt_instructions,
+                "task_name": task_name,
+            }
+            inputs.append(inp)
 
         request_start = time.time()
 

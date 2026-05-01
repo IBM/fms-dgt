@@ -414,15 +414,15 @@ def load_epoch_timings(run_id: str, telemetry_dir: str) -> dict[int, dict]:
     except Exception:
         return result
 
-    for s in spans:
-        if s.get("run_id") != run_id or s.get("epoch") is None:
+    for span in spans:
+        if span.get("run_id") != run_id or span.get("epoch") is None:
             continue
-        epoch = int(s["epoch"])
-        ms = s.get("duration_ms") or 0
+        epoch = int(span["epoch"])
+        ms = span.get("duration_ms") or 0
         existing = result.get(epoch, {"generationMs": 0, "postprocessingMs": 0})
-        if s.get("span_name") == "dgt.epoch":
+        if span.get("span_name") == "dgt.epoch":
             result[epoch] = {**existing, "generationMs": ms}
-        elif s.get("span_name") == "dgt.postprocessing":
+        elif span.get("span_name") == "dgt.postprocessing":
             result[epoch] = {**existing, "postprocessingMs": ms}
 
     # Subtract postprocessing from epoch to get pure generation time.
@@ -678,7 +678,9 @@ def load_token_usage(run_id: str, build_id: str | None, telemetry_dir: str) -> d
         return None
 
     run_spans = [
-        s for s in spans if s.get("span_name") == "dgt.llm_call" and s.get("run_id") == run_id
+        span
+        for span in spans
+        if span.get("span_name") == "dgt.llm_call" and span.get("run_id") == run_id
     ]
     if not run_spans:
         return None
@@ -687,10 +689,10 @@ def load_token_usage(run_id: str, build_id: str | None, telemetry_dir: str) -> d
         build_id
         and build_id != "exp"
         and any(
-            s.get("span_name") == "dgt.llm_call"
-            and s.get("build_id") == build_id
-            and s.get("run_id") != run_id
-            for s in spans
+            span.get("span_name") == "dgt.llm_call"
+            and span.get("build_id") == build_id
+            and span.get("run_id") != run_id
+            for span in spans
         )
     )
 
@@ -710,18 +712,18 @@ def load_token_usage(run_id: str, build_id: str | None, telemetry_dir: str) -> d
     rate_updated_at = None
     rate_description = None
 
-    for s in run_spans:
-        pt = s.get("prompt_tokens") or 0
-        ct = s.get("completion_tokens") or 0
+    for run_span in run_spans:
+        pt = run_span.get("prompt_tokens") or 0
+        ct = run_span.get("completion_tokens") or 0
         prompt_tokens += pt
         completion_tokens += ct
         if rates_file:
-            match = _lookup_rate(rates_file, s.get("provider"), s.get("model_id"))
+            match = _lookup_rate(rates_file, run_span.get("provider"), run_span.get("model_id"))
             if match:
                 estimated_cost += pt * match["rate"]["input"] + ct * match["rate"]["output"]
                 rated_tokens += pt + ct
                 has_rate = True
-                rate_provider = rate_provider or s.get("provider")
+                rate_provider = rate_provider or run_span.get("provider")
                 rate_updated_at = rate_updated_at or match["updated_at"]
                 rate_description = rate_description or match["description"]
 
@@ -731,18 +733,18 @@ def load_token_usage(run_id: str, build_id: str | None, telemetry_dir: str) -> d
     bucket_secs = ctx["bucketSizeSeconds"]
 
     bucket_map: dict[str, dict] = {}
-    for s in run_spans:
-        if not s.get("start_time"):
+    for run_span in run_spans:
+        if not run_span.get("start_time"):
             continue
-        key = to_bucket(s["start_time"], bucket_secs)
+        key = to_bucket(run_span["start_time"], bucket_secs)
         if key in bucket_map:
-            bucket_map[key]["prompt_tokens"] += s.get("prompt_tokens") or 0
-            bucket_map[key]["completion_tokens"] += s.get("completion_tokens") or 0
+            bucket_map[key]["prompt_tokens"] += run_span.get("prompt_tokens") or 0
+            bucket_map[key]["completion_tokens"] += run_span.get("completion_tokens") or 0
         else:
             bucket_map[key] = {
                 "timestamp": key,
-                "prompt_tokens": s.get("prompt_tokens") or 0,
-                "completion_tokens": s.get("completion_tokens") or 0,
+                "prompt_tokens": run_span.get("prompt_tokens") or 0,
+                "completion_tokens": run_span.get("completion_tokens") or 0,
             }
 
     series = sorted(bucket_map.values(), key=lambda b: b["timestamp"])

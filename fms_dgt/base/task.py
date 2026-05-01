@@ -19,20 +19,18 @@ from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
-from fms_dgt.constants import ENGINE_KEY, TASK_NAME_KEY, TYPE_KEY
+from fms_dgt.constants import ENGINE_KEY, TYPE_KEY
 from fms_dgt.core.tools import (
-    MultiServerToolEngine,
+    CompositeToolEngine,
     ToolEngine,
     ToolRegistry,
     get_tool_engine,
     get_tool_loader,
 )
+from fms_dgt.core.tools.constants import TOOL_DEFAULT_NAMESPACE
 from fms_dgt.core.tools.enrichments import get_tool_enrichment
 from fms_dgt.log import LogDatastoreHandler, run_context
-from fms_dgt.utils import (
-    group_data_by_attribute,
-    init_dataclass_from_dict,
-)
+from fms_dgt.utils import init_dataclass_from_dict
 
 # Logger name prefix for all task-scoped loggers; child of dgt_logger so records
 # propagate to its stdout handler automatically.
@@ -109,18 +107,6 @@ def _topo_sort_enrichments(enrichments: List[Any]) -> List[Any]:
         )
 
     return [enrichments[i] for i in order]
-
-
-def group_data_by_task(data_list: List[T]) -> List[List[T]]:
-    """Utility function that groups input data by task name.
-
-    Args:
-        data_list (List[T]): List of DataPoint to group into tasks
-
-    Returns:
-        List[List[T]]: DataPoint that has been grouped into tasks
-    """
-    return group_data_by_attribute(data_list, TASK_NAME_KEY)
 
 
 # ===========================================================================
@@ -247,7 +233,7 @@ class Task:
         # The type: discriminator selects the loader / engine from the registry.
         # All other keys are forwarded to the constructor.
         self._tool_registry: ToolRegistry | None = None
-        self._tool_engine: MultiServerToolEngine | None = None
+        self._tool_engine: CompositeToolEngine | None = None
 
         if tools:
             # Normalise Phase-1 flat list into Phase-2 shape.
@@ -262,11 +248,6 @@ class Task:
             for entry in registry_cfgs:
                 engine_name = entry.get(ENGINE_KEY)
                 if engine_name:
-                    if "namespace" not in entry:
-                        raise ValueError(
-                            f"tools.registry entry referencing engine '{engine_name}' "
-                            f"must specify a namespace."
-                        )
                     if engine_name not in engines_cfg:
                         raise ValueError(
                             f"tools.registry entry references engine '{engine_name}' "
@@ -297,14 +278,16 @@ class Task:
                 ]
                 self._tool_registry._enrichments = _topo_sort_enrichments(enrichment_instances)
 
-            # Build per-namespace engines, then wrap in MultiServerToolEngine.
+            # Build per-namespace engines, then wrap in CompositeToolEngine.
             if engines_cfg:
                 # Collect all namespaces handled by each engine name.
                 engine_to_namespaces: Dict[str, List[str]] = {}
                 for entry in registry_cfgs:
                     engine_name = entry.get(ENGINE_KEY)
                     if engine_name:
-                        engine_to_namespaces.setdefault(engine_name, []).append(entry["namespace"])
+                        engine_to_namespaces.setdefault(engine_name, []).append(
+                            entry.get("namespace", TOOL_DEFAULT_NAMESPACE)
+                        )
 
                 built_engines: Dict[str, ToolEngine] = {
                     name: get_tool_engine(
@@ -315,16 +298,24 @@ class Task:
                     )
                     for name, cfg in engines_cfg.items()
                 }
-                # Map each individual namespace to its engine for routing.
-                ns_to_engine: Dict[str, ToolEngine] = {
-                    entry["namespace"]: built_engines[entry[ENGINE_KEY]]
-                    for entry in registry_cfgs
-                    if ENGINE_KEY in entry
-                }
-                self._tool_engine = MultiServerToolEngine(
+                # Map each namespace to its engine for routing; error on collision.
+                ns_to_engine: Dict[str, ToolEngine] = {}
+                for entry in registry_cfgs:
+                    if ENGINE_KEY not in entry:
+                        continue
+                    ns = entry.get("namespace", TOOL_DEFAULT_NAMESPACE)
+                    engine = built_engines[entry[ENGINE_KEY]]
+                    if ns in ns_to_engine and ns_to_engine[ns] is not engine:
+                        raise ValueError(
+                            f"tools.registry: namespace '{ns}' is assigned to more than one engine. "
+                            f"Each namespace must route to exactly one engine."
+                        )
+                    ns_to_engine[ns] = engine
+                self._tool_engine = CompositeToolEngine(
                     registry=self._tool_registry,
                     engines=ns_to_engine,
                 )
+                self._component_tool_engines: Dict[str, ToolEngine] = built_engines
 
     def _post_init(self):
         """Finalise datastore configs and initialise stores + logger.
@@ -433,9 +424,19 @@ class Task:
         return self._tool_registry
 
     @property
-    def tool_engine(self) -> "MultiServerToolEngine | None":
-        """Returns the MultiServerToolEngine for this task, or None if no engines are configured."""
+    def tool_engine(self) -> "CompositeToolEngine | None":
+        """Returns the CompositeToolEngine for this task, or None if no engines are configured."""
         return self._tool_engine
+
+    @property
+    def component_tool_engines(self) -> "Dict[str, ToolEngine]":
+        """Returns engines keyed by their declared name (e.g. ``"file_retriever"``).
+
+        These are the individual component engines that make up ``tool_engine``.
+        Use this when resolving engine name references from stage or sampler configs.
+        Returns an empty dict if no engines are configured.
+        """
+        return dict(getattr(self, "_component_tool_engines", {}))
 
     @property
     def runner_config(self) -> TaskRunnerConfig:

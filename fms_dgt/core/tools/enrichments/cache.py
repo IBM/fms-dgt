@@ -33,6 +33,9 @@ import json
 import logging
 import os
 
+# Local
+from fms_dgt.utils import write_json
+
 logger = logging.getLogger(__name__)
 
 
@@ -132,8 +135,7 @@ def save_cache(path: Path, entries: Dict[str, Any]) -> None:
     existing = load_cache(path)
     merged = {**existing, **entries}
     try:
-        with path.open("w", encoding="utf-8") as fh:
-            json.dump(merged, fh, indent=2)
+        write_json(merged, str(path))
         logger.debug("Enrichment cache saved: %s (%d entries)", path, len(merged))
     except Exception as exc:
         logger.warning("Could not write enrichment cache at %s: %s", path, exc)

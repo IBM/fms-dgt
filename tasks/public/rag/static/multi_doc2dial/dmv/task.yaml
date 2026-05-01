@@ -1,0 +1,170 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: public/rag/static/multi_doc2dial/dmv
+task_description: >
+  Generate grounded multi-turn RAG conversations where documents are pre-selected
+  at scenario initialization (static context). The assistant synthesizes responses
+  from the fixed document set without issuing retrieval calls. Training signal:
+  grounded synthesis, faithfulness, multi-document reasoning.
+created_by: IBM
+data_builder: public/rag/conversation
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_datastore:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/rag/static/multi_doc2dial/dmv/seed_examples.jsonl
+
+formatter:
+  type: formatters/conversation/rag/static
+
+runner_config:
+  save_formatted_output: true
+
+######################################################
+#                   CONVERSATION PIPELINE
+######################################################
+max_turns: 6
+min_turns: 3
+
+tools:
+  engines:
+    file_retriever:
+      type: search/file
+      path: ${DGT_DATA_DIR}/public/rag/static/multi_doc2dial/dmv/documents.jsonl
+      format: jsonl
+      projection:
+        body: text
+        doc_id: id
+      limit: 3
+
+initialization_stages:
+  # Sample documents from the corpus and generate a grounded scenario.
+  - name: lm/scenario/rag
+    generator: generator
+    document_samplers:
+      - type: search/random
+        engine: file_retriever
+        group_by: domain
+        strategy: uniform
+        weight: 1.0
+    k: 3
+
+  # Assign a user persona to shape the simulated user's voice and goals.
+  - name: sample/persona
+    persona_store:
+      type: default
+      data_path: ${DGT_DATA_DIR}/public/examples/chit_chat/personas.jsonl
+
+iteration_stages:
+  - name: lm/flow_controller/rag
+    generator: generator
+    termination_patterns:
+      - rag/termination
+    patterns:
+      - name: rag/factoid
+        description: >
+          User asks a brief, specific factual question answerable directly from
+          the documents, such as a name, number, date, or yes/no answer. Do not
+          repeat a factual question on the same topic already answered in a
+          previous turn.
+        hint: >
+          Ask a focused factual question whose answer can be found directly in
+          the provided documents. Avoid broad or open-ended questions, and do
+          not ask about a fact already covered in the conversation.
+
+      - name: rag/explanation
+        description: >
+          User asks for an explanation of a concept, policy, or process described
+          in the documents, requiring the assistant to reason and elaborate.
+        hint: >
+          Ask the assistant to explain why something works a certain way, or
+          what a policy or process means in practice, based on the documents.
+
+      - name: rag/instructional
+        description: >
+          User asks for a set of steps or actions to accomplish a task described
+          in the documents. Do not select this pattern more than twice in a
+          single conversation; if it has already been used twice, mark it
+          ineligible regardless of context.
+        hint: >
+          Ask the assistant how to do something or what steps to follow,
+          where the answer involves a sequence of actions from the documents.
+          Choose a task or sub-task not yet covered in the conversation.
+
+      - name: rag/comparative
+        description: >
+          User asks to compare two or more entities, options, or policies present
+          in the documents. Only valid when the documents contain distinct
+          comparable items.
+        hint: >
+          Ask the assistant to compare two specific things mentioned in the
+          documents, such as two programs, two eligibility criteria, or two
+          options. Only use this if the documents actually contain comparable items.
+
+      - name: rag/follow_up
+        description: >
+          User digs deeper into a specific detail from the assistant's last
+          response, where that detail is explicitly present in the documents
+          and has not yet been explored. Do not select this pattern if the
+          assistant's last response was a refusal or partial answer due to
+          missing information, which indicates the documents are exhausted on
+          this thread. Do not select this pattern more than twice consecutively;
+          if it has been selected for the last two turns, mark it ineligible
+          and choose a different pattern.
+        hint: >
+          Identify a specific detail, term, or figure from the assistant's last
+          response that appears in the documents and ask a focused question about
+          it. The follow-up must be grounded in something the documents actually
+          contain, not a tangential topic.
+
+      - name: rag/clarification
+        description: >
+          User found the assistant's previous response unclear, confusing, or
+          incomplete and asks the assistant to clarify a specific part of what
+          it said. The user is not extending the topic but questioning the
+          response itself. Distinct from rag/follow_up, where the user
+          understands the answer and wants to go further.
+        hint: >
+          Point to a specific part of the assistant's last answer that was
+          unclear or ambiguous and ask the assistant to explain it more clearly.
+          Do not use this to introduce a new topic.
+
+      - name: rag/ambiguous
+        description: >
+          User poses a vague, incomplete, or keyword-style question that could
+          apply to multiple aspects of the documents. The assistant should ask
+          a clarifying question back rather than guessing the user's intent.
+          Use at most once per conversation.
+        hint: >
+          Ask a short, vague, or keyword-style question that does not specify
+          exactly what information is needed, so the assistant must ask for
+          clarification before answering.
+
+      - name: rag/termination
+        description: >
+          Select this pattern in either of two conditions: (1) the scenario has
+          been substantively resolved, meaning the user's core information need
+          is covered, no meaningful open questions remain, and continuing would
+          only produce repetition; or (2) the documents have been unable to
+          answer the last two or more questions, indicating the scenario is
+          exhausted and further turns will not produce useful information.
+          Select proactively whenever either condition is met, even if the user
+          has not explicitly said thank you or goodbye.
+        hint: >
+          Generate a brief closing statement from the user that acknowledges
+          the scenario is resolved or that the available information has been
+          exhausted. This may include a thank-you, a statement of what they
+          plan to do next, or an acknowledgment that they need to look
+          elsewhere. Avoid generic phrases; make the closing reflect the
+          specific scenario.
+
+  - name: lm/user/rag
+    generator: generator
+
+  # Generates grounded responses from static document context.
+  # No ToolCallStep/ToolResultStep in output.
+  - name: lm/assistant/rag/static
+    generator: generator

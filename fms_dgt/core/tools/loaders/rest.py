@@ -125,7 +125,7 @@ class RESTToolLoader(ToolLoader):
                 return yaml.safe_load(resp.text)
             return resp.json()
 
-        path = os.path.expandvars(spec)
+        path = spec
         ext = os.path.splitext(path)[-1].lower()
         if ext in (".yaml", ".yml"):
             return read_yaml(path)

@@ -1,12 +1,15 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import dataclass, field
 from typing import List, Optional
 import re
 
 # Third Party
-import ftfy
 from nltk.corpus import stopwords
 from nltk.tokenize.punkt import PunktParameters, PunktSentenceTokenizer
+import ftfy
 import numpy as np
 
 # Define patterns for IP addresses and email addresses
@@ -436,7 +439,7 @@ def sent_tokenize(text: str) -> List[str]:
     for sent in sentences:
         sub_sents = fallback_split(sent)
         final_sentences.extend(sub_sents)
-    return [s.replace("<prd>", ".") for s in final_sentences]
+    return [sentence.replace("<prd>", ".") for sentence in final_sentences]
 
 
 def clean_special_punct(text):

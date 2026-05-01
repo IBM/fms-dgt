@@ -34,7 +34,7 @@ class ConversationTask(GenerationTask):
     # conversations to be dispatched in a single future and nothing is written
     # until the last one finishes. A small default ensures incremental writes.
     # Users can override via runner_config.seed_batch_size in the task YAML.
-    DEFAULT_SEED_BATCH_SIZE = 5
+    DEFAULT_SEED_BATCH_SIZE = 8
 
     def __init__(
         self,
@@ -131,7 +131,7 @@ class ConversationTask(GenerationTask):
         """
         task_name = kwargs.pop("task_name", self.name)
         raw_steps = kwargs.pop("steps", [])
-        steps = [Step.from_dict(s) if isinstance(s, dict) else s for s in raw_steps]
+        steps = [Step.from_dict(step) if isinstance(step, dict) else step for step in raw_steps]
         raw_branch = kwargs.pop("branch_point", None)
         if isinstance(raw_branch, dict):
             chosen = raw_branch.pop("chosen_response", None)

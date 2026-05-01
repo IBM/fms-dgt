@@ -130,6 +130,48 @@ class DataBuilder:
         """
         return self._tasks
 
+    # ===========================================================================
+    #                       TASK LOOKUP HELPERS
+    # ===========================================================================
+
+    def get_task(self, name: str) -> Task:
+        """Return the task with the given name.
+
+        Args:
+            name: The task name to look up.
+
+        Returns:
+            The matching Task instance.
+
+        Raises:
+            RuntimeError: If no task with the given name is registered on this builder.
+        """
+        task = next((t for t in self._tasks if t.name == name), None)
+        if task is None:
+            raise RuntimeError(
+                f"{self.__class__.__name__}: no task named '{name}' is registered "
+                f"on this builder. Known tasks: {[t.name for t in self._tasks]}"
+            )
+        return task
+
+    def get_task_for(self, datapoint: DataPoint) -> Task:
+        """Return the task associated with a data point.
+
+        Convenience wrapper around :meth:`get_task` that reads the task name
+        from the data point directly, so callers do not need to reference the
+        ``task_name`` attribute explicitly.
+
+        Args:
+            datapoint: A data point whose ``task_name`` field identifies the task.
+
+        Returns:
+            The matching Task instance.
+
+        Raises:
+            RuntimeError: If no matching task is found.
+        """
+        return self.get_task(datapoint.task_name)
+
     @property
     def build_id(self) -> str:
         """Returns the build ID for this run.

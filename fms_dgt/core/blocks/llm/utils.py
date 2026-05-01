@@ -4,10 +4,11 @@
 # Standard
 from functools import wraps
 from inspect import iscoroutinefunction
-from typing import Any, Callable, Optional, Set, Tuple, Type
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
 import asyncio
 import collections
 import itertools
+import json
 import logging
 import time
 
@@ -15,6 +16,31 @@ import time
 from fms_dgt.constants import BASE_LOGGER_NAME
 
 _logger = logging.getLogger(BASE_LOGGER_NAME)
+
+
+def normalize_tool_call_arguments(tool_call: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize the ``arguments`` field of a tool call entry to a parsed dict.
+
+    Providers differ in how they return tool call arguments:
+    - OpenAI, Ollama, WatsonX: JSON string (OpenAI wire format)
+    - Anthropic: already a parsed dict (``ToolUseBlock.input``)
+
+    This helper ensures every consumer downstream receives a dict regardless
+    of which provider produced the response. The formatter is responsible for
+    serializing back to a JSON string in the final training data output.
+
+    Args:
+        tool_call: A single tool call entry dict with a ``"function"`` key
+            containing ``"name"`` and ``"arguments"``.
+
+    Returns:
+        The same dict with ``function.arguments`` guaranteed to be a dict.
+    """
+    function = tool_call.get("function", {})
+    raw = function.get("arguments", {})
+    if isinstance(raw, str):
+        function["arguments"] = json.loads(raw)
+    return tool_call
 
 
 def _retry_after_seconds(exc: Exception, backoff_time: float) -> float:

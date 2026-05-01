@@ -1,0 +1,17 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+name: public/rag/conversation
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+blocks:
+  # Language model connector (referenced as "generator" in task yamls)
+  - name: generator
+    type: ollama
+    model_id_or_path: granite4:3b
+
+# ConcurrentGenerationDataBuilder field
+# max_workers = outer thread pool size. Batch size per worker is controlled by seed_batch_size on the task.
+max_workers: 2

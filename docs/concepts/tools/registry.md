@@ -156,7 +156,7 @@ Each entry in `tools.registry:` specifies a loader type and its arguments:
 tools:
   registry:
     - type: file
-      path: ${DGT_DATA_PATH}/weather_tools.yaml
+      path: ${DGT_DATA_DIR}/weather_tools.yaml
       namespace: weather_api
     - type: mcp
       url: http://localhost:8080

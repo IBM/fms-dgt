@@ -37,6 +37,12 @@ from fms_dgt.core.databuilders.conversation.stages import (  # noqa: F401
 )
 from fms_dgt.core.databuilders.conversation.stages.base import Stage
 from fms_dgt.core.databuilders.conversation.task import ConversationTask
+from fms_dgt.core.databuilders.conversation.utils import (
+    get_all_steps_of_type,
+    get_first_step_of_type,
+    get_last_step_of_type,
+    get_random_step_of_type,
+)
 
 __all__ = [
     "AssistantStep",
@@ -54,7 +60,11 @@ __all__ = [
     "ToolCallStep",
     "ToolResultStep",
     "UserStep",
+    "get_all_steps_of_type",
     "get_context_generator",
+    "get_first_step_of_type",
+    "get_last_step_of_type",
+    "get_random_step_of_type",
     "get_stage",
     "get_step",
     "register_context_generator",

@@ -4,9 +4,11 @@
 # Standard
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import Any, Dict, Generator, List, Optional
 import copy
 import logging
+import random
 import threading
 
 # Local
@@ -14,6 +16,32 @@ from fms_dgt.core.tools.data_objects import ToolCall, ToolResult
 from fms_dgt.core.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
+
+
+# ===========================================================================
+#                       ERROR CATEGORIES
+# ===========================================================================
+
+
+@dataclass
+class ErrorCategory:
+    """Probabilistic error injection descriptor.
+
+    Attributes:
+        type: One of ``"network_error"``, ``"unparseable_result"``,
+            ``"schema_violation"``.
+        probability: Float in [0, 1] — chance this category fires on any
+            given call.
+        message: Optional human-readable error string.  Used for
+            ``"network_error"`` results.
+    """
+
+    type: str
+    probability: float
+    message: str = "Tool execution failed"
+
+    def should_fire(self) -> bool:
+        return random.random() < self.probability
 
 
 # ===========================================================================

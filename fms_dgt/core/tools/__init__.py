@@ -20,8 +20,8 @@ from fms_dgt.core.tools.constants import (
 )
 from fms_dgt.core.tools.data_objects import Tool, ToolCall, ToolList, ToolResult
 from fms_dgt.core.tools.engines import (
+    CompositeToolEngine,
     LMToolEngine,
-    MultiServerToolEngine,
     ToolEngine,
     get_tool_engine,
     register_tool_engine,
@@ -82,7 +82,7 @@ __all__ = [
     # Engine
     "ToolEngine",
     "LMToolEngine",
-    "MultiServerToolEngine",
+    "CompositeToolEngine",
     "register_tool_engine",
     "get_tool_engine",
 ]

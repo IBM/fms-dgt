@@ -32,7 +32,7 @@ class Step:
     (which may predate those fields) deserialize safely.
 
     Validator stages write scores into `scores` on the step they evaluated:
-        [s.scores for s in context.steps if s.role == "assistant"]
+        [step.scores for step in context.steps if isinstance(step, AssistantStep)]
     """
 
     role: str
@@ -241,6 +241,14 @@ class FlowControllerStep(Step):
     hint: str | None = None
     """Optional guidance text passed to the user stage for this iteration."""
 
+    reasoning: str | None = None
+    """Optional step-by-step reasoning recorded by the flow controller when
+    selecting the next interaction pattern."""
+
+    eligible_patterns: List[str] = field(default_factory=list)
+    """Patterns the flow controller considered valid for this turn, before
+    selecting the final one. Useful for debugging and quality analysis."""
+
 
 @dataclass
 class ScenarioStep(Step):
@@ -268,8 +276,8 @@ class PersonaStep(Step):
 
     Stages query by both role and target:
         persona_steps = [
-            s for s in context.steps
-            if s.role == "persona" and s.target == "user"
+            step for step in context.steps
+            if isinstance(s, PersonaStep) and s.target == "user"
         ]
 
     Appending a new PersonaStep mid-conversation shifts the active persona;
@@ -354,18 +362,18 @@ class ConversationDataPoint(DataPoint):
     Step subclasses and accessed by querying steps by role:
 
         # Current scenario
-        scenario_steps = [s for s in context.steps if s.role == "scenario"]
+        scenario_steps = [step for step in context.steps if isinstance(s, ScenarioStep)]
         scenario = scenario_steps[-1].content if scenario_steps else None
 
         # Scenario family id — first-class field on ScenarioStep
         family_id = scenario_steps[-1].scenario_family_id if scenario_steps else None
 
         # Active user persona (empty string if no persona stage in the recipe)
-        persona_steps = [s for s in context.steps if s.role == "persona" and s.target == "user"]
+        persona_steps = [step for step in context.steps if isinstance(s, PersonaStep) and s.target == "user"]
         persona_text = persona_steps[-1].content if persona_steps else ""
 
         # Flow controller termination — first-class field on FlowControllerStep
-        fc_steps = [s for s in context.steps if s.role == "flow_controller"]
+        fc_steps = [step for step in context.steps if isinstance(s, FlowControllerStep)]
         terminate = bool(fc_steps and fc_steps[-1].terminate)
 
         # Flow controller hint for user stage
@@ -391,4 +399,4 @@ class ConversationDataPoint(DataPoint):
         Convenience method for serializers constructing per-turn preference
         signal. Index i corresponds to the i-th assistant step in `steps`.
         """
-        return [s.scores for s in self.steps if s.role == "assistant"]
+        return [step.scores for step in self.steps if isinstance(step, AssistantStep)]

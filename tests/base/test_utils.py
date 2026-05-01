@@ -2,7 +2,45 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Local
-from fms_dgt.utils import from_dict, sanitize_path, to_dict
+from fms_dgt.utils import from_dict, group_by, sanitize_path, to_dict
+
+
+def test_group_by_basic():
+    data = [{"k": "a", "v": 1}, {"k": "b", "v": 2}, {"k": "a", "v": 3}]
+    result = group_by(data, key=lambda x: x["k"])
+    assert list(result.keys()) == ["a", "b"]
+    assert result["a"] == [{"k": "a", "v": 1}, {"k": "a", "v": 3}]
+    assert result["b"] == [{"k": "b", "v": 2}]
+
+
+def test_group_by_empty():
+    assert group_by([], key=lambda x: x) == {}
+
+
+def test_group_by_single_group():
+    data = [1, 2, 3]
+    result = group_by(data, key=lambda x: "same")
+    assert list(result.keys()) == ["same"]
+    assert result["same"] == [1, 2, 3]
+
+
+def test_group_by_all_distinct():
+    data = ["a", "b", "c"]
+    result = group_by(data, key=lambda x: x)
+    assert result == {"a": ["a"], "b": ["b"], "c": ["c"]}
+
+
+def test_group_by_preserves_insertion_order():
+    data = [{"k": "c"}, {"k": "a"}, {"k": "b"}, {"k": "c"}]
+    result = group_by(data, key=lambda x: x["k"])
+    assert list(result.keys()) == ["c", "a", "b"]
+
+
+def test_group_by_non_string_key():
+    data = [1, 2, 3, 4, 5, 6]
+    result = group_by(data, key=lambda x: x % 2)
+    assert result[1] == [1, 3, 5]
+    assert result[0] == [2, 4, 6]
 
 
 def test_sanitize_path():

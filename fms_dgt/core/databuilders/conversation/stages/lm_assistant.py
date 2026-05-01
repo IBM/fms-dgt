@@ -9,9 +9,12 @@ from fms_dgt.core.blocks.llm.llm import LMProvider
 from fms_dgt.core.databuilders.conversation.data_objects import (
     AssistantStep,
     ConversationDataPoint,
+    ScenarioStep,
+    UserStep,
 )
 from fms_dgt.core.databuilders.conversation.registry import register_stage
 from fms_dgt.core.databuilders.conversation.stages.base import Stage
+from fms_dgt.core.databuilders.conversation.utils import get_last_step_of_type
 
 
 def _build_assistant_messages(scenario: str, history_steps: list) -> list:
@@ -20,9 +23,9 @@ def _build_assistant_messages(scenario: str, history_steps: list) -> list:
         system_content += f"\n\nContext for this conversation:\n{scenario}"
     messages = [{"role": "system", "content": system_content}]
     for step in history_steps:
-        if step.role == "user":
+        if isinstance(step, UserStep):
             messages.append({"role": "user", "content": step.content})
-        elif step.role == "assistant":
+        elif isinstance(step, AssistantStep):
             messages.append({"role": "assistant", "content": step.content})
     return messages
 
@@ -49,17 +52,23 @@ class NaiveAssistantStage(Stage):
         **kwargs,
     ) -> List[ConversationDataPoint]:
         generator_inputs = []
-        for ctx in data_points:
-            scenario_steps = [s for s in ctx.steps if s.role == "scenario"]
-            scenario = scenario_steps[-1].content if scenario_steps else ""
+        for data_point in data_points:
+            scenario_step = get_last_step_of_type(data_point.steps, ScenarioStep)
+            scenario = scenario_step.content if scenario_step else ""
 
-            history_steps = [s for s in ctx.steps if s.role in ("user", "assistant")]
             generator_inputs.append(
                 {
-                    "input": _build_assistant_messages(scenario, history_steps),
-                    "gen_kwargs": {"max_new_tokens": 256},
-                    "reference": ctx,
-                    "task_name": ctx.task_name,
+                    "input": _build_assistant_messages(
+                        scenario,
+                        [
+                            step
+                            for step in data_point.steps
+                            if isinstance(step, (UserStep, AssistantStep))
+                        ],
+                    ),
+                    "gen_kwargs": {"max_new_tokens": 1024},
+                    "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -76,7 +85,7 @@ class NaiveAssistantStage(Stage):
             assistant_text = result.strip()
             if not assistant_text:
                 continue
-            ctx: ConversationDataPoint = out["reference"]
-            ctx.steps.append(AssistantStep(content=assistant_text, stage_name=self.name))
-            results.append(ctx)
+            data_point: ConversationDataPoint = out["reference"]
+            data_point.steps.append(AssistantStep(content=assistant_text, stage_name=self.name))
+            results.append(data_point)
         return results
