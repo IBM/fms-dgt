@@ -33,30 +33,31 @@ class ConcurrentGenerationDataBuilderConfig(DataBuilderConfig):
 class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
     """A GenerationDataBuilder that runs work items concurrently via a thread pool.
 
-    Replaces the synchronous inner loop of GenerationDataBuilder.execute_tasks()
-    with a ThreadPoolExecutor that processes mini-batches of data points in
-    parallel. Mirrors the full epoch loop of GenerationDataBuilder including the
-    outer loop that re-queues tasks after postprocessing if their data count
-    dropped below num_outputs_to_generate.
+    Each task owns its full lifecycle independently. Generation and postprocessing
+    both run as futures in a shared ThreadPoolExecutor. The main thread only makes
+    routing decisions; it never blocks on task work.
 
-    Worker allocation across tasks uses a proportional-fill policy:
-    - Every incomplete task is guaranteed at least 1 worker slot.
-    - Remaining slots are distributed proportionally by each task's remaining
-      work (num_outputs_to_generate - produced so far).
-    - If a task has fewer items remaining than its allocated slots, it only
-      spawns as many futures as it has work for; freed slots flow to other
-      tasks on the next recompute.
-    - Allocation is recomputed on every future completion.
-    - Unused slots after proportional distribution are redistributed to tasks
-      with the most remaining work, ensuring full pool utilization.
+    Per-task lifecycle (state machine):
 
-    Two levels of stall detection mirror GenerationDataBuilder:
-    - Per-future stall: incremented each time a future returns zero successes;
+        GENERATING ──(is_complete or gen_stalled)──→ DRAINING
+        DRAINING   ──(in_flight == 0)─────────────→ PENDING_POSTPROC
+        PENDING_POSTPROC ──(worker available)──────→ IN_POSTPROC
+        IN_POSTPROC ──(future resolves, done)──────→ task.finish()
+                    ──(future resolves, re-queue)──→ GENERATING
+
+    Worker allocation (priority-based, recomputed on every future completion):
+    - Step 1: Tasks in PENDING_POSTPROC each consume one slot (highest priority).
+      A task one step from finish() is served before generation gets anything.
+    - Step 2: Remaining slots are distributed to GENERATING tasks using
+      proportional fill with a per-task floor of 1.
+
+    Two levels of stall detection:
+    - Per-future stall: incremented each time a gen future returns zero successes;
       reset on any success. Task exits generation when counter reaches
       max_stalled_attempts.
     - Per-epoch stall: incremented each time postprocessing leaves a task with
       zero data; reset when postprocessing retains any data. Task is terminated
-      when this counter reaches max_stalled_attempts (stalled_postprocessing).
+      when this counter reaches max_stalled_attempts.
 
     The __call__ contract for subclasses:
     - Take N inputs, return M outputs (M <= N).
@@ -109,6 +110,7 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
         self,
         active_tasks: List[GenerationTask],
         in_flight_per_task: Dict[str, int],
+        available_slots: int,
     ) -> Dict[str, int]:
         """Compute how many additional workers to spawn per task.
 
@@ -122,13 +124,12 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
         Args:
             active_tasks: Tasks that still need work.
             in_flight_per_task: Count of currently running futures per task.
+            available_slots: Worker slots available for generation (caller has
+                already reserved slots for postprocessing tasks).
 
         Returns:
             Dict mapping task name to number of new futures to spawn.
         """
-        total_in_flight = sum(in_flight_per_task.values())
-        available_slots = self._max_workers - total_in_flight
-
         if available_slots <= 0 or not active_tasks:
             return {}
 
@@ -203,24 +204,21 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
     #                       EXECUTE TASKS
     # ===========================================================================
     def execute_tasks(self):
-        """Concurrent execution loop.
+        """Flat event loop — each task progresses through its lifecycle independently.
 
-        Mirrors GenerationDataBuilder.execute_tasks() with a two-level loop:
+        State sets (per-task name strings):
+            generating       — tasks currently submitting gen futures
+            draining         — gen exit signalled, waiting for in-flight gen futures to land
+            pending_postproc — all gen futures drained, waiting for a postproc worker slot
+            in_postproc      — postproc future in flight
 
-        Outer loop (epochs): runs while any task is still incomplete and the
-        attempt budget has not been exhausted. After each epoch's generation
-        phase, postprocessing runs on all tasks that produced data. Tasks that
-        are still incomplete after postprocessing re-enter the next epoch's
-        generation phase. A per-epoch stall counter terminates tasks where
-        postprocessing consistently destroys all data.
+        futures maps each Future to (task_name, "gen"|"postproc").
 
-        Inner loop (generation phase): a ThreadPoolExecutor drains all active
-        tasks concurrently. Workers are allocated proportionally with a
-        per-task floor of 1. Allocation is recomputed on every future
-        completion. A per-future stall counter terminates tasks that
-        consistently produce zero results.
+        Span hierarchy emitted per task:
+            dgt.task            — full task lifetime
+              dgt.epoch         — one generation round (first future → last future lands)
+              dgt.postprocessing — one postprocessing run
         """
-
         # Load existing machine data and dataloader state.
         for task in self._tasks:
             task.machine_data = task.load_intermediate_data()
@@ -260,248 +258,330 @@ class ConcurrentGenerationDataBuilder(GenerationDataBuilder):
 
         start_time = time.time()
 
-        # Per-future stall counters: incremented when a future returns zero
-        # successes; reset on any success.
-        consecutive_empty_futures: Dict[str, int] = {t.name: 0 for t in active_tasks}
+        task_by_name: Dict[str, GenerationTask] = {t.name: t for t in active_tasks}
 
-        # Per-epoch stall counters: incremented when postprocessing leaves a
-        # task with zero data; reset when postprocessing retains any data.
-        consecutive_empty_epochs: Dict[str, int] = {t.name: 0 for t in active_tasks}
+        # Per-task epoch counters (for logging and postproc).
+        task_epoch: Dict[str, int] = {t.name: 1 for t in active_tasks}
 
+        # Per-future stall counters: incremented when a gen future returns zero
+        # successes; reset on any success. Reset to 0 on re-queue into generating.
+        empty_futures: Dict[str, int] = {t.name: 0 for t in active_tasks}
+
+        # Per-epoch stall counters: incremented when postprocessing leaves a task
+        # with zero data. Accumulates across re-queues (persistent signal).
+        empty_epochs: Dict[str, int] = {t.name: 0 for t in active_tasks}
+
+        # In-flight future counts (gen + postproc combined per task).
+        in_flight: Dict[str, int] = {t.name: 0 for t in active_tasks}
+
+        # Per-task, per-epoch attempt counters. Incremented each time a gen
+        # future is submitted; attached to the dgt.epoch span at close time
+        # and reset when the task re-enters generation.
+        epoch_attempts: Dict[str, int] = {t.name: 0 for t in active_tasks}
+
+        # Lifecycle state sets (hold task name strings).
+        generating: set = {t.name for t in active_tasks}
+        draining: set = set()  # gen exit signalled, outstanding gen futures remain
+        pending_postproc: set = set()
+        in_postproc: set = set()
+
+        # futures[fut] = (task_name, "gen"|"postproc")
+        futures: Dict[Future, Any] = {}
+
+        # Global attempt counter: incremented on every completed gen future across
+        # all tasks and epochs. Used solely to enforce _num_attempts_to_complete,
+        # the absolute cap on total generation work for the entire run.
         attempt = 0
 
-        # Outer epoch loop: re-enters when tasks remain incomplete after
-        # postprocessing and the attempt budget has not been exhausted.
-        while active_tasks and attempt <= self._num_attempts_to_complete:
-
-            with Span(
-                "dgt.epoch",
+        # Open one dgt.task span per active task. Closed just before task.finish().
+        # build_id/run_id are auto-injected from the active run_context ContextVar
+        # in Span.__exit__ — no need to pass them explicitly here.
+        task_spans: Dict[str, Span] = {}
+        for task in active_tasks:
+            span = Span(
+                "dgt.task",
                 self._span_writer,
                 parent_span_name="dgt.run",
-                epoch=self._epoch,
-                active_task_names=",".join(t.name for t in active_tasks),
-                active_task_count=len(active_tasks),
-            ):
-                self.logger.info("*" * 99)
-                self.logger.info("\t\t\t\tCONCURRENT GENERATION — EPOCH %s", self._epoch)
-                self.logger.info("*" * 99)
-                self.logger.info(
-                    "Epoch %s started: %s worker(s), %s active task(s): %s",
-                    self._epoch,
-                    self._max_workers,
-                    len(active_tasks),
-                    ", ".join(t.name for t in active_tasks),
-                    extra={
-                        "event": "epoch_started",
-                        "epoch": self._epoch,
-                        "active_task_names": [t.name for t in active_tasks],
-                        "active_task_count": len(active_tasks),
-                        "max_workers": self._max_workers,
-                    },
-                )
+                task_name=task.name,
+            )
+            span.__enter__()
+            task_spans[task.name] = span
 
-                # ---------------------------------------------------------------
-                # Generation phase: run thread pool until all active tasks are
-                # either complete or stalled.
-                # ---------------------------------------------------------------
-                tasks_in_generation: List[GenerationTask] = list(active_tasks)
-                tasks_finished_generation: List[GenerationTask] = []
+        # Open epoch and postproc spans are tracked here; populated by
+        # _allocate_and_spawn and closed in the event loop.
+        epoch_spans: Dict[str, Span] = {}
+        postproc_spans: Dict[str, Span] = {}
 
-                futures: Dict[Future, str] = {}
-                in_flight_per_task: Dict[str, int] = {t.name: 0 for t in tasks_in_generation}
+        executor = ThreadPoolExecutor(max_workers=self._max_workers)
+        try:
+            self._allocate_and_spawn(
+                task_by_name,
+                futures,
+                task_epoch,
+                in_flight,
+                generating,
+                pending_postproc,
+                in_postproc,
+                executor,
+                epoch_spans,
+                postproc_spans,
+                epoch_attempts,
+            )
 
-                executor = ThreadPoolExecutor(max_workers=self._max_workers)
-                try:
-                    self._spawn_futures(tasks_in_generation, futures, in_flight_per_task, executor)
+            while futures:
+                done, _ = wait(futures, return_when=FIRST_COMPLETED)
 
-                    while futures:
+                for fut in done:
+                    task_name, future_type = futures.pop(fut)
+                    in_flight[task_name] -= 1
+                    task = task_by_name[task_name]
+
+                    # ----------------------------------------------------------
+                    # Generation future completed.
+                    # ----------------------------------------------------------
+                    if future_type == "gen":
                         attempt += 1
-                        done, _ = wait(futures, return_when=FIRST_COMPLETED)
+                        results: List[DataPoint] = fut.result()
+                        successes = 0
 
-                        for fut in done:
-                            task_name = futures.pop(fut)
-                            if task_name in in_flight_per_task:
-                                in_flight_per_task[task_name] -= 1
+                        with self._task_locks[task_name]:
+                            for dp in results:
+                                task.save_intermediate_data(dp)
+                                task.save_dataloader_state()
+                                task.machine_data.append(dp)
+                                successes += 1
 
-                            task = next(t for t in self._tasks if t.name == task_name)
-                            results: List[DataPoint] = fut.result()
-                            successes = 0
+                        if successes > 0:
+                            empty_futures[task_name] = 0
+                        else:
+                            empty_futures[task_name] += 1
 
-                            with self._task_locks[task_name]:
-                                for dp in results:
-                                    task.save_intermediate_data(dp)
-                                    task.save_dataloader_state()
-                                    task.machine_data.append(dp)
-                                    successes += 1
+                        gen_stalled = empty_futures[task_name] >= self._max_stalled_attempts
+                        budget_exhausted = attempt > self._num_attempts_to_complete
 
-                            # Per-future stall detection.
-                            if successes > 0:
-                                consecutive_empty_futures[task_name] = 0
+                        # Decide whether this task should exit generation.
+                        should_exit_gen = task_name in generating and (
+                            task.is_complete() or gen_stalled or budget_exhausted
+                        )
+
+                        if should_exit_gen:
+                            if gen_stalled and not task.is_complete():
+                                self.logger.warning(
+                                    "Task %s has not generated any data in the last %s futures, moving to postprocessing",
+                                    task_name,
+                                    self._max_stalled_attempts,
+                                )
+                            generating.discard(task_name)
+                            if in_flight[task_name] == 0:
+                                # Close epoch span: no more gen futures for this epoch.
+                                if task_name in epoch_spans:
+                                    span = epoch_spans.pop(task_name)
+                                    span.num_attempts = epoch_attempts[task_name]
+                                    span.__exit__(None, None, None)
+                                pending_postproc.add(task_name)
                             else:
-                                consecutive_empty_futures[task_name] += 1
+                                draining.add(task_name)
 
-                            stalled = (
-                                consecutive_empty_futures[task_name] >= self._max_stalled_attempts
+                        elif task_name in draining and in_flight[task_name] == 0:
+                            # Last in-flight gen future for a draining task landed.
+                            draining.discard(task_name)
+                            # Close epoch span: generation round fully drained.
+                            if task_name in epoch_spans:
+                                span = epoch_spans.pop(task_name)
+                                span.num_attempts = epoch_attempts[task_name]
+                                span.__exit__(None, None, None)
+                            pending_postproc.add(task_name)
+
+                    # ----------------------------------------------------------
+                    # Postprocessing future completed.
+                    # ----------------------------------------------------------
+                    else:
+                        in_postproc.discard(task_name)
+                        epoch = task_epoch[task_name]
+
+                        # Close postproc span.
+                        if task_name in postproc_spans:
+                            postproc_spans.pop(task_name).__exit__(None, None, None)
+
+                        if task.machine_data:
+                            empty_epochs[task_name] = 0
+                        else:
+                            empty_epochs[task_name] += 1
+
+                        epoch_stalled = empty_epochs[task_name] >= self._max_stalled_attempts
+                        gen_stalled = empty_futures[task_name] >= self._max_stalled_attempts
+
+                        if task.is_complete() or gen_stalled or epoch_stalled:
+                            if epoch_stalled and not task.is_complete():
+                                self.logger.warning(
+                                    "Task %s has not produced any data after postprocessing in the last %s epochs, terminating",
+                                    task_name,
+                                    self._max_stalled_attempts,
+                                )
+                            reason = (
+                                "complete"
+                                if task.is_complete()
+                                else (
+                                    "stalled_generation"
+                                    if gen_stalled
+                                    else "stalled_postprocessing"
+                                )
+                            )
+                            self.logger.info(
+                                "Task '%s' finished.",
+                                task_name,
+                                extra={
+                                    "event": "task_finished",
+                                    "task_name": task_name,
+                                    "reason": reason,
+                                    "epoch": epoch,
+                                    "produced": len(task.machine_data),
+                                },
+                            )
+                            # Close task span before finish().
+                            if task_name in task_spans:
+                                task_spans.pop(task_name).__exit__(None, None, None)
+                            task.finish()
+                            # Remove from all tracking dicts so freed slots
+                            # flow to remaining tasks on the next allocation.
+                            del task_by_name[task_name]
+                            del in_flight[task_name]
+                            del empty_futures[task_name]
+                            del empty_epochs[task_name]
+                            del task_epoch[task_name]
+                        else:
+                            # Postprocessing ran but task still needs more data.
+                            # Re-enter generation with a fresh empty_futures counter.
+                            task_epoch[task_name] += 1
+                            empty_futures[task_name] = 0
+                            in_flight[task_name] = 0
+                            epoch_attempts[task_name] = 0
+                            generating.add(task_name)
+                            self.logger.info(
+                                "Task '%s' re-entering generation (epoch %s).",
+                                task_name,
+                                task_epoch[task_name],
+                                extra={
+                                    "event": "task_requeued",
+                                    "task_name": task_name,
+                                    "epoch": task_epoch[task_name],
+                                },
                             )
 
-                            if task.is_complete() or stalled:
-                                if stalled and not task.is_complete():
-                                    self.logger.warning(
-                                        "Task %s has not generated any data in the last %s futures, moving to postprocessing",
-                                        task_name,
-                                        self._max_stalled_attempts,
-                                    )
-                                tasks_in_generation = [
-                                    t for t in tasks_in_generation if t.name != task_name
-                                ]
-                                tasks_finished_generation.append(task)
-                                in_flight_per_task.pop(task_name, None)
-                                # Do not reset consecutive_empty_futures here:
-                                # the epoch decision logic reads it to determine
-                                # stalled_generation reason.
-                            else:
-                                self._spawn_futures(
-                                    tasks_in_generation, futures, in_flight_per_task, executor
-                                )
-
-                finally:
-                    executor.shutdown(wait=True)
-
-                # ---------------------------------------------------------------
-                # Postprocessing phase.
-                # ---------------------------------------------------------------
-                tasks_for_postproc = [t for t in tasks_finished_generation if t.machine_data]
-                _counts_before: Dict[str, int] = {
-                    t.name: len(t.machine_data) for t in tasks_for_postproc
-                }
-
-                if tasks_for_postproc:
-                    self.logger.info("Launch postprocessing")
-                    with Span(
-                        "dgt.postprocessing",
-                        self._span_writer,
-                        parent_span_name="dgt.epoch",
-                        epoch=self._epoch,
-                        task_count=len(tasks_for_postproc),
-                    ):
-                        self.execute_postprocessing(tasks_for_postproc)
-
-                    for task in tasks_for_postproc:
-                        if task.machine_data:
-                            consecutive_empty_epochs[task.name] = 0
-                        else:
-                            consecutive_empty_epochs[task.name] += 1
-
-                    self.logger.info(
-                        "Postprocessing completed",
-                        extra={
-                            "event": "postprocessing_finished",
-                            "epoch": self._epoch,
-                            "task_counts": {
-                                t.name: {
-                                    "before": _counts_before[t.name],
-                                    "after": len(t.machine_data),
-                                }
-                                for t in tasks_for_postproc
-                            },
-                        },
+                    self._allocate_and_spawn(
+                        task_by_name,
+                        futures,
+                        task_epoch,
+                        in_flight,
+                        generating,
+                        pending_postproc,
+                        in_postproc,
+                        executor,
+                        epoch_spans,
+                        postproc_spans,
+                        epoch_attempts,
                     )
 
-                # ---------------------------------------------------------------
-                # Decide which tasks are done vs need another epoch.
-                # ---------------------------------------------------------------
-                _epoch_finish_reasons: Dict[str, str] = {}
-                next_active: List[GenerationTask] = []
-
-                for task in tasks_finished_generation:
-                    generation_stalled = (
-                        consecutive_empty_futures.get(task.name, 0) >= self._max_stalled_attempts
-                    )
-                    epoch_stalled = (
-                        consecutive_empty_epochs.get(task.name, 0) >= self._max_stalled_attempts
-                    )
-
-                    if task.is_complete():
-                        reason = "complete"
-                    elif generation_stalled:
-                        reason = "stalled_generation"
-                        self.logger.warning(
-                            "Task %s has not generated any data in the last %s attempts, terminating",
-                            task.name,
-                            self._max_stalled_attempts,
-                        )
-                    elif epoch_stalled:
-                        reason = "stalled_postprocessing"
-                        self.logger.warning(
-                            "Task %s has not produced any data after postprocessing in the last %s epochs, terminating",
-                            task.name,
-                            self._max_stalled_attempts,
-                        )
-                    else:
-                        # Still incomplete but not stalled: needs another epoch.
-                        next_active.append(task)
-                        continue
-
-                    _epoch_finish_reasons[task.name] = reason
-                    self.logger.info(
-                        "Task '%s' finished.",
-                        task.name,
-                        extra={
-                            "event": "task_finished",
-                            "task_name": task.name,
-                            "reason": reason,
-                            "produced": len(task.machine_data),
-                        },
-                    )
-                    task.finish()
-
-                self.logger.info(
-                    "Epoch %s finished.",
-                    self._epoch,
-                    extra={
-                        "event": "epoch_finished",
-                        "epoch": self._epoch,
-                        "task_counts": {
-                            t.name: len(t.machine_data) for t in tasks_finished_generation
-                        },
-                        "finish_reasons": _epoch_finish_reasons,
-                    },
-                )
-                self.logger.info("*" * 99)
-
-                active_tasks = next_active
-                if active_tasks and attempt <= self._num_attempts_to_complete:
-                    self.logger.info(
-                        "Triggering new epoch since %d task%s still pending.",
-                        len(active_tasks),
-                        "s are" if len(active_tasks) > 1 else " is",
-                    )
-                    self._epoch += 1
+        finally:
+            executor.shutdown(wait=True)
+            # Close any spans left open by an unexpected exit (e.g. exception).
+            for span in postproc_spans.values():
+                span.__exit__(None, None, None)
+            for span in epoch_spans.values():
+                span.__exit__(None, None, None)
+            for span in task_spans.values():
+                span.__exit__(None, None, None)
 
         self.logger.info("Generation took %.2fs", time.time() - start_time)
 
     # ===========================================================================
     #                       HELPERS
     # ===========================================================================
-    def _spawn_futures(
+    def _allocate_and_spawn(
         self,
-        active_tasks: List[GenerationTask],
-        futures: Dict[Future, str],
-        in_flight_per_task: Dict[str, int],
+        task_by_name: Dict[str, GenerationTask],
+        futures: Dict[Future, Any],
+        task_epoch: Dict[str, int],
+        in_flight: Dict[str, int],
+        generating: set,
+        pending_postproc: set,
+        in_postproc: set,
         executor: ThreadPoolExecutor,
+        epoch_spans: Dict[str, "Span"],
+        postproc_spans: Dict[str, "Span"],
+        epoch_attempts: Dict[str, int],
     ) -> None:
-        """Compute worker allocation and submit new futures for each task."""
-        spawn = self._compute_worker_allocation(active_tasks, in_flight_per_task)
+        """Submit new futures according to the priority allocation policy.
 
-        for task in active_tasks:
-            count = spawn.get(task.name, 0)
-            for _ in range(count):
-                batch = task.get_batch_examples()
-                if not batch:
-                    break
-                fut = executor.submit(contextvars.copy_context().run, self, self._epoch, batch)
-                futures[fut] = task.name
-                in_flight_per_task[task.name] = in_flight_per_task.get(task.name, 0) + 1
+        Step 1 (highest priority): each task in pending_postproc consumes one
+        worker slot and transitions to in_postproc. Opens a dgt.postprocessing
+        span for the task.
+
+        Step 2: remaining slots are distributed to generating tasks using
+        proportional fill with a per-task floor of 1. Opens a dgt.epoch span
+        the first time a gen future is submitted for a task in a given epoch.
+        """
+        in_flight_gen = sum(in_flight[n] for n in generating if n in in_flight)
+        in_flight_pp = sum(in_flight[n] for n in in_postproc if n in in_flight)
+        available = self._max_workers - in_flight_gen - in_flight_pp
+
+        # Step 1: postprocessing futures (priority).
+        for task_name in list(pending_postproc):
+            if available <= 0:
+                break
+            task = task_by_name[task_name]
+            pending_postproc.discard(task_name)
+            in_postproc.add(task_name)
+            in_flight[task_name] = in_flight.get(task_name, 0) + 1
+            epoch = task_epoch[task_name]
+            # Open dgt.postprocessing span for this postproc run.
+            if task_name not in postproc_spans:
+                span = Span(
+                    "dgt.postprocessing",
+                    self._span_writer,
+                    parent_span_name="dgt.task",
+                    task_name=task_name,
+                    epoch=epoch,
+                )
+                span.__enter__()
+                postproc_spans[task_name] = span
+            fut = executor.submit(self.execute_postprocessing, [task], epoch)
+            futures[fut] = (task_name, "postproc")
+            available -= 1
+
+        # Step 2: generation futures (proportional fill).
+        if available > 0 and generating:
+            generating_tasks = [task_by_name[n] for n in generating if n in task_by_name]
+            in_flight_generating = {n: in_flight.get(n, 0) for n in generating}
+            spawn = self._compute_worker_allocation(
+                generating_tasks, in_flight_generating, available
+            )
+            for task in generating_tasks:
+                count = spawn.get(task.name, 0)
+                for _ in range(count):
+                    batch = task.get_batch_examples()
+                    if not batch:
+                        # Seed data exhausted — treat as gen_stalled.
+                        generating.discard(task.name)
+                        pending_postproc.add(task.name)
+                        break
+                    # Open dgt.epoch span on the first future for this epoch.
+                    if in_flight.get(task.name, 0) == 0 and task.name not in epoch_spans:
+                        span = Span(
+                            "dgt.epoch",
+                            self._span_writer,
+                            parent_span_name="dgt.task",
+                            task_name=task.name,
+                            epoch=task_epoch[task.name],
+                        )
+                        span.__enter__()
+                        epoch_spans[task.name] = span
+                    fut = executor.submit(
+                        contextvars.copy_context().run, self, task_epoch[task.name], batch
+                    )
+                    futures[fut] = (task.name, "gen")
+                    in_flight[task.name] = in_flight.get(task.name, 0) + 1
+                    epoch_attempts[task.name] = epoch_attempts.get(task.name, 0) + 1
 
     def call_with_task_list(
         self, tasks: List[GenerationTask], request_idx: int

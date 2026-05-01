@@ -191,30 +191,35 @@ def lm_caching_test(model_cfg):
 # ===========================================================================
 
 
+@pytest.mark.live
 @pytest.mark.skipif(SKIP_VLLM, reason='requires "vllm" library')
 @pytest.mark.parametrize("model_cfg", [LM_VLLM_CFG])
 def test_generate(model_cfg):
     execute_completion_flow(model_cfg)
 
 
+@pytest.mark.live
 @pytest.mark.skipif(SKIP_VLLM, reason='requires "vllm" library')
 @pytest.mark.parametrize("model_cfg", [LM_VLLM_CFG])
 def test_chat(model_cfg):
     execute_chat_completion_flow(model_cfg)
 
 
+@pytest.mark.live
 @pytest.mark.skipif(SKIP_VLLM, reason='requires "vllm" library')
 @pytest.mark.parametrize("model_cfg", [LM_VLLM_SERVER_CFG])
 def test_lm_caching(model_cfg):
     lm_caching_test(model_cfg)
 
 
+@pytest.mark.live
 @pytest.mark.skipif(SKIP_VLLM, reason='requires "vllm" library')
 @pytest.mark.parametrize("model_cfg", [LM_VLLM_SERVER_CFG])
 def test_auto_chat_template(model_cfg):
     auto_chat_template_test(model_cfg)
 
 
+@pytest.mark.live
 @pytest.mark.skipif(SKIP_VLLM, reason='requires "vllm" library')
 def test_vllm_tensor_parallel():
     """

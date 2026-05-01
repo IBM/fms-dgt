@@ -35,8 +35,10 @@ class RAGFlowControllerStage(LMFlowControllerStage):
             documents = getattr(scenario_step, "documents", []) or []
             if documents:
                 doc_text = render_documents(documents)
-                lines.append(f"\n[Documents]\n{doc_text}")
+                lines.append(f"\n[Available Documents]\n{doc_text}")
         history = steps_to_text(context.steps)
         if history:
-            lines.append(history)
+            lines.append(f"\n[Conversation History]\n{history}")
+        else:
+            lines.append("\n[Conversation History]\n(no turns yet — conversation has not started)")
         return "\n".join(lines)
