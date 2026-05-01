@@ -125,7 +125,7 @@ class StubConcurrentBuilder(ConcurrentGenerationDataBuilder):
         return self._call_counts
 
     # Disable postprocessing and telemetry helpers that require real infrastructure.
-    def execute_postprocessing(self, tasks):
+    def execute_postprocessing(self, tasks, task_epoch=None):
         pass
 
     def _register_task_log_handler(self, task):
@@ -168,14 +168,14 @@ class TestWorkerAllocation:
     def test_single_task_gets_all_workers(self):
         task = StubTask("A", num_outputs=100)
         builder = self._builder([task], max_workers=4)
-        allocation = builder._compute_worker_allocation([task], {"A": 0})
+        allocation = builder._compute_worker_allocation([task], {"A": 0}, 4)
         assert allocation.get("A", 0) <= 4
         assert allocation.get("A", 0) >= 1
 
     def test_floor_of_one_per_task(self):
         tasks = [StubTask("A", 100), StubTask("B", 100), StubTask("C", 100)]
         builder = self._builder(tasks, max_workers=3)
-        allocation = builder._compute_worker_allocation(tasks, {"A": 0, "B": 0, "C": 0})
+        allocation = builder._compute_worker_allocation(tasks, {"A": 0, "B": 0, "C": 0}, 3)
         # Each task must get at least 1 worker when slots equal task count.
         for t in tasks:
             assert allocation.get(t.name, 0) >= 1
@@ -183,21 +183,23 @@ class TestWorkerAllocation:
     def test_total_allocation_does_not_exceed_max_workers(self):
         tasks = [StubTask("A", 1000), StubTask("B", 1000), StubTask("C", 1000)]
         builder = self._builder(tasks, max_workers=4)
-        allocation = builder._compute_worker_allocation(tasks, {"A": 0, "B": 0, "C": 0})
+        allocation = builder._compute_worker_allocation(tasks, {"A": 0, "B": 0, "C": 0}, 4)
         assert sum(allocation.values()) <= 4
 
     def test_no_new_futures_when_pool_full(self):
         tasks = [StubTask("A", 100), StubTask("B", 100)]
         builder = self._builder(tasks, max_workers=2)
         # Both slots already occupied.
-        allocation = builder._compute_worker_allocation(tasks, {"A": 1, "B": 1})
+        allocation = builder._compute_worker_allocation(tasks, {"A": 1, "B": 1}, 0)
         assert sum(allocation.values()) == 0
 
     def test_proportional_distribution_favours_larger_task(self):
         task_small = StubTask("S", num_outputs=10)
         task_large = StubTask("L", num_outputs=1000)
         builder = self._builder([task_small, task_large], max_workers=8)
-        allocation = builder._compute_worker_allocation([task_small, task_large], {"S": 0, "L": 0})
+        allocation = builder._compute_worker_allocation(
+            [task_small, task_large], {"S": 0, "L": 0}, 8
+        )
         # Large task should get more workers than small task.
         assert allocation.get("L", 0) >= allocation.get("S", 0)
 
@@ -207,7 +209,7 @@ class TestWorkerAllocation:
         # Simulate task_a nearly done: 2 remaining but already in_flight=1
         task_a.machine_data = [make_dp("A")] * 1
         builder = self._builder([task_a, task_b], max_workers=4)
-        allocation = builder._compute_worker_allocation([task_a, task_b], {"A": 1, "B": 0})
+        allocation = builder._compute_worker_allocation([task_a, task_b], {"A": 1, "B": 0}, 3)
         # task_b should absorb the free slots.
         assert allocation.get("B", 0) > 0
 
@@ -258,7 +260,7 @@ class TestConcurrentExecution:
 
         wipe_count = {"n": 0}
 
-        def postprocessing_that_wipes_once(tasks):
+        def postprocessing_that_wipes_once(tasks, task_epoch=None):
             if wipe_count["n"] == 0:
                 for t in tasks:
                     t.machine_data.clear()
