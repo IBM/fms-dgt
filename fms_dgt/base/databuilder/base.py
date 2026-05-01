@@ -48,7 +48,7 @@ class DataBuilder:
     def __init__(
         self,
         config: Mapping | DataBuilderConfig | None = None,
-        max_stalled_attempts: int = 5,
+        max_stalled_attempts: int = 100,
         verify_block_type: bool = False,
         task_kwargs: List[Dict] = None,
         **kwargs: Any,
@@ -65,7 +65,7 @@ class DataBuilder:
         self._max_stalled_attempts = (
             max_stalled_attempts
             if max_stalled_attempts and isinstance(max_stalled_attempts, int)
-            else 5
+            else 100
         )
 
         # Initialize tasks
@@ -386,7 +386,7 @@ class DataBuilder:
             else "-"
         )
         completion_token_usage_str = (
-            f'{block.profiler_data["usage"]["tokens"]["completion"]:,}'
+            f"{block.profiler_data['usage']['tokens']['completion']:,}"
             if "usage" in block.profiler_data
             and block.profiler_data["usage"]
             and "tokens" in block.profiler_data["usage"]
@@ -395,7 +395,7 @@ class DataBuilder:
             else "-"
         )
         prompt_token_usage_str = (
-            f'{block.profiler_data["usage"]["tokens"]["prompt"]:,}'
+            f"{block.profiler_data['usage']['tokens']['prompt']:,}"
             if "usage" in block.profiler_data
             and block.profiler_data["usage"]
             and "tokens" in block.profiler_data["usage"]
@@ -405,7 +405,7 @@ class DataBuilder:
         )
 
         block_name = f"{prefix}.{block.name}" if prefix else block.name
-        report_str = f"{block_name if len(block_name) <= 17 else block_name[:17]+'...':<20}\t{execution_time_str:17}\t{peak_memory_str:24}\t{completion_token_usage_str:^19}\t{prompt_token_usage_str:^19}"
+        report_str = f"{block_name if len(block_name) <= 17 else block_name[:17] + '...':<20}\t{execution_time_str:17}\t{peak_memory_str:24}\t{completion_token_usage_str:^19}\t{prompt_token_usage_str:^19}"
         self.logger.info(report_str)
 
         return
@@ -531,7 +531,7 @@ class DataBuilder:
             " " * 36,
         )
         for task_name, (task, ct) in tasks.items():
-            report_str = f"{task_name if len(task_name) <= 37 else task_name[:37]+'...':<40}\t{len(task.machine_data):^10}\t{ct:^20}"
+            report_str = f"{task_name if len(task_name) <= 37 else task_name[:37] + '...':<40}\t{len(task.machine_data):^10}\t{ct:^20}"
             self.logger.info(report_str)
 
         self.logger.info("*" * 99)

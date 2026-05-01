@@ -1,0 +1,11 @@
+<tools>
+{{ tools }}
+</tools>
+
+<date>
+{{ date }}
+</date>
+
+<history>
+{{ history }}
+</history>

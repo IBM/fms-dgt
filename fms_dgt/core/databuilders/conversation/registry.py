@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Standard
+from dataclasses import MISSING, fields
 from typing import Callable, Dict, Type
 
 # Local
@@ -50,7 +51,7 @@ def get_stage(name: str) -> Type[Stage]:
     """
     if name not in _STAGE_REGISTRY:
         raise KeyError(
-            f"Stage '{name}' is not registered. " f"Available stages: {sorted(_STAGE_REGISTRY)}"
+            f"Stage '{name}' is not registered. Available stages: {sorted(_STAGE_REGISTRY)}"
         )
     return _STAGE_REGISTRY[name]
 
@@ -126,7 +127,35 @@ def get_step(role: str) -> type:
     raising, so seed data with unknown custom roles deserializes safely
     as flat Step objects.
     """
-    return _STEP_REGISTRY.get(role, Step)
+
+    def _get_default(cls):
+        for f in fields(cls):
+            if f.name == "role":
+                # Check for standard default
+                if f.default is not MISSING:
+                    return f.default
+                # Check for default_factory (e.g., list, dict)
+                if f.default_factory is not MISSING:
+                    return f.default_factory()
+
+    def _get_matching_subclass(cls: Type[Step] = Step):
+        matching = set()
+        for subclass in cls.__subclasses__():
+            matching.update(_get_matching_subclass(subclass))
+        default_role_value = _get_default(cls)
+        if default_role_value is not None and default_role_value == role:
+            matching.add(cls)
+        return matching
+
+    registered_cls = _STEP_REGISTRY.get(role)
+    if registered_cls is not None:
+        return registered_cls
+
+    matching_subclasses = _get_matching_subclass()
+    if len(matching_subclasses) > 1:
+        raise ValueError(f"Multiple Step classes meet role constraint: {matching_subclasses}")
+
+    return next(iter(matching_subclasses))
 
 
 def _register_builtin_steps() -> None:

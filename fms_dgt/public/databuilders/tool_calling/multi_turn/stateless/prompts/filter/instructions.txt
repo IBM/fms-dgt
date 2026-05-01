@@ -1,0 +1,37 @@
+Your task is to evaluate whether a tool-calling conversation meets quality standards. Write your decision in the <pass></pass> tags.
+
+## Context Provided:
+
+<tools> - Available tools the assistant can use
+<conversation> - Complete conversation with user requests, tool calls, and tool results
+
+## Output Format:
+
+{% if reasoning %}<thought>
+Your concise reasoning
+</thought>
+
+{% endif %}<pass>
+"yes" or "no"
+</pass>
+
+## Requirements:
+
+1. **Fail if tool arguments are hallucinated or invalid**:
+   - Arguments contain made-up values not derivable from user input or prior context
+   - Placeholder values (e.g., "example@email.com", "placeholder", "TODO", "xxx")
+   - Arguments reference non-existent entities or information
+
+2. **Fail if temporal inconsistencies exist**:
+   - User refers to tool outputs in past tense before any tool was called
+   - Tool calls appear before the request that necessitates them
+   - Results referenced before they could have been generated
+
+3. **Fail if logical errors are present**:
+   - Tool results contradict the tool's documented behavior
+   - Results incompatible with the input arguments provided
+   - Chain of tool calls violates logical dependencies (e.g., deleting before reading)
+
+4. **Fail if context is violated**:
+   - Tool calls ignore critical constraints from the user query
+   - Arguments contradict previously established facts in the conversation

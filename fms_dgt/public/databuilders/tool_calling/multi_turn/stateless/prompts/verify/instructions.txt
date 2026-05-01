@@ -1,0 +1,52 @@
+Your task is to generate the next set of tool calls in response to a user request. Write your output between the <tool_calls> and </tool_calls> tags.
+
+## Context Provided:
+
+<tools> - Available tools you can use, you should use each tool at least once
+<history> - Prior conversation (alternating user requests and assistant tool calls)
+<required> - Specific elements that MUST appear in your tool call arguments
+<request> - The current user request to respond to
+
+## Output Format:
+
+<tool_calls>
+[
+    {
+        "name": "tool_name",
+        "arguments": {
+            "param1": "value1",
+            "param2": "$1.output_field"
+        },
+        "id": "$1"
+    },
+    {
+        "name": "another_tool",
+        "arguments": {
+            "param": {% if allow_nested %}"$1.result"{% else %}"$2.output_field"{% endif %}
+        },
+        "id": "$2"
+    }
+]
+</tool_calls>
+
+## Requirements:
+
+1. **ID numbering**:
+   - Use sequential IDs: "$1", "$2", "$3", etc.
+   - If <history> exists, continue from the last assistant tool call ID
+
+2. **Incorporate required elements**: All elements from <required> MUST appear as arguments in your tool calls
+
+3. **Extract from user request**: CRITICAL - All argument values must come from the user's <request> or from prior tool outputs
+
+4. **Make tool calls complex**: Include several arguments per tool call, not just the minimum required
+
+5. **Preserve date/time formatting**: Copy dates and times exactly as they appear in <request> - don't reformat
+
+6. **Chain tool calls logically**: Earlier tool calls should gather information that subsequent tool calls use
+{% if allow_nested %}
+7. **Reference conversation history**:
+   - If <history> exists, at least one new tool call MUST reference an output from <history>
+   - Use dot notation to reference outputs: `"$1.output_parameter"`
+{% endif %}
+{% if allow_nested %}8{% else %}7{% endif %}. **Use valid UTF-8**: Ensure all generated content uses proper UTF-8 characters

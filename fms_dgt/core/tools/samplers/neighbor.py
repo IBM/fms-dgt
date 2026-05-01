@@ -81,7 +81,7 @@ class NeighborToolSampler(ToolSampler):
         k: int | None = None,
         namespace: str | None = None,
         namespace_weights: Dict[str, float] | None = None,
-        strategy: Literal["uniform", "proportional"] = "uniform",
+        strategy: Literal["uniform", "proportional"] = "proportional",
         temperature: float = 1.0,
         **kwargs: Any,
     ) -> None:
@@ -143,7 +143,11 @@ class NeighborToolSampler(ToolSampler):
         chosen_ns = _random.choices(namespaces, weights=weights, k=1)[0]
         return _random.choice(ns_pools[chosen_ns])
 
-    def _collect_neighbors(self, seed: Tool) -> List[Tuple[Tool, float]]:
+    def _collect_neighbors(
+        self,
+        seed: Tool,
+        rounds: int = 2,
+    ) -> Tuple[List[Tuple[Tool, float]], Dict[str, List[str]]]:
         """Collect all neighbors of the seed across all namespaces.
 
         Looks up the seed's entry in ``registry.artifacts["neighbors"]``,
@@ -153,39 +157,53 @@ class NeighborToolSampler(ToolSampler):
 
         Args:
             seed: The seed tool whose neighbors to collect.
+            rounds: Number of times to expand neighborhood.
 
         Returns:
             List of ``(Tool, raw_score)`` pairs, deduplicated by
             ``(qualified_name, schema_fp)``.
         """
         neighbors_artifact: Dict = self._registry.artifacts["neighbors"]
-        seed_fp = schema_fingerprint(seed.parameters)
 
-        fp_map = neighbors_artifact.get(seed.qualified_name, {})
-        ns_buckets = fp_map.get(seed_fp, {})
+        result: Dict[str, Tuple[Tool, float]] = dict()
+        duplicates: Dict[str, List[Tuple[Tool, float]]] = dict()
 
-        seen: set = set()
-        result: List[Tuple[Tool, float]] = []
+        to_explore = [(seed, 1.0)]
+        for _ in range(rounds):
+            #
+            for tool, score in to_explore:
+                if tool.name not in result:
+                    result[tool.name] = (tool, score)
+            #
+            frontier: List[Tuple[Tool, float]] = []
+            for exp, _ in to_explore:
+                exp_fp = schema_fingerprint(exp.parameters)
+                fp_map = neighbors_artifact.get(exp.qualified_name, {})
+                ns_buckets = fp_map.get(exp_fp, {})
+                duplicates[exp.qualified_name] = []
+                for ns, (neighbors_entries, duplicates_entries) in ns_buckets.items():
+                    for add_to, entries in [
+                        (frontier, neighbors_entries),
+                        (duplicates[exp.qualified_name], duplicates_entries),
+                    ]:
+                        for unqualified_name, tgt_fp, score in entries:
+                            qualified_name = f"{ns}::{unqualified_name}"
+                            try:
+                                tool = self._registry.get_by_fingerprint(qualified_name, tgt_fp)
+                            except KeyError:
+                                self.logger.warning(
+                                    "tc/neighbor: neighbor (%s, %s) not found in registry — skipping.",
+                                    qualified_name,
+                                    tgt_fp,
+                                )
+                                continue
+                            add_to.append((tool, score))
+            to_explore = frontier
 
-        for ns, entries in ns_buckets.items():
-            for unqualified_name, tgt_fp, score in entries:
-                qualified_name = f"{ns}::{unqualified_name}"
-                key = (qualified_name, tgt_fp)
-                if key in seen:
-                    continue
-                seen.add(key)
-                try:
-                    tool = self._registry.get_by_fingerprint(qualified_name, tgt_fp)
-                except KeyError:
-                    self.logger.warning(
-                        "tc/neighbor: neighbor (%s, %s) not found in registry — skipping.",
-                        qualified_name,
-                        tgt_fp,
-                    )
-                    continue
-                result.append((tool, score))
-
-        return result
+        #
+        ret_neighbors = list(result.values())
+        ret_duplicates = {k: [t.qualified_name for t, _ in v] for k, v in duplicates.items()}
+        return ret_neighbors, ret_duplicates
 
     @staticmethod
     def _softmax_scores(neighbors: List[Tuple[Tool, float]], temperature: float) -> List[float]:
@@ -222,6 +240,7 @@ class NeighborToolSampler(ToolSampler):
         namespace_weights: Optional[Dict[str, float]] = None,
         strategy: Optional[Literal["uniform", "proportional"]] = None,
         temperature: Optional[float] = None,
+        use_seed_namespace: Optional[bool] = True,
         **kwargs: Any,
     ) -> List[Tool]:
         """Sample up to ``k`` tools: one seed plus k-1 neighbors.
@@ -237,6 +256,8 @@ class NeighborToolSampler(ToolSampler):
             strategy: Fill-in strategy.  Overrides constructor ``strategy``.
             temperature: Softmax temperature for neighbor weighting.
                 Overrides constructor ``temperature``.
+            use_seed_namespace: Whether or not to keep all selected tools
+                in same namespace as selected seed
 
         Returns:
             List of sampled ``Tool`` instances.  First element is the seed.
@@ -261,14 +282,17 @@ class NeighborToolSampler(ToolSampler):
         if resolved_k == 1:
             return [seed]
 
-        neighbors = self._collect_neighbors(seed)
+        neighbors, duplicates = self._collect_neighbors(seed)
 
-        if not neighbors:
-            self.logger.warning(
-                "tc/neighbor: seed %r has no neighbors in the graph; returning seed only.",
-                seed.qualified_name,
-            )
-            return [seed]
+        # Filter
+        allowed_namespaces = [seed.namespace] if use_seed_namespace else list(ns_pools.keys())
+        neighbors = [(t, score) for t, score in neighbors if t.namespace in allowed_namespaces]
+
+        assert neighbors, f"tc/neighbor: seed {seed.qualified_name} has no neighbors in the graph"
+
+        # Initialize return lists
+        selected_neighbors: List[Tool] = []
+        nogoods = set()
 
         want = resolved_k - 1
         if want > len(neighbors):
@@ -279,19 +303,25 @@ class NeighborToolSampler(ToolSampler):
                 seed.qualified_name,
                 len(neighbors),
             )
-            return [seed] + [t for t, _ in neighbors]
+            for tool in [t for t, _ in neighbors]:
+                if tool.qualified_name not in nogoods:
+                    nogoods.update(duplicates[tool.qualified_name])
+                    selected_neighbors.append(tool)
+            return selected_neighbors
 
         # Sample without replacement using softmax-weighted draw.
         # Softmax guarantees all weights are strictly positive so random.choices
         # never raises.  Re-apply softmax over the remaining pool after each
         # draw to keep the relative score ordering correct.
-        selected_neighbors: List[Tool] = []
-        remaining = list(neighbors)
+        remaining = [(t, s) for t, s in list(neighbors) if t.qualified_name not in nogoods]
         for _ in range(want):
             weights = self._softmax_scores(remaining, resolved_temperature)
             tools_r = [t for t, _ in remaining]
             chosen = _random.choices(tools_r, weights=weights, k=1)[0]
             selected_neighbors.append(chosen)
-            remaining = [(t, s) for t, s in remaining if t is not chosen]
+            nogoods.update(duplicates[chosen.qualified_name])
+            remaining = [
+                (t, s) for t, s in remaining if t is not chosen and t.qualified_name not in nogoods
+            ]
 
-        return [seed] + selected_neighbors
+        return selected_neighbors
