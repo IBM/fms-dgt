@@ -1,0 +1,23 @@
+<tools>
+{{ tools }}
+</tools>
+
+<persona>
+{{ persona }}
+</persona>
+
+<required>
+{{ required }}
+</required>
+
+<history>
+{{ history }}
+</history>
+
+<explicit>
+{{ tool_calls }}
+</explicit>
+
+<hidden>
+{{ hidden }}
+</hidden>

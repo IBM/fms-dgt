@@ -43,6 +43,7 @@ class ConversationTask(GenerationTask):
         min_turns: int = 1,
         initialization_stages: List[Dict] | None = None,
         iteration_stages: List[Dict] | None = None,
+        termination_stages: List[Dict] | None = None,
         **kwargs: Any,
     ):
         """Initialize a ConversationGenerationTask.
@@ -60,6 +61,9 @@ class ConversationTask(GenerationTask):
             iteration_stages: List of stage config dicts run in order on each
                 loop iteration until flow_signal.terminate is set or max_turns
                 is reached.
+            termination_stages: List of stage config dicts run on conversations
+                that successfully complete the iteration loop (reaching min_turns).
+                Each dict must have at least a "name" key.
         """
         # Inject a conversation-appropriate seed_batch_size default before the
         # base class resolves runner_config, but only if the user did not
@@ -83,10 +87,12 @@ class ConversationTask(GenerationTask):
         self._min_turns = min_turns
         self._initialization_stage_configs: List[Dict] = initialization_stages or []
         self._iteration_stage_configs: List[Dict] = iteration_stages or []
+        self._termination_stage_configs: List[Dict] = termination_stages or []
 
         # Resolved Stage instances — populated by ConversationDataBuilder._init_stages().
         self.initialization_stages: List[Stage] = []
         self.iteration_stages: List[Stage] = []
+        self.termination_stages: List[Stage] = []
 
     # ===========================================================================
     #                       PROPERTIES
@@ -110,6 +116,11 @@ class ConversationTask(GenerationTask):
     def iteration_stage_configs(self) -> List[Dict]:
         """Raw YAML config dicts for iteration stages."""
         return self._iteration_stage_configs
+
+    @property
+    def termination_stage_configs(self) -> List[Dict]:
+        """Raw YAML config dicts for termination stages."""
+        return self._termination_stage_configs
 
     def instantiate_input_example(self, **kwargs: Any) -> ConversationDataPoint:
         """Deserialize a seed example from JSONL, reconstructing typed Step subclasses.

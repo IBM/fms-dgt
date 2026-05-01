@@ -1,0 +1,40 @@
+Your task is to provide a subtle hint to help a student correct their tool call mistake. Write your hint between the <hint> and </hint> tags.
+
+## Context Provided:
+
+<tools> - Available tools the student can use
+<correct_tool_call> - The expected correct tool call
+<incorrect_tool_call> - The student's incorrect tool call that needs correction
+
+## Output Format:
+
+<hint>
+Your concise hint (maximum 10 words)
+</hint>
+
+## Requirements:
+
+1. **Never reveal the answer directly**: Guide the student to discover the correction themselves
+
+2. **Never mention specific names**: Don't use tool names or parameter names from <tools>
+
+3. **Use descriptions instead**: Reference the tool's purpose or parameter's function, not its name
+
+4. **Identify the error type and hint accordingly**:
+   - Missing required parameters → hint at what information is needed
+   - Extra/unnecessary parameters → indicate something should be removed
+   - Incorrect parameter values → point to what type/format is expected
+   - Wrong tool selected → guide toward the tool's functional purpose
+
+5. **Keep it concise**: Maximum 10 words total
+
+## Example Hints:
+
+Instead of: "Use the get_weather tool with location parameter"
+Write: "Incorrect tool chosen"
+
+Instead of: "Remove the 'user_id' argument"
+Write: "Unnecessary identifier parameter"
+
+Instead of: "Add the 'date' parameter"
+Write: "Requires temporal information"

@@ -181,8 +181,8 @@ class LMToolEngine(ToolEngine):
             result = self._execute_one(tool_call, history)
             history.append(
                 {
-                    "tool_call": tool_call.to_dict(),
-                    "tool_output": result.to_dict(),
+                    "tool_call": tool_call,
+                    "tool_output": result,
                 }
             )
             results.append(result)
@@ -206,23 +206,15 @@ class LMToolEngine(ToolEngine):
                 error=f"Unknown tool '{tool_call.name}'",
             )
 
-        # 3. Build response_format from output_parameters.
-        if tool.output_parameters:
-            response_format = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": tool.name,
-                    "schema": tool.output_parameters,
-                    "strict": True,
-                },
-            }
-        else:
-            response_format = {"type": "json_object"}
-
         # 4. Build prompt and call the LM.
         messages = self._make_prompt(tool_call, tool, history)
-        lm_input = [{"input": messages, "gen_kwargs": {"response_format": response_format}}]
-        lm_outputs = self._lm(lm_input, method=LMProvider.CHAT_COMPLETION)
+        lm_input = [
+            {
+                "input": messages,
+                "gen_kwargs": {"logprobs": True},
+            }
+        ]
+        lm_outputs = self._lm(lm_input, disable_tqdm=True, method=LMProvider.CHAT_COMPLETION)
 
         # 5. Parse and validate output.
         output, error_message = self._parse_output(lm_outputs, tool)
@@ -273,27 +265,31 @@ class LMToolEngine(ToolEngine):
           - For each history entry: user turn (tool spec + call), assistant turn (tool result)
           - Final user turn: tool spec + current call
         """
-        messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
+        messages = [
+            {"role": _get_instruction_role(self._lm.model_id_or_path), "content": _SYSTEM_PROMPT}
+        ]
 
         for entry in history:
-            tc_dict = entry["tool_call"]
+            hist_tool_call = entry["tool_call"]
             # Reconstruct the tool spec for the historical call from the full
             # catalog — no namespace filter here since history may include calls
             # handled by other engines in a multi-engine session.
-            hist_tool = self._catalog.match(ToolCall.from_dict(tc_dict))
+            hist_tool = self._catalog.match(hist_tool_call)
             hist_tool_spec = (
                 json.dumps([hist_tool.to_dict()], indent=1) if hist_tool is not None else "{}"
             )
             messages.append(
                 {
                     "role": "user",
-                    "content": _user_turn(hist_tool_spec, json.dumps(tc_dict, indent=1)),
+                    "content": _user_turn(
+                        hist_tool_spec, json.dumps(hist_tool_call.to_dict(), indent=1)
+                    ),
                 }
             )
             messages.append(
                 {
                     "role": "assistant",
-                    "content": json.dumps(entry["tool_output"].get("result", {}), indent=1),
+                    "content": json.dumps(entry["tool_output"].result, indent=1),
                 }
             )
 
@@ -338,16 +334,22 @@ class LMToolEngine(ToolEngine):
         prediction = lm_outputs[0] if lm_outputs else None
         result = (prediction or {}).get("result")
         candidates = result if isinstance(result, list) else [result]
+        logprobs = ((prediction or dict()).get("addtl") or dict()).get(
+            "token_logprobs", [[{None: 0}]]
+        )
 
-        for res in candidates:
+        options = []
+        for res_i, res in enumerate(candidates):
             text = ((res or {}).get("content") or "").strip()
             json_obj = try_parse_json_string(text)
             if not (json_obj and isinstance(json_obj, dict)):
                 continue
 
+            content, err_msg = None, None
+
             error_msg = json_obj.get("error")
             if error_msg:
-                return None, str(error_msg)
+                content, err_msg = None, str(error_msg)
 
             # No output_parameters: return raw parsed dict, no assumptions.
             if not tool.output_parameters:
@@ -355,14 +357,14 @@ class LMToolEngine(ToolEngine):
                     "Tool '%s' has no output_parameters — returning raw LM output",
                     tool.name,
                 )
-                return json_obj, None
+                content, err_msg = json_obj, None
 
             output_props = tool.output_parameters.get(TOOL_PROPERTIES) or {}
 
             # Try the full object first.
             filtered = _filter_output_vals(json_obj, output_props)
             if self._is_valid_tool_result(filtered, tool):
-                return filtered, None
+                content, err_msg = filtered, None
 
             # Fallback: unwrap a "result" envelope if the LM added one.
             # Only attempt when "result" is not a declared schema property and
@@ -372,9 +374,23 @@ class LMToolEngine(ToolEngine):
             if "result" not in output_props and isinstance(unwrapped, dict):
                 filtered_unwrapped = _filter_output_vals(unwrapped, output_props)
                 if self._is_valid_tool_result(filtered_unwrapped, tool):
-                    return filtered_unwrapped, None
+                    content, err_msg = filtered_unwrapped, None
 
-        return None, None
+            if content is None and err_msg is None:
+                continue
+
+            scores = [next(iter(lp.values())) for lp in logprobs[res_i]]
+            score = sum([score for score in scores if isinstance(score, (float, int))])
+
+            options.append((score, content, err_msg))
+
+        if not options:
+            return None, None
+
+        # consensus
+        content, err_msg = max(options, key=lambda x: x[0])[1:]
+
+        return content, err_msg
 
     def _is_valid_tool_result(self, output: Dict, tool: Tool) -> bool:
         """Validate parsed output against the tool's output_parameters schema.
@@ -387,7 +403,7 @@ class LMToolEngine(ToolEngine):
         try:
             jsonschema.validate(instance=output, schema=tool.output_parameters)
             return True
-        except jsonschema.ValidationError:
+        except Exception:
             return False
 
 
@@ -417,3 +433,10 @@ def _filter_output_vals(inp: Dict, props: Dict) -> Dict:
 
     projected = {k: v for k, v in inp.items() if k in props} if props else inp
     return _filter(projected)
+
+
+def _get_instruction_role(model_id_or_path: str):
+    if "gpt" in model_id_or_path:
+        return "developer"
+    else:
+        return "system"

@@ -1,0 +1,92 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: tool_calling/multi_turn/stateless/toolmind_local
+created_by: IBM Research
+data_builder: tool_calling/multi_turn/stateless
+task_description: To create multi-turn conversation over tool calls
+formatter:
+  type: tool_calling/formatters/multi_turn
+
+######################################################
+#                  MT SPECIFIC PARAMS
+######################################################
+max_turns: 3
+min_turns: 1
+has_nested: true
+separate_context: true
+
+######################################################
+#                  TOOL SETTINGS
+######################################################
+tools:
+  registry:
+    - type: file
+      path: ${DGT_DATA_DIR}/public/tool_calling/toolmind/APIGen-MT-5k-query_tools.yaml
+      namespace: toolmind_apigen
+      engine: lm_simulator
+    - type: file
+      path: ${DGT_DATA_DIR}/public/tool_calling/toolmind/BUTTONInstruct-query_tools.yaml
+      namespace: toolmind_button
+      engine: lm_simulator
+    - type: file
+      path: ${DGT_DATA_DIR}/public/tool_calling/toolmind/glaive-function-calling-v2-query_tools.yaml
+      namespace: toolmind_glaive
+      engine: lm_simulator
+    - type: file
+      path: ${DGT_DATA_DIR}/public/tool_calling/toolmind/graphsyn_tools.yaml
+      namespace: toolmind_graphsyn
+      engine: lm_simulator
+    - type: file
+      path: ${DGT_DATA_DIR}/public/tool_calling/toolmind/ToolACE-query_tools.yaml
+      namespace: toolmind_toolace
+      engine: lm_simulator
+    - type: file
+      path: ${DGT_DATA_DIR}/public/tool_calling/toolmind/When2Call-query_tools.yaml
+      namespace: toolmind_when2call
+      engine: lm_simulator
+    - type: file
+      path: ${DGT_DATA_DIR}/public/tool_calling/toolmind/xlam-function-calling-60k-query_tools.yaml
+      namespace: toolmind_xlam
+      engine: lm_simulator
+  engines:
+    lm_simulator:
+      type: lm
+      lm_config:
+        type: ollama
+        model_id_or_path: openai/gpt-oss-20b
+        n: 8
+        temperature: 1.0
+        max_new_tokens: 1024
+  enrichments: # optional — omit if no enrichment needed
+    - type: output_parameters
+      lm_config:
+        type: ollama
+        model_id_or_path: openai/gpt-oss-20b
+    - type: embeddings
+      model: sentence-transformers/all-mpnet-base-v2
+    - type: neighbors
+      model: sentence-transformers/all-mpnet-base-v2
+
+######################################################
+#                  REQUIRED MT STAGES
+######################################################
+initialization_stages:
+  - name: sample/persona
+    persona_store:
+      type: default
+      data_path: ${DGT_DATA_DIR}/public/tool_calling/personas.jsonl
+  - name: tool_calling/multi_turn/stages/scenario_generator
+    generator: generator
+    sampler_mix:
+      - sampler: { type: tc/neighbor, k: 15, min_score: 0.0 }
+        weight: 1.0
+iteration_stages:
+  - name: tool_calling/multi_turn/stages/planner
+  - name: tool_calling/multi_turn/stages/user
+  - name: tool_calling/multi_turn/stages/verifier
+  - name: tool_calling/multi_turn/stages/execute
+  - name: tool_calling/multi_turn/stages/summarize
+termination_stages:
+  - name: tool_calling/multi_turn/stages/filter
+  - name: tool_calling/multi_turn/stages/error_hint

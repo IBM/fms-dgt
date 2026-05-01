@@ -19,7 +19,7 @@ from fms_dgt.core.databuilders.conversation.registry import register_stage
 from fms_dgt.core.databuilders.conversation.stages.base import Stage
 
 
-def render_persona(step: PersonaStep) -> str:
+def render_persona(step: PersonaStep, sep: str = "\n") -> str:
     """Render a PersonaStep's structured fields into a prompt-ready string.
 
     Consumer stages call this to get the text they pass to the LLM. Keeping
@@ -41,19 +41,36 @@ def render_persona(step: PersonaStep) -> str:
     else:
         p = step.personality
         traits = []
+        ##
+        # openness
+        if p.openness > 0.3:
+            traits.append("curious and creative")
+        elif p.openness < -0.3:
+            traits.append("conventional and resistant to novelty")
+        # conscientiousness
+        if p.conscientiousness > 0.3:
+            traits.append("methodical and thorough")
+        elif p.conscientiousness < -0.3:
+            traits.append("spontaneous and disorganized")
+        # extraversion
         if p.extraversion > 0.3:
-            traits.append("expressive and enthusiastic")
+            traits.append("expressive and enthusiastic and talkative")
         elif p.extraversion < -0.3:
             traits.append("reserved and terse")
+        # agreeableness
         if p.agreeableness < -0.3:
             traits.append("skeptical and challenging")
         elif p.agreeableness > 0.3:
             traits.append("cooperative and accommodating")
+        # neuroticism
         if p.neuroticism > 0.3:
             traits.append("anxious and sometimes frustrated")
+        elif p.neuroticism < -0.3:
+            traits.append("calm and confident")
+        ##
         if traits:
             parts.append("Personality: " + ", ".join(traits) + ".")
-    return " ".join(parts)
+    return sep.join(parts)
 
 
 def _persona_spec_from_dict(record: Dict) -> PersonaSpec:

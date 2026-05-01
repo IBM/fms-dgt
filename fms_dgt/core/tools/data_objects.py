@@ -56,7 +56,7 @@ class Tool:
         """Always-qualified ``namespace::name``."""
         return f"{self.namespace}{TOOL_NAMESPACE_SEP}{self.name}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, keep_keys: List[str] | None = None) -> Dict[str, Any]:
         """Serialize to a plain dict using the OpenAI function-call schema keys.
 
         The ``namespace`` field is included as a top-level extension key so
@@ -73,6 +73,8 @@ class Tool:
             d[TOOL_OUTPUT_PARAMETERS] = self.output_parameters
         if self.metadata:
             d["metadata"] = self.metadata
+        if keep_keys is not None:
+            d = {k: v for k, v in d.items() if k in keep_keys}
         return d
 
     def to_qualified_dict(self) -> Dict[str, Any]:
@@ -131,31 +133,28 @@ class ToolCall:
     """
 
     name: str
+    namespace: str
+    qualified_name: str = field(default_factory=str)
     arguments: Dict[str, Any] = field(default_factory=dict)
     call_id: str | None = None
 
-    @property
-    def namespace(self) -> str:
-        """Extract the namespace component from the qualified name."""
-        parts = self.name.split(TOOL_NAMESPACE_SEP, 1)
-        return parts[0]
+    def __post_init__(self):
+        if not self.qualified_name:
+            self.qualified_name = TOOL_NAMESPACE_SEP.join([self.namespace, self.name])
 
-    @property
-    def tool_name(self) -> str:
-        """Extract the unqualified tool name from the qualified name."""
-        parts = self.name.split(TOOL_NAMESPACE_SEP, 1)
-        return parts[1] if len(parts) == 2 else parts[0]
-
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, keep_keys: List[str] | None = None) -> Dict[str, Any]:
         d: Dict[str, Any] = {TOOL_NAME: self.name, TOOL_CALL_ARGS: self.arguments}
         if self.call_id is not None:
             d[TOOL_CALL_ID] = self.call_id
+        if keep_keys is not None:
+            d = {k: v for k, v in d.items() if k in keep_keys}
         return d
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "ToolCall":
         return cls(
             name=d[TOOL_NAME],
+            namespace=d[TOOL_NAMESPACE],
             arguments=d.get(TOOL_CALL_ARGS, {}),
             call_id=d.get(TOOL_CALL_ID),
         )

@@ -375,7 +375,7 @@ class ToolRegistry:
             The best-matching ``Tool``, or ``None`` if no overload is registered
             for the qualified name (or within the given namespaces).
         """
-        candidates = self.get(tool_call.name)
+        candidates = self.get(tool_call.qualified_name)
         if namespaces is not None:
             candidates = [t for t in candidates if t.namespace in namespaces]
         if not candidates:

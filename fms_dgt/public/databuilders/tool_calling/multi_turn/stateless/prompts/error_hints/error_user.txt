@@ -1,0 +1,11 @@
+<tools>
+{{ tools }}
+</tools>
+
+<correct_tool_call>
+{{ correct_tool_call }}
+</correct_tool_call>
+
+<incorrect_tool_call>
+{{ incorrect_tool_call }}
+</incorrect_tool_call>
