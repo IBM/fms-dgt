@@ -465,11 +465,13 @@ class DataBuilder:
             self._unregister_task_log_handler(task)
             task.close_log_handler()
 
-    def execute_postprocessing(self, completed_tasks: List[Task]):
+    def execute_postprocessing(self, completed_tasks: List[Task], task_epoch: int = None):
         """Executes any postprocessing required after tasks have completed.
 
         Args:
             completed_tasks (List[SdgTask]): tasks that have been completed and can undergo postprocessing
+            task_epoch: epoch counter for the tasks being postprocessed, used for logging.
+                Defaults to self._epoch when not provided.
         """
         if self._config.postprocessors:
             # TODO: This could potentially be very expensive,
@@ -502,9 +504,13 @@ class DataBuilder:
                 post_processed_data.extend(data)
 
             # write results
-            self._write_postprocessing(completed_tasks, post_processed_data)
+            self._write_postprocessing(completed_tasks, post_processed_data, task_epoch=task_epoch)
 
-    def _write_postprocessing(self, completed_tasks: List[Task], data: DATASET_TYPE):
+    def _write_postprocessing(
+        self, completed_tasks: List[Task], data: DATASET_TYPE, task_epoch: int = None
+    ):
+        epoch = task_epoch if task_epoch is not None else self._epoch
+
         # write outputs to datastore
         for task in completed_tasks:
             # update pointer to current datastore
@@ -524,7 +530,7 @@ class DataBuilder:
             tasks[task_name][1] += 1
 
         self.logger.info("*" * 99)
-        self.logger.info("\t[EPOCH %d]\tPOST-PROCESSING RESULTS", self._epoch)
+        self.logger.info("\t[EPOCH %d]\tPOST-PROCESSING RESULTS", epoch)
         self.logger.info("*" * 99)
         self.logger.info(
             "Task%s\tBefore\t\t\tAfter",

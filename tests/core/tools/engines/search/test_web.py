@@ -29,6 +29,14 @@ from fms_dgt.core.tools.engines.search.web.utils import (
 )
 from fms_dgt.core.tools.registry import ToolRegistry
 
+SKIP_SEARCH = False
+try:
+    # Third Party
+    from ddgs import DDGS  # noqa: F401
+    import trafilatura  # noqa: F401
+except ModuleNotFoundError:
+    SKIP_SEARCH = True
+
 # ---------------------------------------------------------------------------
 # Minimal HTML pages used across tests — no network needed
 # ---------------------------------------------------------------------------
@@ -109,6 +117,9 @@ class TestValidateContent:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(
+    SKIP_SEARCH, reason="requires search extras — install with: pip install fms_dgt[search]"
+)
 class TestExtractText:
     def test_extracts_article_content(self):
         text = extract_text(_SIMPLE_HTML)
@@ -170,6 +181,9 @@ class TestBuildDocumentSnippetOnly:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(
+    SKIP_SEARCH, reason="requires search extras — install with: pip install fms_dgt[search]"
+)
 class TestBuildDocumentWithFetch:
     def test_raw_content_stored_in_metadata(self):
         with patch(
@@ -311,6 +325,9 @@ _DDG_RAW_RESULTS = [
 ]
 
 
+@pytest.mark.skipif(
+    SKIP_SEARCH, reason="requires search extras — install with: pip install fms_dgt[search]"
+)
 class TestDuckDuckGoEngineExecute:
     def _run(self, engine, tc):
         engine.setup("s1")

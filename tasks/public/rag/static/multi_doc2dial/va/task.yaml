@@ -155,9 +155,10 @@ iteration_stages:
           extend what has already been covered; (2) the documents have failed
           to answer the last two consecutive questions, indicating the
           available information on this thread is exhausted; (3) the
-          conversation history shows three or more distinct topics have
+          the Conversation History (not the Available Documents) shows three or more distinct topics have
           already been exchanged and no new answerable topics remain in
-          the documents. Prefer termination over continuing when in doubt.
+          the Available Documents. Do not count topics present only in the Available Documents as exchanged.
+          Prefer termination over continuing when in doubt.
           An extra turn that adds little is worse than a clean close.
         hint: >
           Generate a brief closing statement from the user that fits the

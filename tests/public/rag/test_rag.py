@@ -56,11 +56,26 @@ def _docs(*texts: str) -> List[Document]:
 
 
 def _mock_generator(response: str) -> MagicMock:
-    """Return a mock LMProvider that always replies with ``response``."""
+    """Return a mock LMProvider that always replies with ``response``.
+
+    When called with a response_format in gen_kwargs (critique calls), returns
+    a JSON-encoded ``{"valid": "yes", "issues": "", "reasoning": "ok"}`` so
+    that the critique always approves the generated response. Generation calls
+    (no response_format) return ``response`` verbatim.
+    """
+    _critique_ok = '{"valid": "yes", "issues": "", "reasoning": "ok"}'
+
+    def _side_effect(inputs, **kw):
+        results = []
+        for inp in inputs:
+            rf = (inp.get("gen_kwargs") or {}).get("response_format") or {}
+            is_critique = rf.get("json_schema", {}).get("name") == "rag_critique"
+            content = _critique_ok if is_critique else response
+            results.append({**inp, "result": {"content": content}})
+        return results
+
     gen = MagicMock()
-    gen.side_effect = lambda inputs, **kw: [
-        {"result": {"content": response}, "reference": inp["reference"]} for inp in inputs
-    ]
+    gen.side_effect = _side_effect
     return gen
 
 

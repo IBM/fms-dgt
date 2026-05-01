@@ -1229,7 +1229,7 @@ requires-dist = [
     { name = "anthropic" },
     { name = "datasets" },
     { name = "ddgs", marker = "extra == 'search'", specifier = ">=9.0" },
-    { name = "elasticsearch", marker = "extra == 'search'", specifier = ">=8.0,<9" },
+    { name = "elasticsearch", marker = "extra == 'search'", specifier = ">=8.0" },
     { name = "faiss-cpu" },
     { name = "fastapi" },
     { name = "fastparquet", marker = "extra == 'time-series'", specifier = ">=2024.5.0" },
