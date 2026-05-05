@@ -41,7 +41,6 @@ def render_persona(step: PersonaStep, sep: str = "\n") -> str:
     else:
         p = step.personality
         traits = []
-        ##
         # openness
         if p.openness > 0.3:
             traits.append("curious and creative")
@@ -67,7 +66,7 @@ def render_persona(step: PersonaStep, sep: str = "\n") -> str:
             traits.append("anxious and sometimes frustrated")
         elif p.neuroticism < -0.3:
             traits.append("calm and confident")
-        ##
+
         if traits:
             parts.append("Personality: " + ", ".join(traits) + ".")
     return sep.join(parts)

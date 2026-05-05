@@ -134,13 +134,12 @@ class ToolCall:
 
     name: str
     namespace: str
-    qualified_name: str = field(default_factory=str)
     arguments: Dict[str, Any] = field(default_factory=dict)
     call_id: str | None = None
 
-    def __post_init__(self):
-        if not self.qualified_name:
-            self.qualified_name = TOOL_NAMESPACE_SEP.join([self.namespace, self.name])
+    @property
+    def qualified_name(self):
+        return TOOL_NAMESPACE_SEP.join([self.namespace, self.name])
 
     def to_dict(self, keep_keys: List[str] | None = None) -> Dict[str, Any]:
         d: Dict[str, Any] = {TOOL_NAME: self.name, TOOL_CALL_ARGS: self.arguments}

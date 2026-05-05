@@ -31,13 +31,13 @@ from fms_dgt.core.tools.constants import (
     TOOL_PARAMETERS,
 )
 from fms_dgt.core.tools.data_objects import ToolCall
-from fms_dgt.core.tools.utils import extract_first_tool_call
 from fms_dgt.public.databuilders.tool_calling.multi_turn.stateless.data_objects import (
     ToolInfoStep,
     ToolPlanStep,
     ToolUserStep,
 )
 from fms_dgt.public.databuilders.tool_calling.multi_turn.stateless.utils import (
+    extract_first_tool_call,
     extract_largest_connected_component,
     get_leaves,
     normalize_str,
