@@ -206,3 +206,17 @@ See the [generate.py](./generate.py) file for the main entry point and [task.py]
 ## Contributors
 
 **Author and Maintainer**: IBM Research
+
+## Citation
+
+If you make use of this work, please cite it as
+
+```
+@article{crouse2026simulating,
+  title={Simulating Complex Multi-Turn Tool Calling Interactions in Stateless Execution Environments},
+  author={Crouse, Maxwell and Abdelaziz, Ibrahim and Fadnis, Kshitij and Patel, Siva Sankalp and Basu, Kinjal and Gunasekara, Chulaka and Kumaravel, Sadhana and Munawar, Asim and Kapanipathi, Pavan},
+  journal={arXiv preprint arXiv:2601.19914},
+  year={2026},
+  url={https://arxiv.org/abs/2601.19914}
+}
+```
