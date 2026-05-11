@@ -14,9 +14,41 @@ from fms_dgt.public.databuilders.tool_calling.multi_turn.stateless.task import (
 class ConversationToolCallingStatelessDataBuilder(ConversationDataBuilder):
     """Data builder for generating multi-turn tool calling conversations.
 
-    This builder generates synthetic tool calling conversations using an
-    agentic approach, creating realistic interactions between users and
-    AI assistants with tool usage.
+    This builder generates synthetic multi-turn tool calling conversations using a
+    stateless approach, creating realistic interactions between users and AI assistants
+    that involve planning and executing tool calls.
+
+    Key Features:
+        - Persona-driven generation with diverse user personalities and roles
+        - Multi-turn planning with complex tool call dependencies
+        - Support for nested tool calls where outputs feed into subsequent calls
+        - Tool namespace management for organizing tools from multiple sources
+        - LM-based tool simulation for generating synthetic tool outputs
+        - Automatic quality filtering and error hint generation
+        - Flexible output formatting (multi-turn or single-turn)
+
+    Architecture:
+        The builder follows a stage-based generation pipeline:
+        1. Initialization: Sample personas and generate initial scenarios
+        2. Iteration: For each turn, plan tool calls, generate user messages,
+           verify validity, execute tools, and summarize responses
+        3. Termination: Filter results and add error hints where applicable
+
+    Configuration:
+        Task configuration supports:
+        - tool_registry: Tool definitions from multiple namespaces
+        - tool_engine: LM-based simulator for tool execution
+        - separate_context: Keep tool contexts isolated (default: True)
+        - has_nested: Allow nested/dependent tool calls (default: False)
+        - min_plan_length/max_plan_length: Control plan complexity (1-8)
+        - min_turns/max_turns: Control conversation length
+
+    Example:
+        See tasks/public/tool_calling/multi_turn/stateless/toolmind/conversation.yaml
+        for a complete task configuration example.
+
+    Attributes:
+        TASK_TYPE: ConversationToolCallingStatelessTask class for task handling
     """
 
     TASK_TYPE: ConversationToolCallingStatelessTask = ConversationToolCallingStatelessTask
