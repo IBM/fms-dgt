@@ -54,7 +54,7 @@ tools:
       type: lm
       lm_config:
         type: ollama
-        model_id_or_path: openai/gpt-oss-20b
+        model_id_or_path: gpt-oss:20b
         n: 8
         temperature: 1.0
         max_new_tokens: 1024
@@ -62,7 +62,7 @@ tools:
     - type: output_parameters
       lm_config:
         type: ollama
-        model_id_or_path: openai/gpt-oss-20b
+        model_id_or_path: gpt-oss:20b
     - type: embeddings
       model: sentence-transformers/all-mpnet-base-v2
     - type: neighbors

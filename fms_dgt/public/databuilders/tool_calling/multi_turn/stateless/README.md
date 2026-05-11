@@ -59,7 +59,7 @@ Default configuration for generators used by the data builder is available [here
 ### Generators
 
 - Configurable LLM-based generators via `ollama` or other supported backends
-- Example: `openai/gpt-oss-20b` via `ollama` with sampling parameters
+- Example: `gpt-oss:20b` via `ollama` with sampling parameters
 
 ### Tool Execution Engines
 
