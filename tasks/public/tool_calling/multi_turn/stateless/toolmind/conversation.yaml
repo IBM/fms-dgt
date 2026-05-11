@@ -60,6 +60,7 @@ tools:
       lm_config:
         type: openai
         model_id_or_path: openai/gpt-oss-20b
+        base_url: http://localhost:8000/v1/
         n: 8
         temperature: 1.0
         max_new_tokens: 1024
@@ -68,6 +69,7 @@ tools:
       lm_config:
         type: openai
         model_id_or_path: openai/gpt-oss-20b
+        base_url: http://localhost:8000/v1/
     - type: embeddings
       model: sentence-transformers/all-mpnet-base-v2
     - type: neighbors
