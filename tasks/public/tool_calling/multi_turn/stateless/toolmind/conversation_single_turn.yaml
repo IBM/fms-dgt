@@ -53,16 +53,16 @@ tools:
     lm_simulator:
       type: lm
       lm_config:
-        type: ollama
-        model_id_or_path: gpt-oss:20b
+        type: openai
+        model_id_or_path: openai/gpt-oss-20b
         n: 8
         temperature: 1.0
         max_new_tokens: 1024
   enrichments: # optional — omit if no enrichment needed
     - type: output_parameters
       lm_config:
-        type: ollama
-        model_id_or_path: gpt-oss:20b
+        type: openai
+        model_id_or_path: openai/gpt-oss-20b
     - type: embeddings
       model: sentence-transformers/all-mpnet-base-v2
     - type: neighbors

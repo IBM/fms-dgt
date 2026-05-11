@@ -9,8 +9,8 @@ name: tool_calling/multi_turn/stateless
 blocks:
   # Language model connector
   - name: generator
-    type: ollama
-    model_id_or_path: gpt-oss:20b
+    type: openai
+    model_id_or_path: openai/gpt-oss-20b
     #
     # these parameters have strong influence on success rate in each iteration...
     n: 8
