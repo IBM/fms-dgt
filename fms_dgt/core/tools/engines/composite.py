@@ -37,7 +37,6 @@ class CompositeToolEngine(ToolEngine):
     ) -> None:
         super().__init__(registry)
         self._engines = dict(engines)
-        self._distinct_engines = {id(engine): engine for engine in self._engines.values()}.values()
 
     @property
     def engines(self) -> Dict[str, ToolEngine]:
@@ -50,12 +49,16 @@ class CompositeToolEngine(ToolEngine):
 
     def setup(self, session_id: str, *args: Any, **kwargs: Any) -> None:
         super().setup(session_id, *args, **kwargs)
-        for engine in self._distinct_engines:
+        # ensure we do not initialize the same engine twice
+        distinct_engines = {id(engine): engine for engine in self._engines.values()}.values()
+        for engine in distinct_engines:
             engine.setup(session_id, *args, **kwargs)
 
     def teardown(self, session_id: str) -> None:
         super().teardown(session_id)
-        for engine in self._distinct_engines:
+        # ensure we do not tear down the same engine twice
+        distinct_engines = {id(engine): engine for engine in self._engines.values()}.values()
+        for engine in distinct_engines:
             engine.teardown(session_id)
 
     def get_session_state(self, session_id: str) -> Dict[str, Any] | None:

@@ -233,7 +233,9 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
             # partial mid-turn state. This guarantees rescued data points always
             # end at a complete turn boundary, which downstream SFT/DPO
             # serializers require.
-            snapshots = {id(data_point): copy.deepcopy(data_point) for data_point in live}
+            snapshots = {
+                data_point.conversation_id: copy.deepcopy(data_point) for data_point in live
+            }
 
             for stage in task.iteration_stages:
                 previous = live
@@ -242,11 +244,11 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
                 # Data points the stage chose not to continue (omitted from
                 # return). Rescue from the turn-entry snapshot so the saved
                 # data point ends at the last complete turn, not mid-turn.
-                live_ids = {id(data_point) for data_point in live}
+                live_ids = {data_point.conversation_id for data_point in live}
                 for data_point in previous:
-                    if id(data_point) not in live_ids:
+                    if data_point.conversation_id not in live_ids:
                         if turn_count >= task.min_turns:
-                            completed.append(snapshots[id(data_point)])
+                            completed.append(snapshots[data_point.conversation_id])
                             self.logger.info(
                                 "[%s] conversation %s dropped mid-turn at turn %d/%d — rescued at turn %d",
                                 task.name,
