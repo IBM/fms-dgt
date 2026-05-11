@@ -143,7 +143,7 @@ class NeighborToolSampler(ToolSampler):
         chosen_ns = _random.choices(namespaces, weights=weights, k=1)[0]
         return _random.choice(ns_pools[chosen_ns])
 
-    def _collect_neighbors(
+    def _collect_connected_tools(
         self,
         seed: Tool,
         rounds: int = 2,
@@ -282,7 +282,7 @@ class NeighborToolSampler(ToolSampler):
         if resolved_k == 1:
             return [seed]
 
-        neighbors, duplicates = self._collect_neighbors(seed)
+        neighbors, duplicates = self._collect_connected_tools(seed)
 
         # Filter
         allowed_namespaces = [seed.namespace] if use_seed_namespace else list(ns_pools.keys())

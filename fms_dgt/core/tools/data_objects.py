@@ -122,12 +122,12 @@ class Tool:
 class ToolCall:
     """A single tool invocation request, always carrying a qualified name.
 
-    ``name`` is always of the form ``namespace::tool_name``.  This mirrors the
-    OpenAI function-calling schema: the qualified name travels in the existing
-    ``name`` field — no structural change to the wire format.
+    ``name`` is always of the form ``tool_name``.  This mirrors the
+    OpenAI function-calling schema: the qualified name is then namespace::tool_name and travels in the
+    property ``qualified_name`` — no structural change to the wire format.
 
     Attributes:
-        name: Always-qualified ``namespace::tool_name``.
+        name: String name of tool ``tool_name``.
         arguments: Argument dict matching the tool's ``parameters`` schema.
         call_id: Optional opaque ID for nested-call reference (``$id.output``).
     """
