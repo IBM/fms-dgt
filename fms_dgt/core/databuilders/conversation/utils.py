@@ -3,13 +3,14 @@
 
 # Standard
 from collections import Counter, defaultdict
-from typing import Any, Dict, List, Literal, Tuple, Type, TypeVar, Union, overload
+from typing import Any, Dict, List, Type, TypeVar
 import json
 import math
 import random
 import re
 
 # Local
+from fms_dgt.core.databuilders.conversation.constants import DEVELOPER_ROLE, SYSTEM_ROLE
 from fms_dgt.core.databuilders.conversation.data_objects import (
     AssistantStep,
     Step,
@@ -19,6 +20,13 @@ from fms_dgt.core.databuilders.conversation.data_objects import (
 )
 
 T = TypeVar("T", bound=Step)
+
+
+def get_instruction_role(model_id_or_path: str):
+    if "gpt" in model_id_or_path:
+        return DEVELOPER_ROLE
+    else:
+        return SYSTEM_ROLE
 
 
 def steps_to_messages(steps: List[Step]) -> List[Dict[str, Any]]:
@@ -114,27 +122,7 @@ def steps_to_text(steps: List[Step]) -> str:
     return "\n".join(lines)
 
 
-@overload
-def get_first_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: Literal[False] = ...,
-) -> T | None: ...
-
-
-@overload
-def get_first_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: Literal[True],
-) -> Tuple[int, T] | Tuple[None, None]: ...
-
-
-def get_first_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: bool = False,
-) -> Union[T, Tuple[int, T], None, Tuple[None, None]]:
+def get_first_step_of_type(steps: List[Step], tgt_class: Type[T]) -> T | None:
     """Return the first step that is an instance of ``tgt_class``.
 
     Args:
@@ -146,33 +134,12 @@ def get_first_step_of_type(
         The first matching step, or None if not found.
         If ``return_index`` is True, returns ``(index, step)`` or ``(None, None)``.
     """
-    for idx, step in enumerate(steps):
+    for step in steps:
         if isinstance(step, tgt_class):
-            return (idx, step) if return_index else step
-    return (None, None) if return_index else None
+            return step
 
 
-@overload
-def get_last_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: Literal[False] = ...,
-) -> T | None: ...
-
-
-@overload
-def get_last_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: Literal[True],
-) -> Tuple[int, T] | Tuple[None, None]: ...
-
-
-def get_last_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: bool = False,
-) -> Union[T, Tuple[int, T], None, Tuple[None, None]]:
+def get_last_step_of_type(steps: List[Step], tgt_class: Type[T]) -> T | None:
     """Return the last step that is an instance of ``tgt_class``.
 
     Args:
@@ -184,33 +151,12 @@ def get_last_step_of_type(
         The last matching step, or None if not found.
         If ``return_index`` is True, returns ``(index, step)`` or ``(None, None)``.
     """
-    for idx, step in reversed(list(enumerate(steps))):
+    for step in reversed(list(steps)):
         if isinstance(step, tgt_class):
-            return (idx, step) if return_index else step
-    return (None, None) if return_index else None
+            return step
 
 
-@overload
-def get_random_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: Literal[False] = ...,
-) -> T | None: ...
-
-
-@overload
-def get_random_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: Literal[True],
-) -> Tuple[int, T] | Tuple[None, None]: ...
-
-
-def get_random_step_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: bool = False,
-) -> Union[T, Tuple[int, T], None, Tuple[None, None]]:
+def get_random_step_of_type(steps: List[Step], tgt_class: Type[T]) -> T | None:
     """Return a randomly selected step that is an instance of ``tgt_class``.
 
     Args:
@@ -222,18 +168,11 @@ def get_random_step_of_type(
         A randomly chosen matching step, or None if not found.
         If ``return_index`` is True, returns ``(index, step)`` or ``(None, None)``.
     """
-    matches = [(idx, step) for idx, step in enumerate(steps) if isinstance(step, tgt_class)]
-    if not matches:
-        return (None, None) if return_index else None
-    idx, step = random.choice(matches)
-    return (idx, step) if return_index else step
+    matches = get_all_steps_of_type(steps, tgt_class)
+    return random.choice(matches) if matches else None
 
 
-def get_all_steps_of_type(
-    steps: List[Step],
-    tgt_class: Type[T],
-    return_index: bool = False,
-) -> List[Union[T, Tuple[int, T]]]:
+def get_all_steps_of_type(steps: List[Step], tgt_class: Type[T]) -> List[T]:
     """Return all steps that are instances of ``tgt_class``.
 
     Args:
@@ -245,9 +184,11 @@ def get_all_steps_of_type(
         List of matching steps (or ``(index, step)`` pairs if ``return_index`` is True).
         Empty list if none found.
     """
-    if return_index:
-        return [(idx, step) for idx, step in enumerate(steps) if isinstance(step, tgt_class)]
-    return [step for step in steps if isinstance(step, tgt_class)]
+    matches = []
+    for step in steps:
+        if isinstance(step, tgt_class):
+            matches.append(step)
+    return matches
 
 
 # ---------------------------------------------------------------------------

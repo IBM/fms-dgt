@@ -257,9 +257,7 @@ class ToolEngine(ABC):
         with self._sessions_lock:
             state = self._sessions.get(session_id)
         if state is None:
-            raise KeyError(
-                f"Session '{session_id}' is not active. " f"Call setup() before execute()."
-            )
+            raise KeyError(f"Session '{session_id}' is not active. Call setup() before execute().")
         snapshot = (
             copy.deepcopy({k: v for k, v in state.items() if k != "_lock"}) if rollback else None
         )

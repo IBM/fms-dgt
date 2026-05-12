@@ -1,7 +1,8 @@
 # Project-specific
 fms_dgt/core/blocks/llm/private_*.py
 configs/**/private_*.yaml
-
+configs/private/
+data/private/
 
 output/
 telemetry/

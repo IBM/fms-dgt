@@ -228,7 +228,6 @@ class ToolCallValidator(ValidatorBlock):
             # Individual argument checking
             matching_tool_args = matching_tool_params.get(PROPERTIES, dict())
             for arg_name, arg_value in tc_args.items():
-
                 # Check for argument name hallucinations
                 if arg_name not in matching_tool_args:
                     self.logger.debug(

@@ -1,0 +1,15 @@
+<tools>
+{{ tools }}
+</tools>
+
+<history>
+{{ history }}
+</history>
+
+<required>
+{{ required }}
+</required>
+
+<request>
+{{ request }}
+</request>

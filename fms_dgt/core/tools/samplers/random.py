@@ -72,7 +72,7 @@ class RandomToolSampler(ToolSampler):
         k: int | None = None,
         namespace: str | None = None,
         namespace_weights: Dict[str, float] | None = None,
-        strategy: Literal["uniform", "proportional"] = "uniform",
+        strategy: Literal["uniform", "proportional"] = "proportional",
         **kwargs: Any,
     ) -> None:
         super().__init__(registry=registry, **kwargs)
@@ -175,7 +175,9 @@ class RandomToolSampler(ToolSampler):
 
         selected: List[Tool] = []
         for ns, count in slots.items():
-            selected.extend(_random.sample(pools[ns], count))
+            for tool in _random.sample(pools[ns], count):
+                if not any(t.name == tool.name for t in selected):
+                    selected.append(tool)
         return selected
 
     # ------------------------------------------------------------------
@@ -244,8 +246,7 @@ class RandomToolSampler(ToolSampler):
         total_available = sum(len(p) for p in ns_pools.values())
         if resolved_k > total_available:
             self.logger.warning(
-                "tc/random: requested k=%d but only %d tool(s) available; "
-                "returning all available.",
+                "tc/random: requested k=%d but only %d tool(s) available; returning all available.",
                 resolved_k,
                 total_available,
             )

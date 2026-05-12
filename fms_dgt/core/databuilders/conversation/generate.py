@@ -50,7 +50,7 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
     def __init__(
         self,
         *args: Any,
-        max_concurrent_conversations: int = 8,
+        max_concurrent_conversations: int = 100,
         **kwargs: Any,
     ) -> None:
         """Initialize ConversationDataBuilder.
@@ -64,7 +64,7 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
         self._max_concurrent_conversations = (
             max_concurrent_conversations
             if isinstance(max_concurrent_conversations, int) and max_concurrent_conversations > 0
-            else 8
+            else 100
         )
         # Track which tasks have had their stages initialized.
         self._stages_initialized: Set[str] = set()
@@ -80,7 +80,7 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
     # ===========================================================================
     #                       STAGE INITIALIZATION
     # ===========================================================================
-    def _init_stages(self, task: ConversationTask) -> None:
+    def _init_stages(self, task: ConversationTask, **kwargs) -> None:
         """Resolve stage config dicts to Stage instances for a task.
 
         Called once per task on first __call__. Stages receive all databuilder
@@ -93,20 +93,27 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
         block_kwargs: Dict[str, Any] = {b.name: b for b in self._blocks}
 
         task.initialization_stages = [
-            self._build_stage(cfg, block_kwargs) for cfg in task.initialization_stage_configs
+            self._build_stage(cfg, block_kwargs, kwargs)
+            for cfg in task.initialization_stage_configs
         ]
         task.iteration_stages = [
-            self._build_stage(cfg, block_kwargs) for cfg in task.iteration_stage_configs
+            self._build_stage(cfg, block_kwargs, kwargs) for cfg in task.iteration_stage_configs
+        ]
+        task.termination_stages = [
+            self._build_stage(cfg, block_kwargs, kwargs) for cfg in task.termination_stage_configs
         ]
         self._stages_initialized.add(task.name)
 
-    def _build_stage(self, config: Dict, block_kwargs: Dict[str, Any]) -> Stage:
+    def _build_stage(
+        self, config: Dict, block_kwargs: Dict[str, Any], addtl_kwargs: Dict[str, Any]
+    ) -> Stage:
         """Instantiate one stage from its config dict.
 
         Args:
             config: Dict with at least a "name" key. All other keys are
                 passed as kwargs to the Stage subclass __init__.
             block_kwargs: Block instances keyed by block name.
+            addtl_kwargs: Additional optional kwargs.
 
         An optional ``blocks`` key in the config dict maps constructor argument
         names to block names defined in the databuilder, allowing stages to
@@ -153,7 +160,7 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
         remaining_blocks = {k: v for k, v in block_kwargs.items() if k not in stage_blocks}
 
         stage_cls = get_stage(name)
-        return stage_cls(name=name, **remaining_blocks, **stage_blocks, **cfg)
+        return stage_cls(name=name, **remaining_blocks, **stage_blocks, **cfg, **addtl_kwargs)
 
     # ===========================================================================
     #                       SINGLE CONVERSATION RUNNER
@@ -164,7 +171,7 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
         task: ConversationTask,
         seed_data: List[ConversationDataPoint],
     ) -> List[ConversationDataPoint]:
-        """Run the full initialization + iteration loop for one conversation.
+        """Run the full initialization + iteration + termination loop for one conversation.
 
         Called from the inner thread pool — must not touch any shared mutable
         state outside `data_point`. seed_data is read-only; fetched once per
@@ -220,15 +227,15 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
         turn_count = 0
 
         while live:
-            turn_count += 1
-
             # Snapshot each live data point at turn entry (Section 13.4).
             # If a data point is dropped mid-turn and turn_count >= min_turns,
             # we rescue from the snapshot (end of turn N-1) rather than the
             # partial mid-turn state. This guarantees rescued data points always
             # end at a complete turn boundary, which downstream SFT/DPO
             # serializers require.
-            snapshots = {id(data_point): copy.deepcopy(data_point) for data_point in live}
+            snapshots = {
+                data_point.conversation_id: copy.deepcopy(data_point) for data_point in live
+            }
 
             for stage in task.iteration_stages:
                 previous = live
@@ -237,11 +244,11 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
                 # Data points the stage chose not to continue (omitted from
                 # return). Rescue from the turn-entry snapshot so the saved
                 # data point ends at the last complete turn, not mid-turn.
-                live_ids = {id(data_point) for data_point in live}
+                live_ids = {data_point.conversation_id for data_point in live}
                 for data_point in previous:
-                    if id(data_point) not in live_ids:
+                    if data_point.conversation_id not in live_ids:
                         if turn_count >= task.min_turns:
-                            completed.append(snapshots[id(data_point)])
+                            completed.append(snapshots[data_point.conversation_id])
                             self.logger.info(
                                 "[%s] conversation %s dropped mid-turn at turn %d/%d — rescued at turn %d",
                                 task.name,
@@ -321,8 +328,11 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
                         still_running.append(data_point)
                 live = still_running
 
-            # Log turn completion for all still-live data points.
-            for data_point in live:
+            # Update turn count now that turn has completed
+            turn_count += 1
+
+            # Log turn completion for all still-live contexts.
+            for ctx in live:
                 self.logger.debug(
                     "[%s] conversation %s turn %d/%d complete",
                     task.name,
@@ -356,6 +366,34 @@ class ConversationDataBuilder(ConcurrentGenerationDataBuilder):
                     )
                 completed.extend(live)
                 live = []
+
+        # Phase 3: termination stages (run on all successfully completed contexts).
+        # Termination stages receive all contexts that made it through iteration
+        # with turn_count >= min_turns. They can perform final validation, add
+        # metadata, discard contexts, or fork contexts.
+        if completed and task.termination_stages:
+            self.logger.debug(
+                "[%s] running termination stages on %d completed conversation(s)",
+                task.name,
+                len(completed),
+                extra={
+                    "event": "termination_stages_started",
+                    "task_name": task.name,
+                    "num_completed": len(completed),
+                },
+            )
+            for stage in task.termination_stages:
+                completed = stage(completed, seed_data=seed_data)
+                if not completed:
+                    self.logger.debug(
+                        "[%s] all conversations dropped by termination stage",
+                        task.name,
+                        extra={
+                            "event": "all_conversations_dropped",
+                            "task_name": task.name,
+                        },
+                    )
+                    break
 
         return completed
 

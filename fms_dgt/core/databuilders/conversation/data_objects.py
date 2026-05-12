@@ -5,6 +5,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal
 import dataclasses
+import random
 import uuid
 
 # Local
@@ -53,7 +54,7 @@ class Step:
     retrieval-augmented and tool-calling models alike.
     """
 
-    content: str | list | dict
+    content: str | list | dict | None = None
     """The message text or structured output produced by the stage.
 
     str   — natural-language turns (user, assistant, scenario, persona, etc.)
@@ -127,20 +128,31 @@ class BigFiveProfile:
     matter for the recipe; unset dimensions are unconstrained.
     """
 
-    openness: float = 0.0
+    openness: float | None = None
     """−1: conventional, resistant to novelty. +1: curious, creative, open."""
 
-    conscientiousness: float = 0.0
+    conscientiousness: float | None = None
     """−1: spontaneous, flexible, disorganized. +1: methodical, thorough."""
 
-    extraversion: float = 0.0
+    extraversion: float | None = None
     """−1: reserved, terse, low-energy. +1: expressive, verbose, enthusiastic."""
 
-    agreeableness: float = 0.0
+    agreeableness: float | None = None
     """−1: challenging, skeptical, adversarial. +1: cooperative, accommodating."""
 
-    neuroticism: float = 0.0
+    neuroticism: float | None = None
     """−1: calm, stable, confident. +1: anxious, frustrated, volatile."""
+
+    def __post_init__(self):
+        for attr in [
+            "openness",
+            "conscientiousness",
+            "extraversion",
+            "agreeableness",
+            "neuroticism",
+        ]:
+            if getattr(self, attr) is None:
+                setattr(self, attr, round(random.uniform(-1, 1), 1))
 
 
 @dataclass

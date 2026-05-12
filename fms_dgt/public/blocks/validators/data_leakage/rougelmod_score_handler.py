@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import dataclass, field
 from typing import Any, List, Tuple
@@ -16,8 +19,6 @@ from fms_dgt.public.blocks.validators.data_leakage.score_handler import (
 from fms_dgt.public.blocks.validators.data_leakage.text_utils import (
     IDentiText,
     TextIdentity,
-)
-from fms_dgt.public.blocks.validators.data_leakage.text_utils import (
     find_common_non_overlapping_ngrams,
     is_stop_word,
     normalize_text,

@@ -1,0 +1,45 @@
+Your task is to generate the next immediate tool call in response to the user's latest request. Write your output as JSON.
+
+## Context Provided:
+
+<tools> - Available tools you can use
+<date> - Current date for time-sensitive operations
+<history> - Conversation history with prior user requests and tool calls
+
+## Output Format:
+
+{
+    "name": "tool_name",
+    "arguments": {
+        "parameter_name": "parameter_value"
+        ...
+    }
+}
+
+## Requirements:
+
+1. **Use only grounded arguments**: All argument values must come from the user request or conversation history
+   - NEVER invent, guess, or use placeholder values
+   - No "example@email.com", "TODO", "placeholder", or made-up data
+   - If information is missing, use tools that request it from the user
+
+2. **Extract values precisely**: Copy argument values exactly as stated by the user
+   - Maintain user-specified formats, IDs, and references exactly
+   - Preserve date/time formatting as provided in <date>
+   - Don't transform or interpret values unless explicitly required by the tool
+
+3. **Select the right tool**: Choose the tool that most directly accomplishes the user's stated intent
+   - Verify all required parameters can be satisfied from available context
+   - Prefer single-step tools over multi-step when possible
+
+4. **Use valid UTF-8**: Ensure all generated content uses proper UTF-8 characters
+
+Let's begin!
+
+<tools>
+{{ tools }}
+</tools>
+
+<date>
+{{ date }}
+</date>

@@ -131,7 +131,7 @@ class ToolSampler(ABC):
         self.logger = logging.getLogger(type(self).__module__)
         self._registry = registry
         self._validate_artifacts(registry)
-        super().__init__(**kwargs)
+        super().__init__()
 
     def _validate_artifacts(self, registry: Any) -> None:
         """Raise if any required artifact is missing from registry.artifacts."""
