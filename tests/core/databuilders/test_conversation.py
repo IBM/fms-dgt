@@ -54,8 +54,10 @@ def _make_task(
     task._min_turns = min_turns
     task._initialization_stage_configs = init_stages or []
     task._iteration_stage_configs = iter_stages or []
+    task._termination_stage_configs = []
     task.initialization_stages = []
     task.iteration_stages = []
+    task.termination_stages = []
 
     # Attributes expected by ConversationDataBuilder (name + sample_examples).
     # `name` is a read-only property backed by `_name`.
@@ -205,15 +207,20 @@ class TestRunSingleConversation:
         # terminated at turn 1 which is < min_turns=2
         assert results == []
 
-    def test_early_terminate_at_min_turns_returns_context(self):
+    def test_early_terminate_at_min_turns_drops_context(self):
+        # min_turns is enforced against fully-completed turns (turn_count is
+        # incremented only after all iteration stages run for a turn). A
+        # flow-controller terminate fired during turn 1, before any iteration
+        # has completed, means 0 turns are counted — so min_turns=1 is not
+        # met and the context is dropped. This conservative check works
+        # correctly regardless of where the flow controller sits in the
+        # iteration stage list.
         task = _make_task(max_turns=5, min_turns=1)
         task.initialization_stages = []
         task.iteration_stages = [_make_terminate_stage("terminator")]
 
         results = self._run(task)
-        assert len(results) == 1
-        fc_steps = [step for step in results[0].steps if step.role == "flow_controller"]
-        assert fc_steps and fc_steps[-1].terminate is True
+        assert results == []
 
     def test_max_turns_caps_iteration(self):
         task = _make_task(max_turns=3, min_turns=1)

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Literal, Optional
 import random
 
 # Local
+from fms_dgt.core.tools.constants import TOOL_DEFAULT_NAMESPACE
 from fms_dgt.core.tools.data_objects import ToolCall
 from fms_dgt.core.tools.engines.search.base import Document, SearchToolEngine
 from fms_dgt.core.tools.engines.search.samplers.base import (
@@ -194,7 +195,12 @@ class RandomDocumentSampler(DocumentSampler):
         return random.sample(pool, min(k, len(pool)))
 
     def _sample_engine(self, session_id: str, k: int) -> List[Document]:
-        tc = ToolCall(name="sample", arguments={"size": k}, call_id=None)
+        tc = ToolCall(
+            name="sample",
+            namespace=TOOL_DEFAULT_NAMESPACE,
+            arguments={"size": k},
+            call_id=None,
+        )
         results = self._engine.simulate(session_id=session_id, tool_calls=[tc])
         if not results or results[0].result is None:
             return []

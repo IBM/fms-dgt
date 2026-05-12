@@ -45,21 +45,27 @@ class NeighborToolSampler(ToolSampler):
         ``tc/fan_in``, and ``tc/fan_out`` samplers once the ``dataflow``
         enrichment is available.  See the tool subsystem design discussion.
 
-    Selects one seed tool then fills the remaining k-1 slots from that seed's
-    neighbors, weighted by their compatibility scores.
+    Picks a seed tool to anchor a BFS over the neighbor graph, assembles the
+    seed's connected component (seed plus tools reachable within a fixed
+    number of expansion rounds), and draws ``k`` tools from that pool.
+
+    The seed is the starting point for neighbor expansion; it is a member of
+    the returned pool like any other tool, with no guaranteed position in the
+    output and no guarantee of being included when ``k`` is small relative to
+    the pool size.
 
     **Seed selection:** a namespace is drawn according to the configured
     distribution (``namespace``, ``namespace_weights``, ``strategy``), then
     one tool is chosen uniformly at random within that namespace.
 
-    **Neighbor sampling:** neighbors are drawn without replacement, weighted
-    by softmax-normalized compatibility scores.  Neighbors span all namespaces.
-    If fewer than k-1 neighbors exist, all available neighbors are returned
-    alongside the seed and a warning is logged.
+    **Pool sampling:** ``k`` tools are drawn without replacement from the
+    connected-component pool, weighted by softmax-normalized compatibility
+    scores. If the pool holds fewer than ``k`` tools, all of them are
+    returned and a warning is logged.
 
     Args:
         registry: The ``ToolRegistry`` to sample from.
-        k: Default number of tools to sample (seed + k-1 neighbors).
+        k: Default number of tools to sample.
             Required unless every ``sample()`` call provides ``k`` explicitly.
         namespace: Hard-filter seed selection to a single namespace.
         namespace_weights: Per-namespace relative weights for seed namespace
@@ -243,7 +249,7 @@ class NeighborToolSampler(ToolSampler):
         use_seed_namespace: Optional[bool] = True,
         **kwargs: Any,
     ) -> List[Tool]:
-        """Sample up to ``k`` tools: one seed plus k-1 neighbors.
+        """Sample up to ``k`` tools from the seed's connected component.
 
         Call-site arguments override constructor defaults for this call only.
 
@@ -260,8 +266,12 @@ class NeighborToolSampler(ToolSampler):
                 in same namespace as selected seed
 
         Returns:
-            List of sampled ``Tool`` instances.  First element is the seed.
-            Length is ``min(k, 1 + available_neighbors)``.
+            List of sampled ``Tool`` instances drawn from the connected
+            component of the seed.  Length is ``min(k, pool_size)``, where
+            ``pool_size`` is the number of tools reachable from the seed
+            within the BFS expansion rounds. The seed is part of the pool
+            but has no privileged position in the result and is not
+            guaranteed to appear when ``k`` is smaller than ``pool_size``.
         """
         resolved_k = self._resolve_k(k)
         resolved_ns = namespace if namespace is not None else self._default_namespace
@@ -294,11 +304,11 @@ class NeighborToolSampler(ToolSampler):
         selected_neighbors: List[Tool] = []
         nogoods = set()
 
-        want = resolved_k - 1
+        want = resolved_k
         if want > len(neighbors):
             self.logger.warning(
-                "tc/neighbor: requested k=%d but seed %r has only %d neighbor(s); "
-                "returning seed + all available neighbors.",
+                "tc/neighbor: requested k=%d but seed %r has only %d tool(s) in "
+                "its connected component; returning all available tools.",
                 resolved_k,
                 seed.qualified_name,
                 len(neighbors),

@@ -59,14 +59,19 @@ def _make_neighbors_artifact(
     source: Tool,
     targets: list,  # list of (Tool, score)
 ) -> dict:
-    """Build a minimal neighbors artifact for a single source tool."""
+    """Build a minimal neighbors artifact for a single source tool.
+
+    Artifact shape (per enrichment):
+      {src_qname: {src_fp: {ns: (neighbors_triples, duplicates_triples)}}}
+    Each triple is (unqualified_name, tgt_fp, score).
+    """
     src_fp = _fp(source)
     ns_buckets: dict = {}
     for tgt, score in targets:
         ns = tgt.namespace
         if ns not in ns_buckets:
-            ns_buckets[ns] = []
-        ns_buckets[ns].append((tgt.name, _fp(tgt), score))
+            ns_buckets[ns] = ([], [])
+        ns_buckets[ns][0].append((tgt.name, _fp(tgt), score))
     return {source.qualified_name: {src_fp: ns_buckets}}
 
 
@@ -147,13 +152,6 @@ class TestNeighborSamplerBasic:
             result = sampler.sample()
         assert len(result) == 3
 
-    def test_seed_is_first(self):
-        reg, seed, _ = _simple_setup()
-        sampler = NeighborToolSampler(registry=reg, k=2, namespace="ns")
-        with patch.object(sampler, "_select_seed", return_value=seed):
-            result = sampler.sample()
-        assert result[0] is seed
-
     def test_no_duplicates(self):
         reg, seed, _ = _simple_setup()
         sampler = NeighborToolSampler(registry=reg, k=4, namespace="ns")
@@ -232,10 +230,13 @@ class TestNeighborSamplerCapping:
         reg.artifacts["neighbors"] = {
             seed.qualified_name: {
                 src_fp: {
-                    "ns": [
-                        ("real", _fp(real_neighbor), 0.9),
-                        ("ghost", stale_fp, 0.8),
-                    ]
+                    "ns": (
+                        [
+                            ("real", _fp(real_neighbor), 0.9),
+                            ("ghost", stale_fp, 0.8),
+                        ],
+                        [],
+                    )
                 }
             }
         }
@@ -311,7 +312,8 @@ class TestNeighborScoreWeighting:
         with patch.object(sampler, "_select_seed", return_value=seed):
             for _ in range(200):
                 result = sampler.sample()
-                counts[result[1].name] += 1
+                for tool in result:
+                    counts[tool.name] += 1
         total = sum(counts.values())
         for name in counts:
             assert counts[name] / total > 0.1
@@ -328,7 +330,8 @@ class TestNeighborScoreWeighting:
         with patch.object(sampler, "_select_seed", return_value=seed):
             for _ in range(200):
                 result = sampler.sample()
-                counts[result[1].name] += 1
+                for tool in result:
+                    counts[tool.name] += 1
         assert counts["hi"] > counts["lo"]
 
     def test_low_temperature_concentrates_on_top_neighbor(self):
@@ -342,8 +345,9 @@ class TestNeighborScoreWeighting:
         with patch.object(sampler, "_select_seed", return_value=seed):
             for _ in range(100):
                 result = sampler.sample()
-                counts[result[1].name] += 1
-        # At very low temperature, hi should dominate almost entirely.
+                for tool in result:
+                    counts[tool.name] += 1
+        # At very low temperature, hi should be sampled nearly every run.
         assert counts["hi"] > 90
 
     def test_invalid_temperature_raises(self):

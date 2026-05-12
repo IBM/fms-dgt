@@ -53,6 +53,7 @@ def _make_enrichment() -> NeighborsEnrichment:
     enrichment._model_name = "mock-model"
     enrichment._max_candidates = 50
     enrichment._max_neighbors = 10
+    enrichment._duplicate_sim_thresh = 0.9
     enrichment._force = True
 
     mock_model = MagicMock()
@@ -86,7 +87,10 @@ class TestNeighborsEnrichment:
         assert len(reg.artifacts[NeighborsEnrichment.artifact_key]) == 3
 
     def test_artifact_structure(self):
-        """Artifact shape: {qname: {schema_fp: {ns: [(name, fp, score)]}}}."""
+        """Artifact shape: {qname: {schema_fp: {ns: (neighbors, duplicates)}}}.
+
+        Each of ``neighbors`` and ``duplicates`` is a list of (name, fp, score).
+        """
         t1 = _tool("alpha", ns="api")
         t2 = _tool("beta", ns="api")
         reg = _registry(t1, t2)
@@ -97,12 +101,14 @@ class TestNeighborsEnrichment:
             assert "::" in src_qname
             for src_fp, ns_buckets in fp_map.items():
                 assert isinstance(src_fp, str)
-                for ns, triples in ns_buckets.items():
+                for ns, bucket in ns_buckets.items():
                     assert isinstance(ns, str)
-                    for name, tgt_fp, score in triples:
-                        assert "::" not in name  # unqualified
-                        assert isinstance(tgt_fp, str)
-                        assert isinstance(score, float)
+                    neighbors_triples, duplicates_triples = bucket
+                    for triples in (neighbors_triples, duplicates_triples):
+                        for name, tgt_fp, score in triples:
+                            assert "::" not in name  # unqualified
+                            assert isinstance(tgt_fp, str)
+                            assert isinstance(score, float)
 
     def test_self_not_in_neighbors(self):
         tools = [_tool(f"t{i}") for i in range(4)]
@@ -113,7 +119,9 @@ class TestNeighborsEnrichment:
         for src_qname, fp_map in neighbors.items():
             src_name = src_qname.split("::", 1)[1]
             for ns_buckets in fp_map.values():
-                all_names = [n for triples in ns_buckets.values() for n, _, _ in triples]
+                all_names = [
+                    n for bucket in ns_buckets.values() for triples in bucket for n, _, _ in triples
+                ]
                 assert src_name not in all_names
 
     def test_neighbor_scores_are_floats(self):
@@ -124,9 +132,10 @@ class TestNeighborsEnrichment:
         neighbors = reg.artifacts[NeighborsEnrichment.artifact_key]
         for fp_map in neighbors.values():
             for ns_buckets in fp_map.values():
-                for triples in ns_buckets.values():
-                    for _, _, score in triples:
-                        assert isinstance(score, float)
+                for bucket in ns_buckets.values():
+                    for triples in bucket:
+                        for _, _, score in triples:
+                            assert isinstance(score, float)
 
     def test_empty_registry(self):
         reg = _registry()
@@ -145,8 +154,9 @@ class TestNeighborsEnrichment:
         neighbors = reg.artifacts[NeighborsEnrichment.artifact_key]
         for fp_map in neighbors.values():
             for ns_buckets in fp_map.values():
-                for triples in ns_buckets.values():
-                    assert len(triples) <= 1
+                for bucket in ns_buckets.values():
+                    neighbors_triples, _ = bucket
+                    assert len(neighbors_triples) <= 1
 
     def test_namespace_bucketing(self):
         """Tools from different namespaces appear in separate buckets."""
@@ -161,9 +171,11 @@ class TestNeighborsEnrichment:
         src_buckets = neighbors[t1.qualified_name][fp]
         assert "ns_a" in src_buckets
         assert "ns_b" in src_buckets
-        for name, _, _ in src_buckets["ns_a"]:
+        ns_a_neighbors, _ = src_buckets["ns_a"]
+        ns_b_neighbors, _ = src_buckets["ns_b"]
+        for name, _, _ in ns_a_neighbors:
             assert name == "t2"
-        for name, _, _ in src_buckets["ns_b"]:
+        for name, _, _ in ns_b_neighbors:
             assert name == "t3"
 
     def test_overloads_get_separate_entries(self):

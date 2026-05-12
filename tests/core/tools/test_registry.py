@@ -234,13 +234,13 @@ class TestMatch:
 
     def test_unknown_tool_returns_none(self):
         reg = ToolRegistry()
-        tc = ToolCall(name="ns::unknown", arguments={})
+        tc = ToolCall(name="unknown", namespace="ns", arguments={})
         assert reg.match(tc) is None
 
     def test_single_overload_returned_immediately(self):
         tool = self._make_overload("search", ["query", "limit"])
         reg = ToolRegistry(tools=[tool])
-        tc = ToolCall(name="ns::search", arguments={"query": "cats"})
+        tc = ToolCall(name="search", namespace="ns", arguments={"query": "cats"})
         assert reg.match(tc) is tool
 
     def test_multiple_overloads_validated_by_schema(self):
@@ -251,7 +251,9 @@ class TestMatch:
         reg = ToolRegistry(tools=[tool_a, tool_b])
 
         # Call supplies "filter" — only B is valid
-        tc = ToolCall(name="ns::search", arguments={"query": "cats", "filter": "recent"})
+        tc = ToolCall(
+            name="search", namespace="ns", arguments={"query": "cats", "filter": "recent"}
+        )
         assert reg.match(tc) is tool_b
 
     def test_multiple_overloads_required_field_disambiguates(self):
@@ -262,7 +264,7 @@ class TestMatch:
         reg = ToolRegistry(tools=[tool_a, tool_b])
 
         # Call only supplies "query" — B fails validation (missing required "filter"), A passes
-        tc = ToolCall(name="ns::search", arguments={"query": "cats"})
+        tc = ToolCall(name="search", namespace="ns", arguments={"query": "cats"})
         assert reg.match(tc) is tool_a
 
     def test_tiebreaker_uses_key_overlap(self):
@@ -274,11 +276,13 @@ class TestMatch:
         reg = ToolRegistry(tools=[tool_a, tool_b])
 
         # Call has "query" and "filter" — overlaps B more (2 vs 1)
-        tc = ToolCall(name="ns::search", arguments={"query": "cats", "filter": "recent"})
+        tc = ToolCall(
+            name="search", namespace="ns", arguments={"query": "cats", "filter": "recent"}
+        )
         assert reg.match(tc) is tool_b
 
         # Call has "query" and "limit" — overlaps A more
-        tc2 = ToolCall(name="ns::search", arguments={"query": "cats", "limit": "10"})
+        tc2 = ToolCall(name="search", namespace="ns", arguments={"query": "cats", "limit": "10"})
         assert reg.match(tc2) is tool_a
 
     def test_no_valid_overload_falls_back_to_key_overlap(self):
@@ -289,7 +293,9 @@ class TestMatch:
 
         # Call supplies only "query" and "filter" — neither strictly validates,
         # but B has higher key overlap.
-        tc = ToolCall(name="ns::search", arguments={"query": "cats", "filter": "recent"})
+        tc = ToolCall(
+            name="search", namespace="ns", arguments={"query": "cats", "filter": "recent"}
+        )
         assert reg.match(tc) is tool_b
 
     def test_namespaces_filter_restricts_candidates(self):
@@ -297,8 +303,8 @@ class TestMatch:
         tool_b = Tool(name="search", namespace="hr_api", parameters={})
         reg = ToolRegistry(tools=[tool_a, tool_b])
 
-        tc_weather = ToolCall(name="weather_api::search", arguments={})
-        tc_hr = ToolCall(name="hr_api::search", arguments={})
+        tc_weather = ToolCall(name="search", namespace="weather_api", arguments={})
+        tc_hr = ToolCall(name="search", namespace="hr_api", arguments={})
 
         # Scoped to weather_api only — hr call returns None
         assert reg.match(tc_weather, namespaces=["weather_api"]) is tool_a
@@ -313,7 +319,7 @@ class TestMatch:
         tool_b = Tool(name="search", namespace="hr_api", parameters={})
         reg = ToolRegistry(tools=[tool_a, tool_b])
 
-        tc = ToolCall(name="weather_api::search", arguments={})
+        tc = ToolCall(name="search", namespace="weather_api", arguments={})
         assert reg.match(tc, namespaces=None) is tool_a
 
 

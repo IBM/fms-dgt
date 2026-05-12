@@ -20,7 +20,6 @@ import time
 import pytest
 
 # Local
-from fms_dgt.core.tools.constants import TOOL_NAMESPACE_SEP
 from fms_dgt.core.tools.data_objects import ToolCall
 from fms_dgt.core.tools.engines.mcp import MCPToolEngine
 from fms_dgt.core.tools.loaders.mcp import MCPToolLoader
@@ -71,7 +70,7 @@ def engine(registry):
 
 
 def _call(tool: str, **kwargs) -> ToolCall:
-    return ToolCall(name=f"{_NS}{TOOL_NAMESPACE_SEP}{tool}", arguments=kwargs)
+    return ToolCall(name=tool, namespace=_NS, arguments=kwargs)
 
 
 # ===========================================================================
@@ -166,7 +165,7 @@ class TestMCPToolEngine:
         assert r.result[0]["text"] == "hello mcp"
 
     def test_unknown_tool_returns_error(self, engine):
-        call = ToolCall(name=f"{_NS}{TOOL_NAMESPACE_SEP}nonexistent", arguments={})
+        call = ToolCall(name="nonexistent", namespace=_NS, arguments={})
         results = engine.execute(self._SESSION, [call])
         assert results[0].is_error
         assert "nonexistent" in results[0].error

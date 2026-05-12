@@ -171,8 +171,8 @@ class TestLMToolEngineSimulateVsExecute:
         history_b = eng.get_session_state("branch_b")["tool_executions"]
         assert len(history_a) == 2
         assert len(history_b) == 2
-        assert history_a[1]["tool_call"]["id"] == "ca"
-        assert history_b[1]["tool_call"]["id"] == "cb"
+        assert history_a[1]["tool_call"].call_id == "ca"
+        assert history_b[1]["tool_call"].call_id == "cb"
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ class TestLMToolEngineUnknownTool:
     def test_unknown_tool_returns_error_result(self):
         eng = _make_lm_engine()
         eng.setup("s1")
-        call = ToolCall(name="ns::nonexistent_tool", arguments={})
+        call = ToolCall(name="nonexistent_tool", namespace="ns", arguments={})
         results = eng.execute("s1", [call])
         assert results[0].is_error
         assert "Unknown tool" in results[0].error
@@ -252,7 +252,7 @@ class TestLMToolEngineNamespaceScoping:
         reg = _make_registry("weather_api")
         eng = _make_lm_engine(reg, namespaces=["hr_api"])
         eng.setup("s1")
-        call = ToolCall(name="weather_api::search", arguments={})
+        call = ToolCall(name="search", namespace="weather_api", arguments={})
         results = eng.execute("s1", [call])
         assert results[0].is_error
         assert "Unknown tool" in results[0].error
@@ -262,7 +262,7 @@ class TestLMToolEngineNamespaceScoping:
         eng = _make_lm_engine(reg, namespaces=None)
         _set_lm_response(eng, {"result": "sunny"})
         eng.setup("s1")
-        call = ToolCall(name="weather_api::search", arguments={"q": "hello"})
+        call = ToolCall(name="search", namespace="weather_api", arguments={"q": "hello"})
         results = eng.execute("s1", [call])
         assert not results[0].is_error
 
