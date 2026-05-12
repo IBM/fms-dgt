@@ -19,6 +19,7 @@ from fms_dgt.core.databuilders.conversation.data_objects import (
 )
 from fms_dgt.core.databuilders.conversation.registry import register_stage
 from fms_dgt.core.databuilders.conversation.stages.base import Stage
+from fms_dgt.core.tools.constants import TOOL_DEFAULT_NAMESPACE
 from fms_dgt.core.tools.data_objects import ToolCall
 from fms_dgt.core.tools.engines.composite import CompositeToolEngine
 
@@ -128,7 +129,7 @@ class LiveRetrievalAssistantStage(Stage):
         seed_data: List[ConversationDataPoint] | None = None,
         **kwargs: Any,
     ) -> List[ConversationDataPoint]:
-        tools = self._engine.catalog.to_dicts(qualified=True)
+        tools = self._engine.catalog.to_dicts(qualified=False)
 
         # LM call #1: present full conversation history + all tools, let model decide.
         call1_inputs = [
@@ -178,23 +179,29 @@ class LiveRetrievalAssistantStage(Stage):
         # Execute tool calls and collect retrieved results for synthesis.
         synthesis_batch: List[tuple] = []  # (ctx, list of tool results)
 
+        catalog = self._engine.catalog
         for ctx, raw_tool_calls in tool_call_batch:
             tool_calls = []
             for tc in raw_tool_calls:
                 fn = tc.get("function", {})
-                tool_calls.append(
-                    ToolCall(
-                        name=fn.get("name", ""),
-                        arguments=fn.get("arguments", {}),
-                        call_id=tc.get("id") or str(uuid.uuid4()),
-                    )
+                name = fn.get("name", "")
+                # FIXME(tc-team): unqualified names prompted to the LM are
+                # ambiguous if the catalog has name collisions across
+                # namespaces. This lookup takes the first match and may pick
+                # the wrong namespace. Safe today because RAG typically runs
+                # against a single-namespace catalog, but needs a principled
+                # fix (e.g., stage-init validation, or a schema convention
+                # that disambiguates without exposing namespaces to the LM).
+                match = next((t for t in catalog.all_tools() if t.name == name), None)
+                namespace = match.namespace if match else TOOL_DEFAULT_NAMESPACE
+                tool_call = ToolCall(
+                    name=name,
+                    namespace=namespace,
+                    arguments=fn.get("arguments", {}),
+                    call_id=tc.get("id") or str(uuid.uuid4()),
                 )
-                ctx.steps.append(
-                    ToolCallStep(
-                        content=dataclasses.asdict(tool_calls[-1]),
-                        stage_name=self.name,
-                    )
-                )
+                tool_calls.append(tool_call)
+                ctx.steps.append(ToolCallStep(content=tool_call.to_dict(), stage_name=self.name))
 
             try:
                 tool_results = self._engine.execute(

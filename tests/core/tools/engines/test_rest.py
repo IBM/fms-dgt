@@ -22,7 +22,6 @@ from typing import Any, Dict
 import pytest
 
 # Local
-from fms_dgt.core.tools.constants import TOOL_NAMESPACE_SEP
 from fms_dgt.core.tools.data_objects import ToolCall
 from fms_dgt.core.tools.engines.rest import RESTToolEngine
 from fms_dgt.core.tools.loaders.rest import (
@@ -113,7 +112,7 @@ def _registry_from_inline(operation_ids=None) -> ToolRegistry:
 
 
 def _call(tool: str, **kwargs) -> ToolCall:
-    return ToolCall(name=f"{_NS}{TOOL_NAMESPACE_SEP}{tool}", arguments=kwargs)
+    return ToolCall(name=tool, namespace=_NS, arguments=kwargs)
 
 
 # ===========================================================================
@@ -159,7 +158,7 @@ class TestRESTToolLoaderUnit:
         engine = RESTToolEngine(registry)
         engine.setup("s1")
         try:
-            call = ToolCall(name=f"{_NS}{TOOL_NAMESPACE_SEP}missing", arguments={})
+            call = ToolCall(name="missing", namespace=_NS, arguments={})
             results = engine.execute("s1", [call])
             assert results[0].is_error
             assert "missing" in results[0].error

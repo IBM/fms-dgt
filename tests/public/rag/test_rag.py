@@ -476,13 +476,12 @@ class TestLiveRetrievalAssistantStage:
     ):
         """Build a generator mock that returns a tool call on call #1, plain text on call #2."""
         call_count = [0]
-        qualified = f"{namespace}::{tool_name}"
 
         def side_effect(inputs, **kw):
             call_count[0] += 1
             if call_count[0] == 1:
                 return [
-                    {"result": _tool_call_result(qualified, query), "reference": inp["reference"]}
+                    {"result": _tool_call_result(tool_name, query), "reference": inp["reference"]}
                     for inp in inputs
                 ]
             return [
@@ -542,7 +541,7 @@ class TestLiveRetrievalAssistantStage:
         results = stage([self._ctx_with_user_turn()])
 
         tool_call_step = [step for step in results[0].steps if step.role == "tool_call"][-1]
-        assert tool_call_step.content["name"] == "custom::my_retriever"
+        assert tool_call_step.content["name"] == "my_retriever"
 
     def test_retrieval_result_stored_in_tool_result_step(self):
         docs = _docs("Quantum computers use superposition.")

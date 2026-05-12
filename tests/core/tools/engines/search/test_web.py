@@ -86,7 +86,7 @@ def _make_ddg_engine(**kwargs) -> DuckDuckGoSearchEngine:
 
 def _tc(query: str = "mount rushmore faces", call_id: str = "c1", **extra) -> ToolCall:
     args = {"query": query, **extra}
-    return ToolCall(name="ns::search", arguments=args, call_id=call_id)
+    return ToolCall(name="search", namespace="ns", arguments=args, call_id=call_id)
 
 
 # ---------------------------------------------------------------------------
@@ -384,7 +384,7 @@ class TestDuckDuckGoEngineExecute:
         engine = _make_ddg_engine()
         engine._ddgs = self._mock_ddgs()
         [result] = self._run(
-            engine, ToolCall(name="ns::search", arguments={"query": ""}, call_id="c0")
+            engine, ToolCall(name="search", namespace="ns", arguments={"query": ""}, call_id="c0")
         )
         assert result.result == []
 
@@ -393,7 +393,7 @@ class TestDuckDuckGoEngineExecute:
         engine._ddgs = self._mock_ddgs()
         [result] = self._run(engine, _tc(call_id="my-id"))
         assert result.call_id == "my-id"
-        assert result.name == "ns::search"
+        assert result.name == "search"
 
     def test_ddg_exception_raises_runtime_error(self):
         # Third Party

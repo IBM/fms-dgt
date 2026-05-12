@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 import json
 
 # Local
-from fms_dgt.core.tools.constants import TOOL_NAMESPACE_SEP
 from fms_dgt.core.tools.data_objects import Tool, ToolCall
 from fms_dgt.core.tools.engines import LMToolEngine
 from fms_dgt.core.tools.registry import ToolRegistry
@@ -37,7 +36,8 @@ def _make_call(
     call_id: str | None = None,
 ) -> ToolCall:
     return ToolCall(
-        name=f"{namespace}{TOOL_NAMESPACE_SEP}{tool}",
+        name=tool,
+        namespace=namespace,
         arguments={"q": "hello"},
         call_id=call_id,
     )

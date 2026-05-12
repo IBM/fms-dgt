@@ -50,7 +50,7 @@ def _make_engine(path: str, **kwargs) -> FileSearchEngine:
 
 def _tc(call_id: str = "c1", size: int | None = None) -> ToolCall:
     args = {} if size is None else {"size": size}
-    return ToolCall(name="ns::search", arguments=args, call_id=call_id)
+    return ToolCall(name="search", namespace="ns", arguments=args, call_id=call_id)
 
 
 # ---------------------------------------------------------------------------
@@ -168,10 +168,10 @@ class TestFileSearchEngineResults:
         engine = _make_engine(_CORPUS_CANONICAL)
         engine.setup("s1")
         try:
-            tc = ToolCall(name="ns::search", arguments={}, call_id="my-call-id")
+            tc = ToolCall(name="search", namespace="ns", arguments={}, call_id="my-call-id")
             [result] = engine.execute("s1", [tc])
             assert result.call_id == "my-call-id"
-            assert result.name == "ns::search"
+            assert result.name == "search"
         finally:
             engine.teardown("s1")
 
@@ -292,7 +292,7 @@ class TestFileSearchEngineErrorInjection:
             assert result.error == "timeout"
             assert result.result is None
             assert result.call_id == "ce"
-            assert result.name == "ns::search"
+            assert result.name == "search"
         finally:
             engine.teardown("s1")
 
