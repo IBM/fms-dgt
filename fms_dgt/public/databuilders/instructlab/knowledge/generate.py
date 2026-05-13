@@ -10,6 +10,7 @@ from fms_dgt.base.databuilder import GenerationDataBuilder
 from fms_dgt.base.prompt import JinjaPromptTemplate
 from fms_dgt.base.registry import register_data_builder
 from fms_dgt.base.task import GenerationTask
+from fms_dgt.constants import STORE_NAMES_KEY
 from fms_dgt.core.blocks.llm import LMProvider
 from fms_dgt.core.blocks.validators.lm_judge import LMJudgeValidator
 from fms_dgt.public.blocks.magpie.tag import MagpieTagger
@@ -211,7 +212,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
             # Build validator inputs
             validator_inputs: List[Dict] = [
                 {
-                    "store_names": self.get_block_store_names(
+                    STORE_NAMES_KEY: self.get_block_store_names(
                         block_name=self.validator.name,
                         task_name=question_answer_pair.task_name,
                     ),

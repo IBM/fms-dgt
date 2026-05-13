@@ -13,13 +13,15 @@ together.
 from dataclasses import MISSING, dataclass
 from typing import Any, Dict, List, Optional
 import dataclasses
+import logging
 
 # Third Party
 import pytest
 
 # Local
-from fms_dgt.base.block import Block
-from fms_dgt.base.data_objects import BlockData, DataPoint
+from fms_dgt.base.block import Block, ValidatorBlock
+from fms_dgt.base.data_objects import BlockData, DataPoint, ValidatorBlockData
+from fms_dgt.base.telemetry import _NoOpSpanWriter
 from fms_dgt.utils import from_dataclass, to_dataclass
 
 
@@ -49,15 +51,16 @@ class _SamplePoint(DataPoint):
 
     Inherits ``task_name`` / ``is_seed`` from :class:`DataPoint` and declares
     the fields touched by the block's default ``output_map`` echo (``score``,
-    ``labels``, ``tag``, ``store_names``) plus extra fields that the tests
-    aim nested writes at (``tags``, ``annotations``, ``metadata``).
+    ``labels``, ``tag``) plus extra fields that the tests aim nested writes at
+    (``tags``, ``annotations``, ``metadata``). ``store_names`` is intentionally
+    omitted: it is framework-reserved bookkeeping and must never appear in any
+    default output_map.
     """
 
     question: str = ""
     score: Optional[float] = None
     labels: Optional[Dict[str, Any]] = None
     tag: Optional[str] = None
-    store_names: Optional[List[str]] = None
     tags: Optional[List[str]] = None
     annotations: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
@@ -422,6 +425,87 @@ def test_transform_output_dataclass_nested_read_from_dict_inp():
     block.transform_output(inp, {"result.scores[0].value": "metadata.top_score"})
 
     assert src.metadata == {"top_score": 0.7}
+
+
+# ===========================================================================
+#       transform_output — framework-bookkeeping exclusion (regression)
+# ===========================================================================
+def test_default_map_excludes_store_names_on_dataclass_src():
+    """Framework-reserved ``store_names`` must not appear in the default
+    output_map, so a user ``DataPoint`` that omits the field is not required
+    to declare it just to satisfy the echo. Regression for the
+    direct-call-on-dataclass-list failure documented at
+    ``.claude/discussions/transform-output-bookkeeping-fields-leak.md``.
+    """
+
+    @dataclass
+    class _UserDP(DataPoint):
+        payload: str = ""
+
+    @dataclass(kw_only=True)
+    class _ToyData(ValidatorBlockData):
+        payload: str = ""
+
+    class _ToyValidator(ValidatorBlock):
+        DATA_TYPE = _ToyData
+
+        def __init__(self):
+            self._name = "toy"
+            self._block_type = "test"
+            self._input_map = None
+            self._output_map = None
+            self._req_args = []
+            self._opt_args = [
+                f.name for f in dataclasses.fields(_ToyData) if f.default is not dataclasses.MISSING
+            ]
+            self._filter_invalids = True
+            # Bypass datastore / profiling machinery for this unit.
+            self._datastores = None
+            self.profiler_data = {"executions": []}
+            self._builder_name = None
+            self._span_writer = _NoOpSpanWriter()
+            self._logger = logging.getLogger(f"fms_dgt.block.{self._name}")
+
+        def _validate(self, instance):
+            return instance.payload != "", None
+
+    v = _ToyValidator()
+    out = list(v([_UserDP(task_name="t", payload="hello"), _UserDP(task_name="t", payload="")]))
+
+    assert len(out) == 1
+    assert out[0].payload == "hello"
+
+
+def test_default_map_silent_skip_for_unknown_is_valid_field():
+    """Framework-synthesized default-map entries that target a field
+    ``src_data`` does not declare are silently skipped. User-declared
+    ``output_map`` entries remain strict (see
+    ``test_transform_output_dataclass_undeclared_destination_raises``).
+    """
+    block = _DataclassBlock()  # DATA_TYPE=_SampleBlockData, no is_valid field
+    src = _SamplePoint(task_name="t", question="q")
+    inp = _dc_inp(src, score=0.5)
+
+    # Default map echoes score/labels/tag. No user-declared map given, so the
+    # absence of any field on _SamplePoint that the block might try to write
+    # must not raise. (Happy-path existing tests already cover this shape, but
+    # this pins the contract explicitly.)
+    out = block.transform_output(inp, {})
+    assert out is src
+    assert out.score == 0.5
+
+
+def test_user_declared_typo_still_raises_after_fix():
+    """Fix must not re-introduce silent-skip for caller typos. Guards against
+    over-broadening the dataclass-branch strict check.
+    """
+    block = _DataclassBlock()
+    src = _SamplePoint(task_name="t", question="q")
+    inp = _dc_inp(src, score=0.5)
+
+    # User-declared path-side typo: strict-raise preserved.
+    with pytest.raises(ValueError):
+        block.transform_output(inp, {"score": "nonexistent_target"})
 
 
 # ===========================================================================

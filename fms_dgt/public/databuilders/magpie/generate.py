@@ -7,6 +7,7 @@ from typing import Iterable, Optional
 # Local
 from fms_dgt.base.databuilder import TransformationDataBuilder
 from fms_dgt.base.registry import register_data_builder
+from fms_dgt.constants import STORE_NAMES_KEY
 from fms_dgt.public.blocks.magpie.distance import MagpieDistance
 from fms_dgt.public.blocks.magpie.filter import MagpieFilter
 from fms_dgt.public.blocks.magpie.tag import MagpieTagger
@@ -102,7 +103,7 @@ class MagpieTransformDataBuilder(TransformationDataBuilder):
                 [
                     {
                         **output,
-                        "store_names": self.get_block_store_names(
+                        STORE_NAMES_KEY: self.get_block_store_names(
                             block_name=self.filter.name, task_name=output["task_name"]
                         ),
                     }
