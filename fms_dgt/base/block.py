@@ -349,7 +349,7 @@ class Block:
         if isinstance(inp_obj, (dict, pd.DataFrame, Dataset)):
             # NOTE: we flip this here because from a DGT pipeline, the input map goes from UserData -> BlockData
             data_type_map = {
-                **{v: k for k, v in self._get_default_map(inp).items()},
+                **{v: k for k, v in self._get_default_map(inp, direction="in").items()},
                 **{v: k for k, v in input_map.items()},
             }
 
@@ -410,7 +410,7 @@ class Block:
         # declare. A user DataPoint that omits e.g. ``is_valid`` should not
         # raise when a ValidatorBlock's default echo tries to write it back.
         user_declared = set(output_map)
-        output_map = {**self._get_default_map(src_data), **output_map}
+        output_map = {**self._get_default_map(src_data, direction="out"), **output_map}
 
         if is_dataclass(src_data):
             for k, path in output_map.items():
@@ -452,14 +452,39 @@ class Block:
 
         return src_data
 
-    def _get_default_map(self, data: Dict | BlockData):
+    def _get_default_map(self, data: Dict | BlockData, *, direction: str = "out"):
+        """Return the identity default map for ``transform_input`` / ``transform_output``.
+
+        The ``direction`` flag controls whether framework bookkeeping fields
+        (``_FRAMEWORK_FIELDS``) are excluded:
+
+        - ``direction="out"`` excludes them. The output-side echo would
+          otherwise try to write ``store_names`` back onto a user
+          ``DataPoint`` that does not declare it, triggering the
+          strict-raise in ``_to_dataclass``.
+        - ``direction="in"`` keeps them. Framework bookkeeping like
+          ``store_names`` is **supplied on the way in** by the caller
+          (``execute_postprocessing`` injects it into each row's dict;
+          direct in-loop callers hand-build dicts that include it). The
+          input-side default map is the route by which that injected value
+          lands on the block-side ``BlockData`` instance where
+          ``Block.save_data`` reads it for routing. Excluding framework
+          fields here silently severs that route, and ``save_data`` finds
+          ``store_names=None`` on every rejected instance, so nothing gets
+          persisted.
+
+        The asymmetry is intentional: bookkeeping fields flow in, never
+        flow back out, and the two directions must be filtered differently.
+        """
         # if DATA_TYPE is not provided, assume it maps to the input
         if is_dataclass(self.DATA_TYPE):
             fields = dataclasses.fields(self.DATA_TYPE)
         else:
             fields = data.keys() if isinstance(data, dict) else dataclasses.fields(data)
         fields = [f if isinstance(f, str) else f.name for f in fields]
-        return {f: f for f in fields if f not in _FRAMEWORK_FIELDS}
+        if direction == "out":
+            return {f: f for f in fields if f not in _FRAMEWORK_FIELDS}
+        return {f: f for f in fields if f != _SRC_DATA}
 
     # ===========================================================================
     #                       MAIN FUNCTIONS
