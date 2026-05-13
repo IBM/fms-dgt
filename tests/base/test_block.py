@@ -624,3 +624,57 @@ def test_transform_input_missing_required_arg_raises_valueerror():
 
     with pytest.raises(ValueError):
         block.transform_input(row, None)
+
+
+# ===========================================================================
+#       transform_input — framework-bookkeeping supply route (regression)
+# ===========================================================================
+def test_transform_input_default_map_carries_store_names_to_block_data():
+    """Framework bookkeeping (``store_names``) injected on the input dict
+    must reach the block-side ``BlockData`` instance via the default map.
+
+    Regression for the asymmetric-direction fix: the output-side exclusion
+    must not also strip ``store_names`` on the input side, otherwise
+    ``Block.save_data`` finds ``store_names=None`` on every rejected
+    instance and silently drops persistence (rejection log fires, but no
+    file is written under the per-block datastore).
+
+    See ``.claude/discussions/transform-output-bookkeeping-fields-leak.md``
+    "Correction" section.
+    """
+    block = _InputBlock()
+    row = {
+        "question_text": "q",
+        "score": 0.7,
+        "labels": {"primary": "safe"},
+        "tag": "x",
+        "store_names": ["per_task_store"],
+    }
+
+    out = block.transform_input(row, block._input_map)
+
+    # The whole point of the supply route: caller-injected store_names
+    # lands on the constructed BlockData where save_data can read it.
+    assert out.store_names == ["per_task_store"]
+    # Other declared fields still flow as before.
+    assert out.score == 0.7
+    assert out.labels == {"primary": "safe"}
+    assert out.tag == "x"
+
+
+def test_transform_output_default_map_still_skips_store_names():
+    """Direction asymmetry guard: the output-side default map must continue
+    to exclude ``store_names`` even though the input side carries it. A
+    user ``DataPoint`` that does not declare ``store_names`` must survive
+    the echo without raising.
+    """
+    src = _SamplePoint(task_name="t", question="q")  # no store_names field
+    block = _DataclassBlock()
+    inp = _dc_inp(src, score=0.5)
+
+    # Default output_map only — no user-declared keys. Must not raise on
+    # the absent store_names field on _SamplePoint.
+    out = block.transform_output(inp, {})
+
+    assert out is src
+    assert out.score == 0.5
