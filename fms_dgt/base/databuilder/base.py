@@ -24,6 +24,7 @@ from fms_dgt.constants import (
     DATASTORES_KEY,
     NAME_KEY,
     STORE_NAME_KEY,
+    STORE_NAMES_KEY,
     TASK_NAME_KEY,
     TYPE_KEY,
 )
@@ -490,7 +491,7 @@ class DataBuilder:
                         [
                             {
                                 **data_point,
-                                "store_names": self.get_block_store_names(
+                                STORE_NAMES_KEY: self.get_block_store_names(
                                     block_name=block_name,
                                     task_name=data_point[TASK_NAME_KEY],
                                 ),

@@ -27,6 +27,7 @@ from fms_dgt.constants import (
     DATASET_TYPE,
     DGT_DIR,
     STORE_NAME_KEY,
+    STORE_NAMES_KEY,
     TASK_NAME_KEY,
     TYPE_KEY,
 )
@@ -39,6 +40,23 @@ from fms_dgt.utils import to_dict as _to_dict
 #                       CONSTATNTS
 # ===========================================================================
 _SRC_DATA = "SRC_DATA"
+
+# Framework-reserved fields on BlockData / ValidatorBlockData that the default
+# output_map must never round-trip back onto SRC_DATA. These are sidecar
+# attributes the framework attaches for its own use, not payload:
+#
+# - SRC_DATA: the original user row, carried on BlockData so transform_output
+#   can write back onto it. Echoing it to itself is nonsense.
+# - store_names: input-only routing metadata. The databuilder decides per-call
+#   which datastore(s) a block's rejects go to (see get_block_store_names and
+#   Block.save_data's dispatch at the store_names iteration below). Letting it
+#   escape back onto the user's DataPoint would conflate payload and routing
+#   and make save_data's dispatch depend on transform_output ordering.
+#
+# A caller who explicitly lists one of these in their output_map still gets
+# the strict behavior in transform_output; only the framework-synthesized
+# default is trimmed here.
+_FRAMEWORK_FIELDS = frozenset({_SRC_DATA, STORE_NAMES_KEY})
 
 
 # ===========================================================================
@@ -386,7 +404,12 @@ class Block:
         if output_map is None:
             output_map = dict()
 
-        # start with assuming elements of input will be used
+        # Keep the caller-declared keys distinct from the framework-synthesized
+        # default so the strict-raise from commit 7659d86 only fires on caller
+        # typos, not on default-map entries for fields SRC_DATA happens not to
+        # declare. A user DataPoint that omits e.g. ``is_valid`` should not
+        # raise when a ValidatorBlock's default echo tries to write it back.
+        user_declared = set(output_map)
         output_map = {**self._get_default_map(src_data), **output_map}
 
         if is_dataclass(src_data):
@@ -400,7 +423,15 @@ class Block:
                     attr_val = _from_dict(inp, k)
                 else:
                     attr_val = _from_dataclass(inp, k)
-                _to_dataclass(src_data, path, attr_val)
+                try:
+                    _to_dataclass(src_data, path, attr_val)
+                except ValueError:
+                    if k in user_declared:
+                        raise
+                    # Framework-synthesized default for a field SRC_DATA doesn't
+                    # declare; silently skip (this is exactly the narrow case
+                    # the pre-7659d86 hasattr skip was protecting).
+                    continue
         elif isinstance(src_data, (dict, pd.DataFrame, Dataset)):
             # TODO: handle things other than dictionaries (pd.DataFrame / Dataset
             # rows are dicts by the time they reach here; full DataFrame / Dataset
@@ -428,7 +459,7 @@ class Block:
         else:
             fields = data.keys() if isinstance(data, dict) else dataclasses.fields(data)
         fields = [f if isinstance(f, str) else f.name for f in fields]
-        return {f: f for f in fields if f != _SRC_DATA}
+        return {f: f for f in fields if f not in _FRAMEWORK_FIELDS}
 
     # ===========================================================================
     #                       MAIN FUNCTIONS

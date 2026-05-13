@@ -17,6 +17,11 @@ DATASET_TYPE = Iterable[DATASET_ROW_TYPE] | pd.DataFrame | Dataset
 TYPE_KEY = "type"
 NAME_KEY = "name"
 STORE_NAME_KEY = "store_name"
+# Wire-format key for the input-only routing metadata on BlockData. The
+# databuilder layer injects this key into rows on the way into a block; the
+# block layer reads the corresponding attribute in save_data to dispatch
+# rejects to the right datastore(s). Not a payload field.
+STORE_NAMES_KEY = "store_names"
 
 # Task specific
 RUNNER_CONFIG_KEY = "runner_config"
