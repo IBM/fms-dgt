@@ -3,7 +3,7 @@
 
 # Standard
 from abc import abstractmethod
-from dataclasses import asdict, is_dataclass
+from dataclasses import MISSING, asdict, is_dataclass
 from typing import Any, Dict, Iterable, List, Tuple
 import asyncio
 import dataclasses
@@ -30,6 +30,10 @@ from fms_dgt.constants import (
     TASK_NAME_KEY,
     TYPE_KEY,
 )
+from fms_dgt.utils import from_dataclass as _from_dataclass
+from fms_dgt.utils import from_dict as _from_dict
+from fms_dgt.utils import to_dataclass as _to_dataclass
+from fms_dgt.utils import to_dict as _to_dict
 
 # ===========================================================================
 #                       CONSTATNTS
@@ -333,11 +337,22 @@ class Block:
 
             args = (self._req_args + self._opt_args) or data_type_map.keys()
 
-            mapped_data = {
-                arg: inp_obj.get(data_type_map.get(arg))
-                for arg in args
-                if data_type_map.get(arg) in inp_obj
-            }
+            # Read each mapped arg via the nested DSL. Skip the arg entirely
+            # when its path is absent (no mapping) or the terminal segment is
+            # missing on the row — the dataclass constructor's declared default
+            # then applies. Intermediate-segment misses on nested paths still
+            # raise (by contract of ``from_dict``): those are config errors
+            # where the user asserted a shape the row does not satisfy.
+            # ``None`` at the terminal is a real value and flows through.
+            mapped_data = {}
+            for arg in args:
+                path = data_type_map.get(arg)
+                if path is None:
+                    continue
+                value = _from_dict(inp_obj, path, strict=False)
+                if value is MISSING:
+                    continue
+                mapped_data[arg] = value
 
             missing = [r_a for r_a in self._req_args if r_a not in mapped_data]
             if missing:
@@ -375,16 +390,32 @@ class Block:
         output_map = {**self._get_default_map(src_data), **output_map}
 
         if is_dataclass(src_data):
-            for k, v in output_map.items():
-                # since a dataclass will throw an error, only try to add attributes if original data type has them
-                if hasattr(src_data, v):
-                    attr_val = inp[k] if isinstance(inp, dict) else getattr(inp, k)
-                    setattr(src_data, v, attr_val)
+            for k, path in output_map.items():
+                # Read the block's output value. When ``inp`` is a dict (DATA_TYPE=None
+                # blocks), the DSL on ``k`` lets callers pull nested values out of the
+                # block's returned dict. When ``inp`` is a dataclass, ``k`` is a
+                # declared field name by construction of the dataclass schema, so the
+                # dataclass walker covers the rare nested-dataclass-field case.
+                if isinstance(inp, dict):
+                    attr_val = _from_dict(inp, k)
+                else:
+                    attr_val = _from_dataclass(inp, k)
+                _to_dataclass(src_data, path, attr_val)
         elif isinstance(src_data, (dict, pd.DataFrame, Dataset)):
-            # TODO: handle things other than dictionaries
-            for k, v in output_map.items():
-                attr_val = inp[k] if isinstance(inp, dict) else getattr(inp, k)
-                src_data[v] = attr_val
+            # TODO: handle things other than dictionaries (pd.DataFrame / Dataset
+            # rows are dicts by the time they reach here; full DataFrame / Dataset
+            # objects in this branch are likely dead — audit tracked in design doc
+            # item 5 before removing the type from this isinstance tuple).
+            for k, path in output_map.items():
+                # Reads on `inp` use the DSL when `inp` is a dict (DATA_TYPE=None
+                # blocks returning nested dicts benefit from this). When `inp` is
+                # a dataclass, `k` is a flat field name by construction of the
+                # dataclass schema; `getattr` is the correct accessor.
+                if isinstance(inp, dict):
+                    attr_val = _from_dict(inp, k)
+                else:
+                    attr_val = getattr(inp, k)
+                _to_dict(src_data, path, attr_val)
         else:
             raise TypeError(f"Unexpected input type: {type(inp)}")
 
