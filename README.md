@@ -149,13 +149,7 @@ See [Observability](https://ibm.github.io/fms-dgt/concepts/observability/) in th
 
 DiGiT Studio is a local run-monitoring UI that works like TensorBoard: it auto-launches alongside a generation run and stays up after the run finishes so you can keep browsing your data.
 
-**Install:**
-
-```bash
-pip install -e ".[studio]"
-```
-
-Node.js (>=24) is required only if you want to rebuild Studio from source. The pre-built assets in `studio/dist/` are committed to the repo, so end users do not need Node.
+Node.js (>=24) is required only if you want to rebuild Studio from source. The pre-built assets are bundled in the package under `fms_dgt/studio/dist/`, so end users do not need Node.
 
 **Launch with a generation run:**
 

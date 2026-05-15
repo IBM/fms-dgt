@@ -83,6 +83,344 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 // ===================================================================================
+//                        TRANSFORMATION STATS PANEL
+// ===================================================================================
+function TransformationStatsPanel({
+  transformationStats,
+  tokenUsage,
+}: {
+  transformationStats: TransformationStats;
+  tokenUsage: TokenUsage | null;
+}) {
+  const { totalInput, totalOutput, totalFiltered, durationSeconds } =
+    transformationStats;
+  const acceptanceRate =
+    totalInput > 0 ? (totalOutput / totalInput) * 100 : null;
+  const throughput =
+    durationSeconds != null && durationSeconds > 0
+      ? totalInput / durationSeconds
+      : null;
+
+  return (
+    <div className={classes.statsTab}>
+      <SectionHeading>Transformation</SectionHeading>
+      <div className={classes.statRow}>
+        <StatTile
+          label="Input"
+          value={totalInput}
+          tooltip="Total data points passed into the transformation."
+          tooltipAlign="bottom-left"
+        />
+        <StatTile
+          label="Output"
+          value={totalOutput}
+          tooltip="Data points remaining after transformation and postprocessing."
+        />
+        <StatTile
+          label="Filtered"
+          value={totalFiltered}
+          tooltip="Data points removed by postprocessors after transformation."
+        />
+        <StatTile
+          label="Acceptance rate"
+          displayValue={
+            acceptanceRate != null ? `${acceptanceRate.toFixed(1)}%` : '-'
+          }
+          tooltip="Percentage of input data points that survived postprocessing."
+          tooltipAlign="bottom-right"
+        />
+      </div>
+      <div className={classes.statRow}>
+        <StatTile
+          label="Duration"
+          displayValue={
+            durationSeconds != null ? `${durationSeconds.toFixed(1)}s` : '-'
+          }
+          tooltip="Wall-clock time from run_started to run_finished."
+          tooltipAlign="bottom-left"
+        />
+        <StatTile
+          label="Throughput"
+          displayValue={throughput != null ? `${throughput.toFixed(1)}/s` : '-'}
+          tooltip="Input data points processed per second."
+        />
+        <div className={classes.statTileSpacer} />
+        <div className={classes.statTileSpacer} />
+      </div>
+      <SectionHeading>Token Usage</SectionHeading>
+      <TokenMetrics usage={tokenUsage} />
+    </div>
+  );
+}
+
+// ===================================================================================
+//                          GENERATION STATS PANEL
+// ===================================================================================
+function GenerationStatsPanel({
+  generationStats,
+  tokenUsage,
+}: {
+  generationStats: GenerationStats;
+  tokenUsage: TokenUsage | null;
+}) {
+  const { theme } = useTheme();
+  const {
+    totalGenerated,
+    totalSurvived,
+    lastEpoch,
+    lastEpochGenerated,
+    lastEpochSurvived,
+    lastEpochGenerationAttempts,
+    series,
+    timeSeries,
+  } = generationStats;
+  const totalFiltered = totalGenerated - totalSurvived;
+  const acceptanceRate =
+    totalGenerated > 0 ? (totalSurvived / totalGenerated) * 100 : null;
+  const lastEpochFiltered = lastEpochGenerated - lastEpochSurvived;
+  const lastEpochAcceptance =
+    lastEpochGenerated > 0
+      ? (lastEpochSurvived / lastEpochGenerated) * 100
+      : null;
+
+  const multiEpoch = series.length > 1;
+
+  // Waste estimate using telemetry token data
+  const avgTokensPerPoint =
+    totalGenerated > 0 && tokenUsage
+      ? (tokenUsage.prompt_tokens + tokenUsage.completion_tokens) /
+        totalGenerated
+      : null;
+  const wastedTokens =
+    avgTokensPerPoint != null && totalFiltered > 0
+      ? Math.round(avgTokensPerPoint * totalFiltered)
+      : null;
+  const wastedCost =
+    wastedTokens != null && tokenUsage?.avg_cost_per_token != null
+      ? avgTokensPerPoint! * totalFiltered * tokenUsage.avg_cost_per_token
+      : null;
+
+  // Chart: cumulative generated vs survived over time (adaptive buckets)
+  const chartData: ChartTabularData = useMemo(
+    () =>
+      timeSeries.flatMap((b) => [
+        { group: 'Generated', date: b.timestamp, value: b.cumGenerated },
+        {
+          group: 'Survived postprocessing',
+          date: b.timestamp,
+          value: b.cumSurvived,
+        },
+      ]),
+    [timeSeries],
+  );
+
+  const chartOptions: LineChartOptions = useMemo(() => {
+    const maxCumGenerated = Math.max(...timeSeries.map((b) => b.cumGenerated));
+    return {
+      title: 'Data points over time',
+      axes: {
+        bottom: {
+          title: 'Time',
+          mapsTo: 'date',
+          scaleType: ScaleTypes.TIME,
+        },
+        left: {
+          title: 'Cumulative data points',
+          mapsTo: 'value',
+          scaleType: ScaleTypes.LINEAR,
+          domain: [0, Math.ceil(maxCumGenerated * 1.1)],
+        },
+      },
+      curve: 'curveStepAfter',
+      theme,
+      height: '300px',
+      toolbar: { enabled: false },
+      legend: { enabled: true },
+      tooltip: { enabled: true },
+    };
+  }, [timeSeries, theme]);
+
+  // Chart: generation vs postprocessing time per epoch (stacked bar)
+  const hasTimingData = series.some(
+    (b) => b.generationMs > 0 || b.postprocessingMs > 0,
+  );
+  const epochChartData: ChartTabularData = useMemo(
+    () =>
+      series.flatMap((b) => [
+        {
+          group: 'Generation',
+          key: `Epoch ${b.epoch}`,
+          value: Math.round(b.generationMs / 100) / 10,
+        },
+        {
+          group: 'Postprocessing',
+          key: `Epoch ${b.epoch}`,
+          value: Math.round(b.postprocessingMs / 100) / 10,
+        },
+      ]),
+    [series],
+  );
+  const epochChartOptions: StackedBarChartOptions = useMemo(() => {
+    const maxEpochSecs = Math.max(
+      ...series.map((b) => (b.generationMs + b.postprocessingMs) / 1000),
+    );
+    return {
+      title: 'Time per epoch',
+      axes: {
+        bottom: {
+          title: 'Epoch',
+          mapsTo: 'key',
+          scaleType: ScaleTypes.LABELS,
+        },
+        left: {
+          title: 'Seconds',
+          mapsTo: 'value',
+          scaleType: ScaleTypes.LINEAR,
+          domain: [0, Math.ceil(maxEpochSecs * 1.1)],
+        },
+      },
+      theme,
+      height: '300px',
+      toolbar: { enabled: false },
+      legend: { enabled: true },
+      tooltip: { enabled: true },
+    };
+  }, [series, theme]);
+
+  return (
+    <div className={classes.statsTab}>
+      <SectionHeading>Data Points (lifetime totals)</SectionHeading>
+      <div className={classes.statRow}>
+        <StatTile
+          label="Generated"
+          value={totalGenerated}
+          tooltip="Total data points generated across all epochs, before postprocessing."
+        />
+        <StatTile
+          label="Filtered"
+          value={totalFiltered}
+          tooltip="Total data points removed by postprocessors across all epochs."
+        />
+        <StatTile
+          label="Survived"
+          value={totalSurvived}
+          tooltip="Total data points that passed all postprocessing steps across all epochs."
+        />
+        <StatTile
+          label="Acceptance rate"
+          displayValue={
+            acceptanceRate != null ? `${acceptanceRate.toFixed(1)}%` : '-'
+          }
+          tooltip="Percentage of generated data points that survived postprocessing, across all epochs."
+          tooltipAlign="bottom-right"
+        />
+      </div>
+
+      {multiEpoch && (
+        <>
+          <SectionHeading>Last Epoch (epoch {lastEpoch})</SectionHeading>
+          <div className={classes.statRow}>
+            <StatTile
+              label="Generated"
+              value={lastEpochGenerated}
+              tooltip={`Data points generated in epoch ${lastEpoch}, before postprocessing.`}
+            />
+            <StatTile
+              label="Filtered"
+              value={lastEpochFiltered}
+              tooltip={`Data points removed by postprocessors in epoch ${lastEpoch}.`}
+            />
+            <StatTile
+              label="Acceptance rate"
+              displayValue={
+                lastEpochAcceptance != null
+                  ? `${lastEpochAcceptance.toFixed(1)}%`
+                  : '-'
+              }
+              tooltip={`Postprocessing acceptance rate for epoch ${lastEpoch}.`}
+            />
+            <StatTile
+              label="Generation attempts"
+              value={lastEpochGenerationAttempts}
+              tooltip={`Number of generator batches that ran in epoch ${lastEpoch} before postprocessing. High values indicate the generator had to work hard to produce enough candidates.`}
+              tooltipAlign="bottom-right"
+            />
+          </div>
+        </>
+      )}
+
+      {!multiEpoch && (
+        <>
+          <SectionHeading>Generation</SectionHeading>
+          <div className={classes.statRow}>
+            <StatTile
+              label="Generation attempts"
+              value={lastEpochGenerationAttempts}
+              tooltip="Number of generator batches that ran before postprocessing. High values indicate the generator had to work hard to produce enough candidates."
+            />
+            <StatTile
+              label="Tokens wasted on filtered"
+              displayValue={
+                wastedTokens != null
+                  ? formatCount(wastedTokens)
+                  : totalFiltered === 0
+                    ? '0'
+                    : '-'
+              }
+              tooltip={
+                wastedTokens != null
+                  ? 'Estimated tokens spent generating data points that were later filtered out. Based on average tokens per generated data point from telemetry.'
+                  : tokenUsage == null
+                    ? 'Requires telemetry to be enabled (DGT_TELEMETRY_DIR).'
+                    : totalFiltered === 0
+                      ? 'No tokens were wasted — all generated data points survived postprocessing.'
+                      : 'No rate found for the provider or model. Add an entry to rates.json to enable this estimate.'
+              }
+            />
+            <StatTile
+              label="Cost wasted on filtered"
+              displayValue={
+                wastedCost != null
+                  ? formatCost(wastedCost)
+                  : totalFiltered === 0
+                    ? '$0'
+                    : '-'
+              }
+              tooltip={
+                wastedCost != null
+                  ? 'Estimated cost of tokens spent on filtered data points.'
+                  : tokenUsage == null
+                    ? 'Requires telemetry to be enabled (DGT_TELEMETRY_DIR).'
+                    : totalFiltered === 0
+                      ? 'No cost wasted — all generated data points survived postprocessing.'
+                      : 'No rate found for the provider or model. Add an entry to rates.json to enable this estimate.'
+              }
+              tooltipAlign="bottom-right"
+            />
+            <div className={classes.statTileSpacer} />
+          </div>
+        </>
+      )}
+
+      {timeSeries.length > 0 && (
+        <div className={classes.chart}>
+          <LineChart data={chartData} options={chartOptions} />
+        </div>
+      )}
+
+      {hasTimingData && (
+        <div className={classes.chart}>
+          <StackedBarChart data={epochChartData} options={epochChartOptions} />
+        </div>
+      )}
+
+      <SectionHeading>Token Usage</SectionHeading>
+      <TokenMetrics usage={tokenUsage} />
+    </div>
+  );
+}
+
+// ===================================================================================
 //                               MAIN COMPONENT
 // ===================================================================================
 export default function StatsTab({
@@ -107,71 +445,15 @@ export default function StatsTab({
   transformationStats: TransformationStats | null;
   isRunning: boolean;
 }) {
-  const { theme } = useTheme();
   // ---------------------------------------------------------------------------
   // Transformation task path (telemetry)
   // ---------------------------------------------------------------------------
   if (transformationStats) {
-    const { totalInput, totalOutput, totalFiltered, durationSeconds } =
-      transformationStats;
-    const acceptanceRate =
-      totalInput > 0 ? (totalOutput / totalInput) * 100 : null;
-    const throughput =
-      durationSeconds != null && durationSeconds > 0
-        ? totalInput / durationSeconds
-        : null;
-
     return (
-      <div className={classes.statsTab}>
-        <SectionHeading>Transformation</SectionHeading>
-        <div className={classes.statRow}>
-          <StatTile
-            label="Input"
-            value={totalInput}
-            tooltip="Total data points passed into the transformation."
-            tooltipAlign="bottom-left"
-          />
-          <StatTile
-            label="Output"
-            value={totalOutput}
-            tooltip="Data points remaining after transformation and postprocessing."
-          />
-          <StatTile
-            label="Filtered"
-            value={totalFiltered}
-            tooltip="Data points removed by postprocessors after transformation."
-          />
-          <StatTile
-            label="Acceptance rate"
-            displayValue={
-              acceptanceRate != null ? `${acceptanceRate.toFixed(1)}%` : '-'
-            }
-            tooltip="Percentage of input data points that survived postprocessing."
-            tooltipAlign="bottom-right"
-          />
-        </div>
-        <div className={classes.statRow}>
-          <StatTile
-            label="Duration"
-            displayValue={
-              durationSeconds != null ? `${durationSeconds.toFixed(1)}s` : '-'
-            }
-            tooltip="Wall-clock time from run_started to run_finished."
-            tooltipAlign="bottom-left"
-          />
-          <StatTile
-            label="Throughput"
-            displayValue={
-              throughput != null ? `${throughput.toFixed(1)}/s` : '-'
-            }
-            tooltip="Input data points processed per second."
-          />
-          <div className={classes.statTileSpacer} />
-          <div className={classes.statTileSpacer} />
-        </div>
-        <SectionHeading>Token Usage</SectionHeading>
-        <TokenMetrics usage={tokenUsage} />
-      </div>
+      <TransformationStatsPanel
+        transformationStats={transformationStats}
+        tokenUsage={tokenUsage}
+      />
     );
   }
 
@@ -179,264 +461,11 @@ export default function StatsTab({
   // Generation task path (telemetry, primary)
   // ---------------------------------------------------------------------------
   if (generationStats) {
-    const {
-      totalGenerated,
-      totalSurvived,
-      lastEpoch,
-      lastEpochGenerated,
-      lastEpochSurvived,
-      lastEpochGenerationAttempts,
-      series,
-      timeSeries,
-    } = generationStats;
-    const totalFiltered = totalGenerated - totalSurvived;
-    const acceptanceRate =
-      totalGenerated > 0 ? (totalSurvived / totalGenerated) * 100 : null;
-    const lastEpochFiltered = lastEpochGenerated - lastEpochSurvived;
-    const lastEpochAcceptance =
-      lastEpochGenerated > 0
-        ? (lastEpochSurvived / lastEpochGenerated) * 100
-        : null;
-
-    const multiEpoch = series.length > 1;
-
-    // Waste estimate using telemetry token data
-    const avgTokensPerPoint =
-      totalGenerated > 0 && tokenUsage
-        ? (tokenUsage.prompt_tokens + tokenUsage.completion_tokens) /
-          totalGenerated
-        : null;
-    const wastedTokens =
-      avgTokensPerPoint != null && totalFiltered > 0
-        ? Math.round(avgTokensPerPoint * totalFiltered)
-        : null;
-    const wastedCost =
-      wastedTokens != null && tokenUsage?.avg_cost_per_token != null
-        ? avgTokensPerPoint! * totalFiltered * tokenUsage.avg_cost_per_token
-        : null;
-
-    // Chart: cumulative generated vs survived over time (adaptive buckets)
-    const chartData: ChartTabularData = useMemo(
-      () =>
-        timeSeries.flatMap((b) => [
-          { group: 'Generated', date: b.timestamp, value: b.cumGenerated },
-          {
-            group: 'Survived postprocessing',
-            date: b.timestamp,
-            value: b.cumSurvived,
-          },
-        ]),
-      [timeSeries],
-    );
-
-    const chartOptions: LineChartOptions = useMemo(() => {
-      const maxCumGenerated = Math.max(
-        ...timeSeries.map((b) => b.cumGenerated),
-      );
-      return {
-        title: 'Data points over time',
-        axes: {
-          bottom: {
-            title: 'Time',
-            mapsTo: 'date',
-            scaleType: ScaleTypes.TIME,
-          },
-          left: {
-            title: 'Cumulative data points',
-            mapsTo: 'value',
-            scaleType: ScaleTypes.LINEAR,
-            domain: [0, Math.ceil(maxCumGenerated * 1.1)],
-          },
-        },
-        curve: 'curveStepAfter',
-        theme,
-        height: '300px',
-        toolbar: { enabled: false },
-        legend: { enabled: true },
-        tooltip: { enabled: true },
-      };
-    }, [timeSeries, theme]);
-
-    // Chart: generation vs postprocessing time per epoch (stacked bar)
-    const hasTimingData = series.some(
-      (b) => b.generationMs > 0 || b.postprocessingMs > 0,
-    );
-    const epochChartData: ChartTabularData = useMemo(
-      () =>
-        series.flatMap((b) => [
-          {
-            group: 'Generation',
-            key: `Epoch ${b.epoch}`,
-            value: Math.round(b.generationMs / 100) / 10,
-          },
-          {
-            group: 'Postprocessing',
-            key: `Epoch ${b.epoch}`,
-            value: Math.round(b.postprocessingMs / 100) / 10,
-          },
-        ]),
-      [series],
-    );
-    const epochChartOptions: StackedBarChartOptions = useMemo(() => {
-      const maxEpochSecs = Math.max(
-        ...series.map((b) => (b.generationMs + b.postprocessingMs) / 1000),
-      );
-      return {
-        title: 'Time per epoch',
-        axes: {
-          bottom: {
-            title: 'Epoch',
-            mapsTo: 'key',
-            scaleType: ScaleTypes.LABELS,
-          },
-          left: {
-            title: 'Seconds',
-            mapsTo: 'value',
-            scaleType: ScaleTypes.LINEAR,
-            domain: [0, Math.ceil(maxEpochSecs * 1.1)],
-          },
-        },
-        theme,
-        height: '300px',
-        toolbar: { enabled: false },
-        legend: { enabled: true },
-        tooltip: { enabled: true },
-      };
-    }, [series, theme]);
-
     return (
-      <div className={classes.statsTab}>
-        <SectionHeading>Data Points (lifetime totals)</SectionHeading>
-        <div className={classes.statRow}>
-          <StatTile
-            label="Generated"
-            value={totalGenerated}
-            tooltip="Total data points generated across all epochs, before postprocessing."
-          />
-          <StatTile
-            label="Filtered"
-            value={totalFiltered}
-            tooltip="Total data points removed by postprocessors across all epochs."
-          />
-          <StatTile
-            label="Survived"
-            value={totalSurvived}
-            tooltip="Total data points that passed all postprocessing steps across all epochs."
-          />
-          <StatTile
-            label="Acceptance rate"
-            displayValue={
-              acceptanceRate != null ? `${acceptanceRate.toFixed(1)}%` : '-'
-            }
-            tooltip="Percentage of generated data points that survived postprocessing, across all epochs."
-            tooltipAlign="bottom-right"
-          />
-        </div>
-
-        {multiEpoch && (
-          <>
-            <SectionHeading>Last Epoch (epoch {lastEpoch})</SectionHeading>
-            <div className={classes.statRow}>
-              <StatTile
-                label="Generated"
-                value={lastEpochGenerated}
-                tooltip={`Data points generated in epoch ${lastEpoch}, before postprocessing.`}
-              />
-              <StatTile
-                label="Filtered"
-                value={lastEpochFiltered}
-                tooltip={`Data points removed by postprocessors in epoch ${lastEpoch}.`}
-              />
-              <StatTile
-                label="Acceptance rate"
-                displayValue={
-                  lastEpochAcceptance != null
-                    ? `${lastEpochAcceptance.toFixed(1)}%`
-                    : '-'
-                }
-                tooltip={`Postprocessing acceptance rate for epoch ${lastEpoch}.`}
-              />
-              <StatTile
-                label="Generation attempts"
-                value={lastEpochGenerationAttempts}
-                tooltip={`Number of generator batches that ran in epoch ${lastEpoch} before postprocessing. High values indicate the generator had to work hard to produce enough candidates.`}
-                tooltipAlign="bottom-right"
-              />
-            </div>
-          </>
-        )}
-
-        {!multiEpoch && (
-          <>
-            <SectionHeading>Generation</SectionHeading>
-            <div className={classes.statRow}>
-              <StatTile
-                label="Generation attempts"
-                value={lastEpochGenerationAttempts}
-                tooltip="Number of generator batches that ran before postprocessing. High values indicate the generator had to work hard to produce enough candidates."
-              />
-              <StatTile
-                label="Tokens wasted on filtered"
-                displayValue={
-                  wastedTokens != null
-                    ? formatCount(wastedTokens)
-                    : totalFiltered === 0
-                      ? '0'
-                      : '-'
-                }
-                tooltip={
-                  wastedTokens != null
-                    ? 'Estimated tokens spent generating data points that were later filtered out. Based on average tokens per generated data point from telemetry.'
-                    : tokenUsage == null
-                      ? 'Requires telemetry to be enabled (DGT_TELEMETRY_DIR).'
-                      : totalFiltered === 0
-                        ? 'No tokens were wasted — all generated data points survived postprocessing.'
-                        : 'No rate found for the provider or model. Add an entry to rates.json to enable this estimate.'
-                }
-              />
-              <StatTile
-                label="Cost wasted on filtered"
-                displayValue={
-                  wastedCost != null
-                    ? formatCost(wastedCost)
-                    : totalFiltered === 0
-                      ? '$0'
-                      : '-'
-                }
-                tooltip={
-                  wastedCost != null
-                    ? 'Estimated cost of tokens spent on filtered data points.'
-                    : tokenUsage == null
-                      ? 'Requires telemetry to be enabled (DGT_TELEMETRY_DIR).'
-                      : totalFiltered === 0
-                        ? 'No cost wasted — all generated data points survived postprocessing.'
-                        : 'No rate found for the provider or model. Add an entry to rates.json to enable this estimate.'
-                }
-                tooltipAlign="bottom-right"
-              />
-              <div className={classes.statTileSpacer} />
-            </div>
-          </>
-        )}
-
-        {timeSeries.length > 0 && (
-          <div className={classes.chart}>
-            <LineChart data={chartData} options={chartOptions} />
-          </div>
-        )}
-
-        {hasTimingData && (
-          <div className={classes.chart}>
-            <StackedBarChart
-              data={epochChartData}
-              options={epochChartOptions}
-            />
-          </div>
-        )}
-
-        <SectionHeading>Token Usage</SectionHeading>
-        <TokenMetrics usage={tokenUsage} />
-      </div>
+      <GenerationStatsPanel
+        generationStats={generationStats}
+        tokenUsage={tokenUsage}
+      />
     );
   }
 

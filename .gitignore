@@ -28,9 +28,9 @@ MANIFEST
 # Studio
 studio/node_modules/
 studio/.next/
+studio/dist/
 studio/next-env.d.ts
 studio/tsconfig.tsbuildinfo
-!studio/dist/
 studio/.env.local
 
 # Environments
