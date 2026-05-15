@@ -116,4 +116,4 @@ cd studio
 npm run build
 ```
 
-Commit the updated `studio/dist/` directory alongside your code changes.
+The build script copies the static export from `studio/dist/` to `fms_dgt/studio/dist/` and `rates.json` to `fms_dgt/studio/data/rates.json`. Commit both `fms_dgt/studio/dist/` and `fms_dgt/studio/data/` alongside your code changes. The local `studio/dist/` is gitignored.

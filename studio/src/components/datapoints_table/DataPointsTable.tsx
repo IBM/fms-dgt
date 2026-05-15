@@ -4,7 +4,7 @@
 'use client';
 
 import { isEmpty } from 'lodash';
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import {
   DataTable,
@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableBody,
   TableCell,
-  Pagination,
   CodeSnippet,
 } from '@carbon/react';
 
@@ -38,37 +37,23 @@ function populateTable(
   return [headers, rows];
 }
 
+// Renders all rows passed in — pagination is the caller's responsibility.
 export default function DataPointsTable({
   datapoints,
 }: {
   datapoints: DataPoint[];
 }) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [visibleRows, setVisibleRows] = useState<
-    { id: string; [key: string]: any }[]
-  >([]);
-
-  var [headers, rows] = useMemo(() => populateTable(datapoints), [datapoints]);
-
-  useEffect(() => {
-    setVisibleRows(() => {
-      if (rows.length <= pageSize) {
-        setPage(1);
-      }
-      return rows.slice(
-        (page - 1) * pageSize,
-        (page - 1) * pageSize + pageSize,
-      );
-    });
-  }, [rows, page, pageSize]);
+  const [headers, rows] = useMemo(
+    () => populateTable(datapoints),
+    [datapoints],
+  );
 
   return (
     <>
       {headers && rows ? (
         <>
           <div className={classes.table}>
-            <DataTable rows={visibleRows} headers={headers}>
+            <DataTable rows={rows} headers={headers}>
               {({
                 rows,
                 headers,
@@ -139,14 +124,6 @@ export default function DataPointsTable({
               )}
             </DataTable>
           </div>
-          <Pagination
-            pageSizes={[25, 50, 100]}
-            totalItems={rows.length}
-            onChange={(event: any) => {
-              setPageSize(event.pageSize);
-              setPage(event.page);
-            }}
-          />
         </>
       ) : null}
     </>

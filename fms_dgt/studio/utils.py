@@ -662,10 +662,8 @@ def _lookup_rate(rates: dict, provider: str | None, model_id: str | None) -> dic
     return None
 
 
-# Path to the bundled rates.json (lives in studio/src/data/ in the source tree).
-_RATES_JSON = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "studio", "src", "data", "rates.json")
-)
+# Path to the bundled rates.json (copied here from studio/src/data/ by `npm run build`).
+_RATES_JSON = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "rates.json"))
 
 
 def load_token_usage(run_id: str, build_id: str | None, telemetry_dir: str) -> dict | None:

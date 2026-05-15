@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "(cd .. && DGT_STUDIO_MODE=dev .venv/bin/python -m fms_dgt.studio.server) & next dev --port 3000",
-    "build": "next build",
+    "build": "next build && cp -r dist/. ../fms_dgt/studio/dist && cp src/data/rates.json ../fms_dgt/studio/data/rates.json",
     "start": "(cd .. && .venv/bin/python -m fms_dgt.studio.server)",
     "test": "vitest run",
     "test:watch": "vitest",

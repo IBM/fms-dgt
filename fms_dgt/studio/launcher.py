@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 import psutil
 
 STUDIO_PORT = int(os.environ.get("DIGIT_STUDIO_PORT", 4720))
-_STUDIO_DIST = os.path.join(os.path.dirname(__file__), "..", "..", "studio", "dist")
+_STUDIO_DIST = os.path.join(os.path.dirname(__file__), "dist")
 
 
 def _studio_dist_path() -> str:
