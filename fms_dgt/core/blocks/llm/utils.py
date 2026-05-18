@@ -1,14 +1,69 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
-from copy import deepcopy
 from functools import wraps
 from inspect import iscoroutinefunction
-from typing import Any, Callable, Optional, Set, Tuple, Type
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
+import asyncio
 import collections
 import itertools
+import json
+import logging
 import time
 
 # Local
-from fms_dgt.utils import dgt_logger
+from fms_dgt.constants import BASE_LOGGER_NAME
+
+_logger = logging.getLogger(BASE_LOGGER_NAME)
+
+
+def normalize_tool_call_arguments(tool_call: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize the ``arguments`` field of a tool call entry to a parsed dict.
+
+    Providers differ in how they return tool call arguments:
+    - OpenAI, Ollama, WatsonX: JSON string (OpenAI wire format)
+    - Anthropic: already a parsed dict (``ToolUseBlock.input``)
+
+    This helper ensures every consumer downstream receives a dict regardless
+    of which provider produced the response. The formatter is responsible for
+    serializing back to a JSON string in the final training data output.
+
+    Args:
+        tool_call: A single tool call entry dict with a ``"function"`` key
+            containing ``"name"`` and ``"arguments"``.
+
+    Returns:
+        The same dict with ``function.arguments`` guaranteed to be a dict.
+    """
+    function = tool_call.get("function", {})
+    raw = function.get("arguments", {})
+    if isinstance(raw, str):
+        function["arguments"] = json.loads(raw)
+    return tool_call
+
+
+def _retry_after_seconds(exc: Exception, backoff_time: float) -> float:
+    """Return how long to wait before the next retry attempt.
+
+    If the exception carries a ``Retry-After`` header (OpenAI and Anthropic
+    both set this on 429 responses via ``httpx.Response``), honour it.
+    Otherwise fall back to the caller-supplied ``backoff_time``.
+
+    Args:
+        exc: The caught exception.
+        backoff_time: Exponential-backoff default (seconds).
+
+    Returns:
+        Seconds to wait before the next attempt.
+    """
+    try:
+        header = exc.response.headers.get("retry-after", None)
+        if header is not None:
+            return float(header)
+    except AttributeError:
+        pass
+    return backoff_time
 
 
 def retry(
@@ -18,7 +73,12 @@ def retry(
     backoff_multiplier: float = 1.5,
     on_exception_callback: Optional[Callable[[Exception, float], Any]] = None,
 ):
-    """Retry on an LLM Provider's rate limit error with exponential backoff
+    """Retry on an LLM Provider's rate limit error with exponential backoff.
+
+    When the exception carries a ``Retry-After`` header (HTTP 429), that
+    value is used as the wait time instead of the computed backoff so the
+    caller honours the server's guidance exactly.
+
     For example, to use for OpenAI, do the following:
     ```
     from openai import RateLimitError
@@ -34,45 +94,41 @@ def retry(
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            # Initialize necessary variables
             sleep_timer = backoff_time
             attempt = 0
 
-            # Keep retrying till max retries are attempted
             while attempt < max_retries:
                 try:
                     return func(*args, **kwargs)
                 except on_exceptions as e:
-                    # Trigger exception callback
+                    wait = _retry_after_seconds(e, sleep_timer)
+
                     if on_exception_callback is not None:
-                        on_exception_callback(e, sleep_timer)
+                        on_exception_callback(e, wait)
 
-                    # Wait for sleep timer before retrying
-                    time.sleep(sleep_timer)
+                    time.sleep(wait)
 
-                    # Increament sleep timer and attempt counter
                     sleep_timer *= backoff_multiplier
                     attempt += 1
 
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
-            # Initialize necessary variables
             sleep_timer = backoff_time
             attempt = 0
 
-            # Keep retrying till max retries are attempted
             while attempt < max_retries:
                 try:
                     return await func(*args, **kwargs)
                 except on_exceptions as e:
-                    # Trigger exception callback
+                    wait = _retry_after_seconds(e, sleep_timer)
+
                     if on_exception_callback is not None:
-                        on_exception_callback(e, sleep_timer)
+                        on_exception_callback(e, wait)
 
-                    # Wait for sleep timer before retrying
-                    time.sleep(sleep_timer)
+                    # Use asyncio.sleep so the event loop is not blocked
+                    # while waiting to retry.
+                    await asyncio.sleep(wait)
 
-                    # Increament sleep timer and attempt counter
                     sleep_timer *= backoff_multiplier
                     attempt += 1
 
@@ -234,8 +290,8 @@ def remap(
     Returns:
         (dict): Remapped dictionary
     """
-    # Step 1: Create deep copy of dictionary to remap
-    remapped_dictionary = deepcopy(dictionary)
+    # Step 1: Shallow copy — remap only adds/removes/renames top-level keys and never mutates values
+    remapped_dictionary = dict(dictionary)
 
     # Step 2: Iterate over mappings
     for to_field, from_fields in mapping.items():
@@ -243,7 +299,7 @@ def remap(
         if remapped_dictionary.get(to_field) and not override:
             warning_msg = f"Retaining detected value for {to_field}"
             if warning_msg not in raised:
-                dgt_logger.warning(warning_msg)
+                _logger.warning(warning_msg)
                 raised.add(warning_msg)
             continue
 

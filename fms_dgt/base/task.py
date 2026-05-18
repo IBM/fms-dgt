@@ -1,8 +1,10 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from abc import abstractmethod
-from logging import FileHandler
-from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, TypeVar, Union
+import logging
 import os
 import random
 
@@ -17,13 +19,22 @@ from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.formatter import Formatter
 from fms_dgt.base.registry import get_dataloader, get_datastore, get_formatter
 from fms_dgt.base.task_card import TaskRunCard
-from fms_dgt.constants import TYPE_KEY
-from fms_dgt.utils import (
-    DGT_LOG_FORMATTER,
-    dgt_logger,
-    group_data_by_attribute,
-    init_dataclass_from_dict,
+from fms_dgt.constants import ENGINE_KEY, TYPE_KEY
+from fms_dgt.core.tools import (
+    CompositeToolEngine,
+    ToolEngine,
+    ToolRegistry,
+    get_tool_engine,
+    get_tool_loader,
 )
+from fms_dgt.core.tools.constants import TOOL_DEFAULT_NAMESPACE
+from fms_dgt.core.tools.enrichments import get_tool_enrichment
+from fms_dgt.log import LogDatastoreHandler, run_context
+from fms_dgt.utils import init_dataclass_from_dict
+
+# Logger name prefix for all task-scoped loggers; child of dgt_logger so records
+# propagate to its stdout handler automatically.
+_TASK_LOGGER_PREFIX = "fms_dgt"
 
 # ===========================================================================
 #                       HELPER FUNCTIONS
@@ -31,16 +42,71 @@ from fms_dgt.utils import (
 T = TypeVar("T")
 
 
-def group_data_by_task(data_list: List[T]) -> List[List[T]]:
-    """Utility function that groups input data by task name.
+def _topo_sort_enrichments(enrichments: List[Any]) -> List[Any]:
+    """Return ``enrichments`` sorted so each item's ``DEPENDS_ON`` keys are
+    satisfied by items earlier in the returned list.
 
     Args:
-        data_list (List[T]): List of DataPoint to group into tasks
+        enrichments: List of ``ToolEnrichment`` instances.
 
     Returns:
-        List[List[T]]: DataPoint that has been grouped into tasks
+        Topologically sorted list.
+
+    Raises:
+        ValueError: On a dependency cycle or if a declared dependency is not
+            satisfied by any enrichment in the list.
     """
-    return group_data_by_attribute(data_list, "task_name")
+    # Build artifact_key -> enrichment index map (None artifact_key is excluded).
+    key_to_idx: Dict[str, int] = {}
+    for i, e in enumerate(enrichments):
+        if e.artifact_key is not None:
+            if e.artifact_key in key_to_idx:
+                raise ValueError(
+                    f"Two enrichments claim the same artifact_key '{e.artifact_key}'. "
+                    f"Each artifact_key must be produced by at most one enrichment."
+                )
+            key_to_idx[e.artifact_key] = i
+
+    # Check that all declared dependencies can be satisfied.
+    for e in enrichments:
+        for dep_key in e.depends_on:
+            if dep_key not in key_to_idx:
+                raise ValueError(
+                    f"Enrichment {type(e).__name__!r} depends on artifact '{dep_key}', "
+                    f"but no enrichment in the list produces it. "
+                    f"Add the corresponding enrichment to tools.enrichments."
+                )
+
+    # Kahn's algorithm on the dependency graph.
+    n = len(enrichments)
+    # indegree[i] = number of deps not yet satisfied for enrichment i
+    indegree = [0] * n
+    # adj[i] = list of indices that depend on i (i.e. i must come before them)
+    adj: List[List[int]] = [[] for _ in range(n)]
+
+    for i, e in enumerate(enrichments):
+        for dep_key in e.depends_on:
+            producer_idx = key_to_idx[dep_key]
+            adj[producer_idx].append(i)
+            indegree[i] += 1
+
+    queue = [i for i in range(n) if indegree[i] == 0]
+    order: List[int] = []
+    while queue:
+        node = queue.pop(0)
+        order.append(node)
+        for neighbor in adj[node]:
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(order) != n:
+        raise ValueError(
+            "Cycle detected in enrichment dependencies. "
+            "Check the 'depends_on' declarations on your enrichments."
+        )
+
+    return [enrichments[i] for i in order]
 
 
 # ===========================================================================
@@ -65,6 +131,7 @@ class Task:
         final_datastore: Dict | None = None,
         formatted_datastore: Dict | None = None,
         store_name: str | None = None,
+        tools: Dict | List[Dict] | None = None,
         **kwargs: Any,
     ):
         """Initializes task object.
@@ -102,7 +169,10 @@ class Task:
         self._runner_config = init_dataclass_from_dict(runner_config, TaskRunnerConfig)
         self._output_dir = self._runner_config.output_dir
         self._save_formatted_output = self._runner_config.save_formatted_output
-        self._restart_generation = self._runner_config.restart_generation
+        # Subclasses that support restart (GenerationTask) set this in their own
+        # __init__ after calling super(). Transformation tasks always do a full
+        # pass so they never restart.
+        self._restart_generation: bool = False
 
         # Initialize necessary state variables
         self._post_proc_id = 0  # Tracks Post processor IDs
@@ -111,27 +181,19 @@ class Task:
         # Determine store name from __init__ OR datastore's property, if defined OR task's name
         self._store_name = store_name or (datastore or dict()).pop("store_name", None) or self._name
 
-        # Datastore configurations
-        self._minimum_datastore_config = {
-            "restart": self.restart_generation,
-            "output_dir": self._output_dir,
-        }
-        self._datastore_cfg = {
-            **self._minimum_datastore_config,
-            **(datastore if datastore is not None else {TYPE_KEY: "default"}),
-        }
-        self._final_datastore_config = {
-            **self._minimum_datastore_config,
-            **(final_datastore if final_datastore is not None else self._datastore_cfg),
-        }
-        self._formatted_datastore_config = {
-            **self._minimum_datastore_config,
-            **(formatted_datastore if formatted_datastore is not None else self._datastore_cfg),
-        }
-        self._task_card_datastore_cfg = {
-            **self._minimum_datastore_config,
-            **self._datastore_cfg,
-        }
+        # Store raw datastore kwargs for each store type. _post_init() merges
+        # these with _minimum_datastore_config (which includes the correct
+        # restart flag) once subclasses have finished their own setup.
+        self._minimum_datastore_config: dict = {}
+        _ds_extra = datastore if datastore is not None else {TYPE_KEY: "default"}
+        self._datastore_cfg = dict(_ds_extra)
+        self._final_datastore_config = dict(
+            final_datastore if final_datastore is not None else _ds_extra
+        )
+        self._formatted_datastore_config = dict(
+            formatted_datastore if formatted_datastore is not None else _ds_extra
+        )
+        self._task_card_datastore_cfg = dict(_ds_extra)
 
         # Datastores
         self._intermediate_data_datastore: Datastore = None
@@ -148,14 +210,234 @@ class Task:
             else None
         )
 
-        # Save task card, initialize datastores and logger
+        # Configure tool registry and (optionally) engine.
+        #
+        # Supported shapes for the tools: block in task YAML:
+        #
+        # Phase-1 (flat list — registry only, backwards-compatible):
+        #   tools:
+        #     - type: file
+        #       path: ...
+        #
+        # Phase-2 (registry + engines sub-keys):
+        #   tools:
+        #     registry:
+        #       - type: file
+        #         path: ...
+        #         engine: my_engine   # optional reference into engines:
+        #     engines:               # optional — omit for registry-only tasks
+        #       my_engine:
+        #         type: lm
+        #         lm_config: {type: ollama, ...}
+        #
+        # The type: discriminator selects the loader / engine from the registry.
+        # All other keys are forwarded to the constructor.
+        self._tool_registry: ToolRegistry | None = None
+        self._tool_engine: CompositeToolEngine | None = None
+
+        if tools:
+            # Normalise Phase-1 flat list into Phase-2 shape.
+            if isinstance(tools, list):
+                tools = {"registry": tools}
+
+            registry_cfgs: List[Dict] = tools.get("registry", [])
+            engines_cfg: Dict[str, Dict] = tools.get("engines", {})
+
+            # Validate engine references upfront so bad configs fail at
+            # Task construction time rather than at first execute() call.
+            for entry in registry_cfgs:
+                engine_name = entry.get(ENGINE_KEY)
+                if engine_name:
+                    if engine_name not in engines_cfg:
+                        raise ValueError(
+                            f"tools.registry entry references engine '{engine_name}' "
+                            f"which is not defined in tools.engines. "
+                            f"Defined engines: {list(engines_cfg.keys())}"
+                        )
+
+            # Build ToolRegistry from loaders.
+            loaders = [
+                get_tool_loader(
+                    entry[TYPE_KEY],
+                    **{k: v for k, v in entry.items() if k not in (TYPE_KEY, ENGINE_KEY)},
+                )
+                for entry in registry_cfgs
+            ]
+            self._tool_registry = ToolRegistry.from_loaders(loaders)
+
+            # Parse and retain enrichment config — actual enrichment runs in
+            # _post_init() after task identity (run_id, task_name) is finalised.
+            enrichments_cfg: List[Dict] = tools.get("enrichments", [])
+            if enrichments_cfg:
+                enrichment_instances = [
+                    get_tool_enrichment(
+                        cfg[TYPE_KEY],
+                        **{k: v for k, v in cfg.items() if k != TYPE_KEY},
+                    )
+                    for cfg in enrichments_cfg
+                ]
+                self._tool_registry._enrichments = _topo_sort_enrichments(enrichment_instances)
+
+            # Build per-namespace engines, then wrap in CompositeToolEngine.
+            if engines_cfg:
+                # Collect all namespaces handled by each engine name.
+                engine_to_namespaces: Dict[str, List[str]] = {}
+                for entry in registry_cfgs:
+                    engine_name = entry.get(ENGINE_KEY)
+                    if engine_name:
+                        engine_to_namespaces.setdefault(engine_name, []).append(
+                            entry.get("namespace", TOOL_DEFAULT_NAMESPACE)
+                        )
+
+                built_engines: Dict[str, ToolEngine] = {
+                    name: get_tool_engine(
+                        cfg[TYPE_KEY],
+                        registry=self._tool_registry,
+                        namespaces=engine_to_namespaces.get(name),
+                        **{k: v for k, v in cfg.items() if k != TYPE_KEY},
+                    )
+                    for name, cfg in engines_cfg.items()
+                }
+                # Map each namespace to its engine for routing; error on collision.
+                ns_to_engine: Dict[str, ToolEngine] = {}
+                for entry in registry_cfgs:
+                    if ENGINE_KEY not in entry:
+                        continue
+                    ns = entry.get("namespace", TOOL_DEFAULT_NAMESPACE)
+                    engine = built_engines[entry[ENGINE_KEY]]
+                    if ns in ns_to_engine and ns_to_engine[ns] is not engine:
+                        raise ValueError(
+                            f"tools.registry: namespace '{ns}' is assigned to more than one engine. "
+                            f"Each namespace must route to exactly one engine."
+                        )
+                    ns_to_engine[ns] = engine
+                self._tool_engine = CompositeToolEngine(
+                    registry=self._tool_registry,
+                    engines=ns_to_engine,
+                )
+                self._component_tool_engines: Dict[str, ToolEngine] = built_engines
+
+    def _post_init(self):
+        """Finalise datastore configs and initialise stores + logger.
+
+        Called by each concrete subclass at the end of its own ``__init__``,
+        after all subclass-specific state (notably ``_restart_generation``) has
+        been set.  Separating this from ``Task.__init__`` ensures that
+        ``_minimum_datastore_config`` is built with the correct restart flag.
+        """
+        self._minimum_datastore_config = {
+            "restart": self._restart_generation,
+            "output_dir": self._output_dir,
+        }
+        self._datastore_cfg = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._datastore_cfg.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
+        self._final_datastore_config = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._final_datastore_config.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
+        self._formatted_datastore_config = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._formatted_datastore_config.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
+        self._task_card_datastore_cfg = {
+            **self._minimum_datastore_config,
+            **{
+                k: v
+                for k, v in self._task_card_datastore_cfg.items()
+                if k not in self._minimum_datastore_config
+            },
+        }
         self._save_task_card()
         self._init_datastores()
         self._init_logger()
 
+        # Run enrichment passes now that task identity is finalised.
+        # Wrapped in run_context so enrichment-phase log records carry
+        # build_id and run_id.  task_name is injected via a LoggerAdapter
+        # on each enrichment's module logger (see _run_tool_enrichments()).
+        if self._tool_registry and self._tool_registry._enrichments:
+            self._run_tool_enrichments()
+
+    def _run_tool_enrichments(self) -> None:
+        """Execute all retained enrichments with full task-identity attribution.
+
+        Called from ``_post_init()`` after ``_save_task_card()`` so that
+        ``build_id``, ``run_id``, and ``task_name`` are all finalised.
+
+        Each enrichment's module logger is temporarily wrapped in a
+        ``LoggerAdapter`` carrying ``task_name`` so enrichment-phase log
+        records are attributable to this specific task without modifying the
+        ``ToolEnrichment`` or ``ToolRegistry`` APIs.  See the three-channel
+        attribution design documented in ``fms_dgt/log/context.py``.
+        """
+        with run_context(self._task_card.build_id, self._task_card.run_id):
+            for enrichment in self._tool_registry._enrichments:
+                adapted = logging.LoggerAdapter(enrichment.logger, {"task_name": self._name})
+                original_logger = enrichment.logger
+                enrichment.logger = adapted
+                try:
+                    enrichment.enrich(self._tool_registry)
+                finally:
+                    enrichment.logger = original_logger
+
+    def refresh_tools(self) -> None:
+        """Reload tools from all retained loaders and re-run enrichments.
+
+        Re-runs loaders and enrichments with the same task-identity attribution
+        as ``_post_init()``: ``build_id`` and ``run_id`` via ``run_context``,
+        ``task_name`` via a ``LoggerAdapter`` on each enrichment's logger.
+        """
+        if self._tool_registry is None:
+            return
+        if not self._tool_registry._loaders:
+            return
+        # Reload tools from loaders and clear artifacts, matching registry.refresh().
+        all_tools = []
+        for loader in self._tool_registry._loaders:
+            all_tools.extend(loader.load())
+        self._tool_registry._rebuild(all_tools)
+        self._tool_registry.artifacts = {}
+        # Re-run enrichments with attribution.
+        if self._tool_registry._enrichments:
+            self._run_tool_enrichments()
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
+    @property
+    def tool_registry(self) -> "ToolRegistry | None":
+        """Returns the ToolRegistry for this task, or None if no tools are configured."""
+        return self._tool_registry
+
+    @property
+    def tool_engine(self) -> "CompositeToolEngine | None":
+        """Returns the CompositeToolEngine for this task, or None if no engines are configured."""
+        return self._tool_engine
+
+    @property
+    def component_tool_engines(self) -> "Dict[str, ToolEngine]":
+        """Returns engines keyed by their declared name (e.g. ``"file_retriever"``).
+
+        These are the individual component engines that make up ``tool_engine``.
+        Use this when resolving engine name references from stage or sampler configs.
+        Returns an empty dict if no engines are configured.
+        """
+        return dict(getattr(self, "_component_tool_engines", {}))
+
     @property
     def runner_config(self) -> TaskRunnerConfig:
         """Returns the run config of the task.
@@ -249,6 +531,27 @@ class Task:
     def formatter(self) -> Formatter | None:
         return self._formatter
 
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the task-scoped logger.
+
+        Returns:
+            logging.Logger: Logger scoped to this task
+        """
+        return self._logger
+
+    @property
+    def log_handler(self) -> LogDatastoreHandler | None:
+        """Returns the LogDatastoreHandler attached to this task's logger.
+
+        The DataBuilder registers this handler with its FanOutHandler so that
+        run-level log records are duplicated into this task's log store.
+
+        Returns:
+            LogDatastoreHandler | None: The task's log handler, or None
+        """
+        return self._log_handler
+
     # ===========================================================================
     #                       HELPER FUNCTIONS
     # ===========================================================================
@@ -279,7 +582,38 @@ class Task:
         task_card_datastore.save_data([self.task_card.to_dict()])
         task_card_datastore.close()
 
+    def _clear_stale_postproc_datastores(self):
+        """Clear postproc_data_N stores left over from a previous run.
+
+        On restart we don't know how many post-processing epochs the prior run
+        produced, so we probe N=1,2,3,... calling clear() on each until we
+        reach one that had nothing to clear (i.e. no prior run wrote it).
+        This uses the datastore abstraction so it works for any backend.
+        """
+        n = 1
+        while True:
+            ds = get_datastore(
+                self._datastore_cfg.get(TYPE_KEY),
+                **{
+                    "store_name": os.path.join(self._store_name, f"postproc_data_{n}"),
+                    **self._datastore_cfg,
+                    "restart": False,  # we call clear() ourselves below
+                },
+            )
+            if not ds.exists():
+                break
+            ds.clear()
+            n += 1
+
     def _init_datastores(self):
+        # When restarting, wipe any postproc_data_N stores from the prior run
+        # before initialising the current run's datastores.  Without this a
+        # user inspecting the output directory would see stale postproc_data_5
+        # files alongside the current run's postproc_data_1 / postproc_data_2,
+        # with no way to tell which epoch count is authoritative.
+        if self._restart_generation:
+            self._clear_stale_postproc_datastores()
+
         # Initialize datastore to save intermediate generated/transformed data
         self._intermediate_data_datastore = get_datastore(
             self._datastore_cfg.get(TYPE_KEY),
@@ -319,28 +653,42 @@ class Task:
         )
 
     def _init_logger(self):
-        # Initialize logger only when default datastore is used
-        if self._datastore_cfg.get(TYPE_KEY) == "default":
+        # Create a task-scoped child logger. It inherits the log level from the
+        # root dgt_logger and propagates records up to it (reaching the stdout
+        # handler) without adding handlers to the global logger.
+        self._logger = logging.getLogger(f"{_TASK_LOGGER_PREFIX}.{self._name}")
+        self._log_handler: LogDatastoreHandler | None = None
 
-            # Create logs directory in output_dir
-            logs_dir = os.path.join(
-                self._datastore_cfg.get("output_dir", "output"),
-                self._store_name,
-                "logs",
+        # Initialize the log datastore using the same type and config as all
+        # other task artifact stores. The store_name path follows the convention
+        # of every other store: <task_store_name>/logs. On restart, the datastore
+        # is recreated from scratch (restart=True wipes the existing store file).
+        log_datastore = get_datastore(
+            self._datastore_cfg.get(TYPE_KEY),
+            **{
+                "store_name": os.path.join(self._store_name, "logs"),
+                **self._datastore_cfg,
+                "restart": self._restart_generation,
+            },
+        )
+
+        log_handler = LogDatastoreHandler(log_datastore)
+        self._logger.addHandler(log_handler)
+        self._log_handler = log_handler
+
+        # On resume, emit a structured marker so the log file records exactly
+        # where this process invocation picked up. run_id is the same as the
+        # previous run (set by _save_task_card when resuming) so no linking is
+        # needed — the marker is purely a process boundary indicator.
+        if not self._restart_generation:
+            self._logger.info(
+                "run_resumed",
+                extra={
+                    "event": "run_resumed",
+                    "task_name": self._name,
+                    "pid": os.getpid(),
+                },
             )
-            os.makedirs(logs_dir, exist_ok=True)
-
-            # Clean up previous logs, if restart requested
-            if self._restart_generation:
-                for existing_log_file in Path(logs_dir).glob("*.log"):
-                    os.remove(existing_log_file)
-
-            # Set up a new log file
-            log_file_handler = FileHandler(
-                filename=os.path.join(logs_dir, f"{os.getpid()}.log"),
-            )
-            log_file_handler.setFormatter(DGT_LOG_FORMATTER)
-            dgt_logger.addHandler(log_file_handler)
 
     def set_new_postprocessing_datastore(self):
         """Sets default datastore (which is used to gather data for final_datastore)
@@ -415,7 +763,7 @@ class Task:
         iterators = self._intermediate_data_datastore.load_iterators() or []
         if iterators:
             iterator = iterators[0]  # since there is only one data.jsonl
-            dgt_logger.info("Saving final data to %s", self.final_datastore.output_path)
+            self._logger.info("Saving final data to %s", self.final_datastore.output_path)
             self.final_datastore.save_data(iterator)
 
     def apply_formatting(self, data: OUTPUT_DATA_TYPE) -> Dict:  # type: ignore
@@ -442,7 +790,9 @@ class Task:
                 formatted_iterator = (
                     self.apply_formatting(self.instantiate_output_example(**d)) for d in iterator
                 )
-                dgt_logger.info("Saving formatted data to %s", self.formatted_datastore.output_path)
+                self._logger.info(
+                    "Saving formatted data to %s", self.formatted_datastore.output_path
+                )
                 self.formatted_datastore.save_data(formatted_iterator)
 
     def finish(self) -> None:
@@ -457,6 +807,28 @@ class Task:
         # close
         self.final_datastore.close()
         self.formatted_datastore.close()
+
+        # Remove all handlers except _log_handler from the task-scoped logger.
+        # _log_handler (LogDatastoreHandler) is intentionally left open so that
+        # run-level events emitted after execute_tasks() returns (run_finished,
+        # run_errored) can still reach this task's log file via the FanOutHandler.
+        # DataBuilder.close() calls close_log_handler() after those events fire.
+        for handler in self._logger.handlers[:]:
+            if handler is self._log_handler:
+                continue
+            handler.close()
+            self._logger.removeHandler(handler)
+
+    def close_log_handler(self) -> None:
+        """Close and remove the log handler after all run-level events have been written.
+
+        Called by DataBuilder.close() after run_finished / run_errored has been
+        emitted, so the final events are guaranteed to land in the log file.
+        """
+        if self._log_handler is not None:
+            self._log_handler.close()
+            self._logger.removeHandler(self._log_handler)
+            self._log_handler = None
 
     def record_task_results(self, intermediate_data: List[DataPoint]) -> Dict[str, Any]:
         """Creates a json object that captures all relevant information describing the results of the SDG task. The json
@@ -519,7 +891,13 @@ class GenerationTask(Task):
             **kwargs,
         )
 
-        # Extract required variables from the runner configuration
+        # restart_generation lives on GenerationTaskRunnerConfig (not the base
+        # TaskRunnerConfig) because it is meaningless for transformation tasks.
+        # Set it before _post_init() so datastores are initialised with the
+        # correct restart flag.
+        self._restart_generation = self.runner_config.restart_generation
+        self._post_init()
+
         self._seed_batch_size = self.runner_config.seed_batch_size
         self._machine_batch_size = self.runner_config.machine_batch_size
         self._num_outputs_to_generate = self.runner_config.num_outputs_to_generate
@@ -550,6 +928,13 @@ class GenerationTask(Task):
             },
         )
 
+        # In-memory cache for seed examples. Populated on first call to
+        # get_seed_examples(). Avoids repeated dataloader construction and
+        # disk reads across calls to sample_examples() within a run.
+        # Pass reload=True to get_seed_examples() to bust the cache (e.g.
+        # when the seed datastore is updated mid-run).
+        self._seed_examples_cache: List[DataPoint] | None = None
+
         # Initialize seed dataloader
         self._dataloader = None
         self._seed_dataloader_config = (
@@ -579,6 +964,20 @@ class GenerationTask(Task):
             int: Number of machine examples
         """
         return self._machine_batch_size
+
+    @property
+    def batch_size(self) -> int:
+        """Total number of items returned by get_batch_examples() per call.
+
+        Combines seed examples (human-authored) and machine-generated examples
+        (synthetic data accumulated so far). This is the actual batch size each
+        worker future receives, and is used by the concurrent executor to
+        estimate how many futures are needed to cover remaining work.
+
+        Returns:
+            int: seed_batch_size + machine_batch_size
+        """
+        return self._seed_batch_size + self._machine_batch_size
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -623,6 +1022,11 @@ class GenerationTask(Task):
 
         super().finish()
 
+    @property
+    def num_outputs_to_generate(self) -> int:
+        """Returns the number of outputs to generate for this task."""
+        return self._num_outputs_to_generate
+
     def is_complete(self):
         """Indicates whether task has completed.
 
@@ -644,12 +1048,21 @@ class GenerationTask(Task):
         except StopIteration:
             return None
 
-    def get_seed_examples(self) -> List[DataPoint]:
+    def get_seed_examples(self, reload: bool = False) -> List[DataPoint]:
         """Gets all seed examples and returns them in a list.
+
+        Results are cached after the first load. Subsequent calls return the
+        cached list unless reload=True is passed, which forces a fresh read
+        from the datastore and updates the cache.
+
+        Args:
+            reload: If True, bypass the cache and reload from disk.
 
         Returns:
             List[DataPoint]: List of all seed examples
         """
+        if self._seed_examples_cache is not None and not reload:
+            return self._seed_examples_cache
         dataloader = get_dataloader(
             self._seed_dataloader_config.get(TYPE_KEY),
             datastore=self._seed_datastore,
@@ -662,10 +1075,81 @@ class GenerationTask(Task):
                 seed_data.append(ex)
         except StopIteration:
             pass
-        return seed_data
+        self._seed_examples_cache = seed_data
+        return self._seed_examples_cache
+
+    def sample_examples(
+        self,
+        k: int,
+        seed_fraction: float | None = None,
+        reload: bool = False,
+    ) -> List[Any]:
+        """Randomly sample up to k examples from seed data and/or machine-generated data.
+
+        Safe to call from anywhere — stages, __call__ implementations, inner
+        thread pools. Does NOT advance the main dataloader. Thread-safe.
+
+        k is always the total cap. seed_fraction controls the seed/synthetic
+        split within that cap. When seed_fraction=None the split is derived
+        from the task config ratio (seed_batch_size / (seed_batch_size +
+        machine_batch_size)), so k still governs the total requested.
+
+        Sampling is random and without replacement on both sides. If either
+        pool has fewer items than its allocated quota, you get however many
+        are available — there is no backfill from the other pool. Callers
+        that strictly need k examples should check the returned length.
+
+        Args:
+            k: Total number of examples requested. Actual count may be less
+                if either pool has insufficient data.
+            seed_fraction: Fraction of k to draw from the seed datastore.
+                Remainder is drawn from machine_data.
+                - 1.0: seeds only
+                - 0.0: synthetic only
+                - None (default): split derived from seed_batch_size /
+                  (seed_batch_size + machine_batch_size) task config ratio.
+            reload: If True, bypass the seed examples cache and reload from
+                disk before sampling. Passed through to get_seed_examples().
+
+        Returns:
+            List of randomly sampled examples (INPUT_DATA_TYPE | OUTPUT_DATA_TYPE).
+            Seeds are marked is_seed=True.
+        """
+        if seed_fraction is not None and not (0.0 <= seed_fraction <= 1.0):
+            raise ValueError(f"seed_fraction must be in [0.0, 1.0], got {seed_fraction}")
+
+        if seed_fraction is None:
+            total = self._seed_batch_size + self._machine_batch_size
+            fraction = self._seed_batch_size / total if total > 0 else 0.0
+        else:
+            fraction = seed_fraction
+
+        n_seed = round(k * fraction)
+        n_synthetic = k - n_seed
+
+        results: List[Any] = []
+
+        # Random sample from seed pool (no state mutation on main dataloader).
+        if n_seed > 0:
+            pool = self.get_seed_examples(reload=reload)
+            n = min(n_seed, len(pool))
+            results.extend(random.sample(pool, k=n) if n < len(pool) else pool)
+
+        # Random sample from machine-generated data.
+        if n_synthetic > 0 and self.machine_data:
+            n = min(n_synthetic, len(self.machine_data))
+            results.extend(random.sample(self.machine_data, k=n))
+
+        return results
 
     def get_batch_examples(self) -> List[DataPoint]:
         """Returns batch of examples from dataloader. Mixes examples from seed data and machine-generated data.
+
+        FRAMEWORK-INTERNAL: Called exclusively by the framework execution loop
+        (_spawn_futures in ConcurrentGenerationDataBuilder, call_with_task_list
+        in GenerationDataBuilder). Advances the main dataloader state — do not
+        call from __call__, stages, or any user code. Use sample_examples()
+        instead for ICL sampling or any other purpose outside the framework loop.
 
         Returns:
             List[DataPoint]: List of examples to be used by SDG process.
@@ -717,6 +1201,12 @@ class TransformationTask(Task):
             runner_config=init_dataclass_from_dict(runner_config, TransformationTaskRunnerConfig),
             **kwargs,
         )
+
+        # Transformation tasks always restart with a clean slate because the
+        # cardinality of the transformation (1→1, M→N, etc.) is unknown, so
+        # resuming a partial output is never safe.
+        self._restart_generation = True
+        self._post_init()
 
         # Extract required variables from the runner configuration
         self._transform_batch_size = self._runner_config.transform_batch_size

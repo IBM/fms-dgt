@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Third Party
 import pytest
 
@@ -16,16 +19,19 @@ LM_WATSONX_CFG = {
 }
 
 
+@pytest.mark.live
 @pytest.mark.parametrize("model_cfg", [LM_WATSONX_CFG])
 def test_completion(model_cfg):
     execute_completion_flow(model_cfg)
 
 
+@pytest.mark.live
 @pytest.mark.parametrize("model_cfg", [LM_WATSONX_CFG])
 def test_chat_completion(model_cfg):
     execute_chat_completion_flow(model_cfg)
 
 
+@pytest.mark.live
 @pytest.mark.parametrize("model_cfg", [LM_WATSONX_CFG])
 def test_auto_chat_template(model_cfg):
     with pytest.raises(NotImplementedError) as exc_info:

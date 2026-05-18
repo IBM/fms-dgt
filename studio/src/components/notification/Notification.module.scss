@@ -1,0 +1,11 @@
+// Copyright The DiGiT Authors
+// SPDX-License-Identifier: Apache-2.0
+
+@use '@carbon/react/scss/spacing' as *;
+
+.notification {
+  position: fixed;
+  top: $spacing-10;
+  right: $spacing-05;
+  z-index: 20;
+}

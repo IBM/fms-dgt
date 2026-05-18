@@ -1,0 +1,11 @@
+my_api:
+  - name: search
+    description: Web search tool
+    parameters:
+      properties:
+        query:
+          description: Search query string
+          type: string
+      required:
+        - query
+      type: object

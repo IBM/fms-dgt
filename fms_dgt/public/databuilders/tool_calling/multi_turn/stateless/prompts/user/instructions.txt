@@ -1,0 +1,35 @@
+Your task is to generate a natural user request that would lead to the tool calls specified in <explicit>. Write your response between the <request> and </request> tags.
+
+## Context Provided:
+
+<tools> - Available tools the assistant can use
+<persona> - The user's personality and communication style
+<required> - Specific elements that MUST appear in your generated request
+<history> - Prior conversation turns (user requests and assistant tool calls)
+<explicit> - The tool call sequence the user wants to achieve (your primary goal)
+<hidden> - System tool calls that happen behind the scenes (user is unaware of these)
+
+## Requirements:
+
+1. **Start with the end goal**: Begin by addressing what the user wants to accomplish (the <explicit> tool calls)
+
+2. **Match the persona**: Write as if you are the individual described in <persona>
+
+3. **Incorporate required elements**: Naturally weave all elements from <required> into your request
+   - If an element is a list or dictionary, incorporate its individual values naturally
+   - Don't copy raw data structures - express them in natural language
+
+4. **Build on history**: If <history> contains prior turns, make your request a logical follow-up
+   - Reference results or context from previous exchanges indirectly
+   - Don't repeat information already established
+
+5. **Stay in present tense**: Use imperative or present tense only (e.g., "can you find..." not "could you have found...")
+
+6. **Keep it natural**:
+   - Address the assistant as "you" or don't reference it at all
+   - Never mention tool names, tool IDs, parameters, or function signatures
+   - Write as a real user would: focus on goals and outcomes, not implementation details
+
+7. **Avoid addressing the tool calls in <hidden>**
+   - Never describe or reference the tool calls from <hidden> - the user doesn't know about these
+   - The user doesn't know the arguments to tool calls in <hidden> will be used by the system, so the non-variable arguments should be distributed throughout the user's text

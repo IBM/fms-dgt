@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Dict, Iterable, List, Optional, Tuple
 import random
@@ -7,6 +10,7 @@ from fms_dgt.base.databuilder import GenerationDataBuilder
 from fms_dgt.base.prompt import JinjaPromptTemplate
 from fms_dgt.base.registry import register_data_builder
 from fms_dgt.base.task import GenerationTask
+from fms_dgt.constants import STORE_NAMES_KEY
 from fms_dgt.core.blocks.llm import LMProvider
 from fms_dgt.core.blocks.validators.lm_judge import LMJudgeValidator
 from fms_dgt.public.blocks.magpie.tag import MagpieTagger
@@ -14,7 +18,6 @@ from fms_dgt.public.databuilders.instructlab.skills.data_objects import SkillsDa
 from fms_dgt.public.databuilders.instructlab.skills.task import (
     SkillsTask,
 )
-from fms_dgt.utils import dgt_logger
 import fms_dgt.public.databuilders.instructlab.skills.utils as utils
 
 
@@ -47,20 +50,22 @@ class SkillsDataBuilder(GenerationDataBuilder):
         """
         outputs = []
         for task in tasks:
-            dgt_logger.info("=" * 99)
-            dgt_logger.info('\t\tTask: "%s"', task.name)
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
+            self.logger.info('\t\tTask: "%s"', task.name)
+            self.logger.info("=" * 99)
 
             outputs.extend(
                 self(
-                    seed_data=task.get_batch_examples(),
+                    seed_data=task.sample_examples(
+                        k=task.seed_batch_size + task.machine_batch_size
+                    ),
                     prompt_templates=task.prompt_templates,
                     num_icl_examples_per_prompt=task.num_icl_examples_per_prompt,
                     num_questions_to_generate_per_prompt=task.num_questions_to_generate_per_prompt,
                 )
             )
 
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
 
         return outputs
 
@@ -135,13 +140,13 @@ class SkillsDataBuilder(GenerationDataBuilder):
         random.shuffle(shuffled_data)
 
         # Generate contexts
-        dgt_logger.info("Generating contexts..")
+        self.logger.info("Generating contexts..")
         generated_contexts = self._generate_contexts(
             shuffled_data, prompt_template=prompt_templates["context_generation"]
         )
 
         # Generate questions based on the generated context
-        dgt_logger.info("Generating context based questions..")
+        self.logger.info("Generating context based questions..")
         context_based_questions = self._generate_context_based_questions(
             data_points=generated_contexts,
             seed_data=data_points,
@@ -150,14 +155,14 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Validate generated questions
-        dgt_logger.info("Validating questions..")
+        self.logger.info("Validating questions..")
         valid_questions = self._validate_context_based_questions(
             context_based_questions,
             prompt_template=prompt_templates["context_based_question_validation"],
         )
 
         # Generate responses
-        dgt_logger.info("Generating answers..")
+        self.logger.info("Generating answers..")
         context_based_question_answer_pairs = self._generate_responses_for_context_based_questions(
             data_points=valid_questions,
             seed_data=data_points,
@@ -165,7 +170,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Step 5: Validate final QA pairs
-        dgt_logger.info("Validating context based question-answer pairs..")
+        self.logger.info("Validating context based question-answer pairs..")
         validated_context_based_question_answer_pairs = (
             self._validate_responses_for_context_based_questions(
                 data_points=context_based_question_answer_pairs,
@@ -188,6 +193,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 ),
                 "gen_kwargs": {"stop": prompt_template.stop},
                 "reference": data_point,
+                "task_name": data_point.task_name,
             }
             for data_point in seed_data
         ]
@@ -239,6 +245,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -280,9 +287,10 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 "success_func": lambda x: utils.parse_response_string(x) == 1.0,
                 "gen_kwargs": {"stop": prompt_template.stop},
                 "reference": data_point,
-                "store_names": self.get_block_store_names(
+                STORE_NAMES_KEY: self.get_block_store_names(
                     block_name=self.validator.name, task_name=data_point.task_name
                 ),
+                "task_name": data_point.task_name,
             }
             for data_point in data_points
         ]
@@ -319,6 +327,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -345,7 +354,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 "success_func": lambda x: utils.parse_response_string(x) > 1.0,
                 "gen_kwargs": {"stop": prompt_template.stop},
                 "reference": data_point,
-                "store_names": self.get_block_store_names(
+                STORE_NAMES_KEY: self.get_block_store_names(
                     block_name=self.validator.name, task_name=data_point.task_name
                 ),
             }
@@ -372,7 +381,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
         random.shuffle(shuffled_data)
 
         # Generate freeform questions
-        dgt_logger.info("Generating freefrom questions..")
+        self.logger.info("Generating freefrom questions..")
         generated_freeform_questions = self._generate_freeform_questions(
             seed_data=shuffled_data,
             prompt_template=prompt_templates["freeform_question_generation"],
@@ -381,14 +390,14 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Validate generated freeform questions
-        dgt_logger.info("Validating questions..")
+        self.logger.info("Validating questions..")
         validated_questions = self._validate_freeform_questions(
             data_points=generated_freeform_questions,
             prompt_template=prompt_templates["freeform_question_validation"],
         )
 
         # Generate responses for valid freeform questions
-        dgt_logger.info("Generating answers..")
+        self.logger.info("Generating answers..")
         freeform_questions_with_responses = self._generate_responses_to_freeform_questions(
             data_points=validated_questions,
             seed_data=seed_data,
@@ -396,7 +405,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
         )
 
         # Validate final QA pairs
-        dgt_logger.info("Validating final QA pairs..")
+        self.logger.info("Validating final QA pairs..")
         valid_freeform_question_answers = self._validate_responses_to_freeform_questions(
             data_points=freeform_questions_with_responses,
             prompt_template=prompt_templates["answer_validation"],
@@ -435,6 +444,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "references": icl_examples,
+                    "task_name": icl_examples[0].task_name,
                 }
             )
 
@@ -476,9 +486,10 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 "success_func": lambda x: utils.parse_response_string(x) == 1.0,
                 "gen_kwargs": {"stop": prompt_template.stop},
                 "reference": data_point,
-                "store_names": self.get_block_store_names(
+                STORE_NAMES_KEY: self.get_block_store_names(
                     block_name=self.validator.name, task_name=data_point.task_name
                 ),
+                "task_name": data_point.task_name,
             }
             for data_point in data_points
         ]
@@ -512,6 +523,7 @@ class SkillsDataBuilder(GenerationDataBuilder):
                     ),
                     "gen_kwargs": {"stop": prompt_template.stop},
                     "reference": data_point,
+                    "task_name": data_point.task_name,
                 }
             )
 
@@ -543,9 +555,10 @@ class SkillsDataBuilder(GenerationDataBuilder):
                 "success_func": lambda x: utils.parse_response_string(x) > 1.0,
                 "gen_kwargs": {"stop": prompt_template.stop},
                 "reference": data_point,
-                "store_names": self.get_block_store_names(
+                STORE_NAMES_KEY: self.get_block_store_names(
                     block_name=self.validator.name, task_name=data_point.task_name
                 ),
+                "task_name": data_point.task_name,
             }
             for data_point in data_points
         ]

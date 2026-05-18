@@ -1,0 +1,7 @@
+<tools>
+{{ tools }}
+</tools>
+
+<conversation>
+{{ conversation }}
+</conversation>

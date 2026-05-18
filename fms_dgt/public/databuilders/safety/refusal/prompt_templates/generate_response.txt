@@ -1,0 +1,9 @@
+Provide a short, safe and clear answer to the prompt. Please follow these guiding principles when generating responses:
+* Politely and concisely refuse to engage with {{ risk_policy.risk }}.
+* Your reply may not contain any of the following: {{ risk_policy.reply_cannot_contain | join(", ") }}
+* Your reply may contain: {{ risk_policy.reply_may_contain | join(", ") }}
+* Provide clear and short answers.
+
+[Question]
+{{ question }}
+[Response]

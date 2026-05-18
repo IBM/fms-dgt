@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import dataclass, fields
 from importlib.metadata import version
@@ -12,11 +15,12 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 
 # Local
+from fms_dgt.base.block import get_row_name
 from fms_dgt.base.registry import register_block
+from fms_dgt.base.telemetry import Span
 from fms_dgt.constants import NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters
 from fms_dgt.core.blocks.llm.utils import Grouper, chunks, remap
-from fms_dgt.utils import dgt_logger
 
 try:
     # Third Party
@@ -173,12 +177,12 @@ class vLLM(LMProvider):
         try:
             return AutoTokenizer.from_pretrained(model_id_or_path or self.model_id_or_path)
         except (OSError, ValueError) as err:
-            dgt_logger.warning(
+            self.logger.warning(
                 'Failed to initialize tokenizer for "%s" due to %s',
                 model_id_or_path or self.model_id_or_path,
                 err.args[0],
             )
-            dgt_logger.warning(
+            self.logger.warning(
                 'Certain capabilites like "apply_chat_template", "truncation" will be unavailable.'
             )
             return None
@@ -252,32 +256,56 @@ class vLLM(LMProvider):
                     }
                 )
 
+                _task_names = list({n for item in batch if (n := get_row_name(item)) is not None})
+
                 # Step 3.b.iii: Trigger vLLM generate function
-                if method == self.CHAT_COMPLETION:
-                    response = self.model.chat(
-                        messages=self._prepare_input(
-                            chunk,
-                            method=method,
-                            max_tokens=params.get("max_tokens", None),
-                        ),
-                        sampling_params=sampling_params,
-                        use_tqdm=False,
-                        lora_request=self._lora_request,
-                        tools=chunk.tools,
-                    )
-                else:
-                    response = self.model.generate(
-                        prompts=[
-                            self._prepare_input(
-                                instance,
+                with Span(
+                    "dgt.llm_call",
+                    self._span_writer,
+                    parent_span_name="dgt.block",
+                    provider=type(self).__name__,
+                    model_id=self.model_id_or_path,
+                    method=method,
+                    batch_size=len(batch),
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    **({"task_names": _task_names} if _task_names else {}),
+                ) as _span:
+                    if method == self.CHAT_COMPLETION:
+                        response = self.model.chat(
+                            messages=self._prepare_input(
+                                chunk,
                                 method=method,
                                 max_tokens=params.get("max_tokens", None),
-                            )
-                            for instance in batch
-                        ],
-                        sampling_params=sampling_params,
-                        use_tqdm=False,
-                        lora_request=self._lora_request,
+                            ),
+                            sampling_params=sampling_params,
+                            use_tqdm=False,
+                            lora_request=self._lora_request,
+                            tools=chunk.tools,
+                        )
+                    else:
+                        response = self.model.generate(
+                            prompts=[
+                                self._prepare_input(
+                                    instance,
+                                    method=method,
+                                    max_tokens=params.get("max_tokens", None),
+                                )
+                                for instance in batch
+                            ],
+                            sampling_params=sampling_params,
+                            use_tqdm=False,
+                            lora_request=self._lora_request,
+                        )
+                    # Token counts from vLLM RequestOutput:
+                    # prompt_token_ids is on RequestOutput, token_ids on each CompletionOutput
+                    _span.set_attribute(
+                        "prompt_tokens",
+                        sum(len(r.prompt_token_ids) for r in response),
+                    )
+                    _span.set_attribute(
+                        "completion_tokens",
+                        sum(len(o.token_ids) for r in response for o in r.outputs),
                     )
 
                 # Step 3.b.iv: If multiple choices requested per input
@@ -295,6 +323,9 @@ class vLLM(LMProvider):
                     outputs, addtl = [], {"token_logprobs": []}
                     for output in response_per_input.outputs:
                         if method == self.CHAT_COMPLETION:
+                            # FIXME: tool calls are silently dropped here. vLLM RequestOutput
+                            # carries tool call information in output.tool_calls but it is never
+                            # read. Until fixed, this provider does not support tool calling.
                             outputs.append({"role": "assistant", "content": output.text})
                         else:
                             outputs.append(output.text)

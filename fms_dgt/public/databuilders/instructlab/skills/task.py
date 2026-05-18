@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from pathlib import Path
 from typing import Any
@@ -7,7 +10,6 @@ import os
 from fms_dgt.base.prompt import JinjaPromptTemplate
 from fms_dgt.base.task import GenerationTask
 from fms_dgt.public.databuilders.instructlab.skills.data_objects import SkillsData
-from fms_dgt.utils import dgt_logger
 
 
 class SkillsTask(GenerationTask):
@@ -36,7 +38,7 @@ class SkillsTask(GenerationTask):
             prompt_templates_dir = os.path.expandvars(prompt_templates_dir)
 
             if not os.path.exists(prompt_templates_dir):
-                dgt_logger.warning(
+                self.logger.warning(
                     'Failed to locate prompt templates directory at "%s". Loading default templates from "%s"',
                     prompt_templates_dir,
                     Path(Path(__file__).parent, "prompt_templates"),

@@ -1,0 +1,50 @@
+// Copyright The DiGiT Authors
+// SPDX-License-Identifier: Apache-2.0
+
+.split {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+// Each pane produced by react-split
+.split > :global(.split) {
+  overflow: hidden;
+}
+
+// Drag handle
+.gutter {
+  background-color: var(--cds-border-subtle);
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  transition: background-color 150ms ease;
+
+  // Grip dots centered on the handle
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 24px;
+    border-radius: 1px;
+    background-color: var(--cds-border-strong);
+    opacity: 0.5;
+    transition: opacity 150ms ease;
+  }
+
+  &:hover {
+    background-color: var(--cds-border-interactive);
+
+    &::after {
+      opacity: 1;
+    }
+  }
+
+  &:active {
+    background-color: var(--cds-border-interactive);
+  }
+}

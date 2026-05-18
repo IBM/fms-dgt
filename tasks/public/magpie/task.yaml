@@ -1,0 +1,15 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: magpie
+task_description: Magpie transformation pipeline consisting of tagging, dedup and/or filtering
+created_by: IBM Research
+
+data_builder: magpie
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+data:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/magpie/data.jsonl

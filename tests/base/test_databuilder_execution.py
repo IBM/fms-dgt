@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 import gc
 import multiprocessing
@@ -20,14 +23,15 @@ to_execute = [
     # simple
     #
     (
-        "core",
-        "simple",
-        f"--task-paths {os.path.join(INTERNAL_DGT_DIR, 'tasks/core/simple/logical_reasoning/causal/task.yaml')} --num-outputs-to-generate 1 --output-dir {_OUTPUT_DIR}",
+        "public",
+        "public/instructlab/simple",
+        f"--task-paths {os.path.join(INTERNAL_DGT_DIR, 'tasks/public/instructlab/simple/logical_reasoning/causal/task.yaml')} --num-outputs-to-generate 1 --output-dir {_OUTPUT_DIR}",
         50,
     ),
 ]
 
 
+@pytest.mark.live
 @pytest.mark.parametrize("namespace,data_builder_name,cmd_line_args,timeout", to_execute)
 def test_data_builders(namespace: str, data_builder_name: str, cmd_line_args: str, timeout: int):
     """This file contains execution tests for each data builder (in the same way it

@@ -1,9 +1,13 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from datetime import datetime
 from typing import Dict, List, Optional
 import gc
 import logging
 import os
+import signal
 
 # Third Party
 from dotenv import load_dotenv
@@ -13,14 +17,17 @@ from fms_dgt import SRC_DGT_DIR
 from fms_dgt.base.databuilder import DataBuilder
 from fms_dgt.base.registry import add_namespace_to_searchable_dirs, get_data_builder
 from fms_dgt.base.task_card import TaskRunCard
+from fms_dgt.base.telemetry import Span, configure_telemetry
 from fms_dgt.constants import (
     BLOCKS_KEY,
+    DATABUILDER_KEY,
     DGT_ENV_VARS,
     RAY_CONFIG_KEY,
     RUNNER_CONFIG_KEY,
     TASK_NAME_KEY,
 )
 from fms_dgt.index import DataBuilderIndex
+from fms_dgt.log import run_context
 from fms_dgt.utils import dgt_logger
 import fms_dgt.utils as utils
 
@@ -115,11 +122,11 @@ def generate_data(
             for task_init in utils.read_tasks(task_path):
                 task_init = {
                     **task_init,
-                    **task_overrides.get(task_init["task_name"], dict()),
+                    **task_overrides.get(task_init[TASK_NAME_KEY], dict()),
                 }
                 task_inits.append(task_init)
         else:
-            raise FileExistsError(f"Error: task path ({task_path}) does not exist.")
+            raise FileNotFoundError(f"Error: task path ({task_path}) does not exist.")
 
     # capture tasks specified only in config overrides
     for task_name, task_override in task_overrides.items():
@@ -133,7 +140,7 @@ def generate_data(
 
     # Step 7: Collate databuilders from task configurations
     # Step 7.a: Form requested databuilders list
-    requested_databuilder_names = [t["data_builder"] for t in task_inits]
+    requested_databuilder_names = [t[DATABUILDER_KEY] for t in task_inits]
 
     # Step 7.b: Initialize databuilder index
     databuilder_index = DataBuilderIndex(
@@ -186,8 +193,8 @@ def generate_data(
                 {
                     # Step 8.b.i.*: Prepare task card
                     "task_card": TaskRunCard(
-                        task_name=task_init.get("task_name"),
-                        databuilder_name=task_init.get("data_builder"),
+                        task_name=task_init.get(TASK_NAME_KEY),
+                        databuilder_name=task_init.get(DATABUILDER_KEY),
                         task_spec={"task_init": task_init, "task_kwargs": task_kwargs},
                         databuilder_spec=utils.load_nested_paths(builder_cfg, builder_dir),
                         build_id=build_id,
@@ -201,7 +208,7 @@ def generate_data(
                     **{k: v for k, v in task_init.items() if k not in [RUNNER_CONFIG_KEY]},
                 }
                 for task_init in task_inits
-                if task_init["data_builder"] == builder_name
+                if task_init[DATABUILDER_KEY] == builder_name
             ],
             **builder_kwargs,
         }
@@ -224,6 +231,15 @@ def generate_data(
             utils.import_builder(builder_dir)
             data_builder = get_data_builder(builder_name, **all_builder_kwargs)
 
+        # Step 8.d.iii: Activate run context so all log records from this
+        # point forward (including LLM connectors and utilities) carry
+        # build_id and run_id automatically via the root RunContextFilter.
+        _run_ctx_mgr = run_context(
+            build_id=data_builder.build_id,
+            run_id=data_builder.run_id,
+        )
+        _run_ctx_mgr.__enter__()
+
         # Step 8.e: Trigger tasks execution for the current databuilder
         data_builder.record_run_results(
             update={
@@ -233,10 +249,61 @@ def generate_data(
                 "end_time": None,
             }
         )
+
+        # Initialize telemetry for this run. configure_telemetry() attaches
+        # TelemetryEventHandler to the builder logger and returns a SpanWriter
+        # for instrumentation sites. Both are no-ops when DGT_TELEMETRY_DISABLE
+        # is set.
+        _span_writer = configure_telemetry(
+            builder_logger=data_builder.logger,
+            build_id=data_builder.build_id,
+            run_id=data_builder.run_id,
+        )
+        data_builder.span_writer = _span_writer
+
+        _resumed = not data_builder.tasks[0].restart_generation if data_builder.tasks else False
+        data_builder.logger.info(
+            "Run started%s for builder '%s' [build_id=%s, run_id=%s]",
+            " (resumed)" if _resumed else "",
+            data_builder.name,
+            data_builder.build_id,
+            data_builder.run_id,
+            extra={
+                "event": "run_started",
+                "builder_name": data_builder.name,
+                "task_names": [t.name for t in data_builder.tasks],
+                "pid": os.getpid(),
+                "resumed": _resumed,
+            },
+        )
+        _run_span = Span(
+            "dgt.run",
+            _span_writer,
+            builder_name=data_builder.name,
+            task_names=",".join(t.name for t in data_builder.tasks),
+            resumed=_resumed,
+        )
+        _run_span.__enter__()
+
+        # Install a SIGTERM handler so VSCode stop (which sends SIGTERM) flows
+        # through the same KeyboardInterrupt path as Ctrl+C and UI Cancel.
+        def _sigterm_handler(*_):
+            raise KeyboardInterrupt("SIGTERM received")
+
+        _prev_sigterm = signal.getsignal(signal.SIGTERM)
+        signal.signal(signal.SIGTERM, _sigterm_handler)
+
+        _cancelled = False
+        _errored = False
         try:
             data_builder.execute_tasks()
+        except KeyboardInterrupt:
+            _cancelled = True
+            raise
         # pylint: disable=broad-exception-caught
         except Exception as e:
+            _errored = True
+            _run_span.set_error(e)
             data_builder.record_run_results(
                 update={
                     "status": "errored",
@@ -244,13 +311,47 @@ def generate_data(
                     "message": str(e),
                 }
             )
-
-            # Raise exception
-            raise e
-
-        # Step 8.f: Cleanup databuilder
-        data_builder.close()
-        del data_builder
+            data_builder.logger.info(
+                "Run errored for builder '%s': %s",
+                data_builder.name,
+                str(e),
+                extra={
+                    "event": "run_errored",
+                    "builder_name": data_builder.name,
+                    "status": "errored",
+                    "exception": str(e),
+                },
+            )
+            raise
+        else:
+            data_builder.logger.info(
+                "Run finished for builder '%s'",
+                data_builder.name,
+                extra={
+                    "event": "run_finished",
+                    "builder_name": data_builder.name,
+                    "status": "completed",
+                },
+            )
+        finally:
+            signal.signal(signal.SIGTERM, _prev_sigterm)
+            if _cancelled:
+                _run_span.set_cancelled()
+                data_builder.logger.info(
+                    "Run cancelled for builder '%s'",
+                    data_builder.name,
+                    extra={
+                        "event": "run_cancelled",
+                        "builder_name": data_builder.name,
+                        "status": "cancelled",
+                    },
+                )
+            _run_span.__exit__(None, None, None)
+            # Step 8.f: Cleanup databuilder — always runs, even on exception,
+            # so log handlers and file resources are never leaked.
+            data_builder.close(cancelled=_cancelled, errored=_errored)
+            del data_builder
+            _run_ctx_mgr.__exit__(None, None, None)
 
         # Step 8.g: Cleanup ray
         if ray_initialized:

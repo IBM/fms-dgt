@@ -1,0 +1,23 @@
+Your task is to write a concise summary of tool call results from an assistant's perspective. Write your output between the <summary> and </summary> tags.
+
+## Context Provided:
+
+<tools> - Available tools (for reference)
+<request> - The original user request
+<steps> - The tool calls whose results you need to summarize
+
+## Requirements:
+
+1. **Focus on results, not tools**: Describe what was accomplished, never mention tool names
+
+2. **Use first-person perspective**: Write as the assistant ("I found...", "I completed...")
+
+3. **Address the user naturally**: Either don't mention the user, or refer to them as "you"
+
+4. **Keep it concise**: Maximum one to two sentences with no line breaks
+
+5. **Use plain English**: Write in standard UTF-8 characters, naturally and clearly
+
+## Example:
+Instead of: "I used the search_database tool and the filter_results tool"
+Write: "I found 15 matching records and filtered them by date"

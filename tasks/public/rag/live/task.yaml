@@ -1,0 +1,173 @@
+######################################################
+#                   MANDATORY FIELDS
+######################################################
+task_name: public/rag/live
+task_description: >
+  Generate multi-turn RAG conversations with live retrieval. The assistant issues
+  a retrieval call on each turn, producing ToolCallStep + ToolResultStep +
+  AssistantStep triples in the output. Training signal: retrieval decision-making,
+  query formulation, retrieval failure handling, grounded synthesis from
+  live-retrieved context.
+created_by: IBM
+data_builder: public/rag/conversation
+
+######################################################
+#                   RESERVED FIELDS
+######################################################
+seed_datastore:
+  type: default
+  data_path: ${DGT_DATA_DIR}/public/rag/live/seed_examples.jsonl
+
+formatter:
+  type: formatters/conversation/messages
+
+runner_config:
+  save_formatted_output: true
+
+######################################################
+#                   CONVERSATION PIPELINE
+######################################################
+max_turns: 6
+min_turns: 3
+
+tools:
+  registry:
+    - type: inline
+      engine: file_retriever
+      tools:
+        - name: search_documents
+          description: Search for relevant document chunks from the knowledge base.
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+                description: The search query string.
+            required: [query]
+  engines:
+    file_retriever:
+      type: search/file
+      path: ${DGT_DATA_DIR}/knowledge_base.jsonl
+      format: jsonl
+      projection:
+        body: text
+        doc_id: id
+      limit: 5
+      # Inject retrieval failures to train the model on error-handling behavior.
+      # Remove or set probability: 0.0 to disable.
+      error_categories:
+        - type: network_error
+          probability: 0.05
+          message: "Retrieval service temporarily unavailable."
+        - type: unparseable_result
+          probability: 0.05
+
+initialization_stages:
+  # Samples documents to ground the scenario, but does not carry them forward
+  # as static context. Live retrieval still happens at each assistant turn.
+  - name: lm/scenario/rag
+    generator: generator
+    document_samplers:
+      - type: random
+        engine: file_retriever
+        weight: 1.0
+
+  # Assign a user persona to shape the simulated user's voice and goals.
+  - name: sample/persona
+    persona_store:
+      type: default
+      data_path: ${DGT_DATA_DIR}/public/examples/chit_chat/personas.jsonl
+
+iteration_stages:
+  - name: lm/flow_controller
+    generator: generator
+    termination_patterns:
+      - rag/termination
+    patterns:
+      - name: rag/factoid
+        description: >
+          User asks a brief, specific factual question answerable from the
+          knowledge base, such as a name, number, date, or yes/no answer. Do
+          not repeat a factual question on the same topic already answered in
+          a previous turn.
+        hint: >
+          Ask a focused factual question whose answer can be retrieved from
+          the knowledge base. Avoid broad or open-ended questions, and do not
+          ask about a fact already covered in the conversation.
+
+      - name: rag/explanation
+        description: >
+          User asks for an explanation of a concept, policy, or process,
+          requiring the assistant to reason and elaborate on retrieved content.
+        hint: >
+          Ask the assistant to explain why something works a certain way or
+          what a policy or process means in practice.
+
+      - name: rag/instructional
+        description: >
+          User asks for a set of steps or actions to accomplish a task. Do not
+          select this pattern more than twice in a single conversation; if it
+          has already been used twice, mark it ineligible regardless of context.
+        hint: >
+          Ask the assistant how to do something or what steps to follow,
+          where the answer involves a sequence of actions. Choose a task or
+          sub-task not yet covered in the conversation.
+
+      - name: rag/follow_up
+        description: >
+          User proactively digs deeper into a topic the assistant just covered,
+          asking about a related aspect, edge case, or implication not yet
+          addressed. The user is extending the topic, not questioning the
+          assistant's wording. Distinct from rag/clarification, where the user
+          is confused by the response itself.
+        hint: >
+          Build on the assistant's last response by asking about a related
+          aspect, an edge case, or a consequence not yet discussed. Do not ask
+          the assistant to re-explain something it already said.
+
+      - name: rag/clarification
+        description: >
+          User found the assistant's previous response unclear, confusing, or
+          incomplete and asks the assistant to clarify a specific part of what
+          it said. The user is not extending the topic but questioning the
+          response itself. Distinct from rag/follow_up, where the user
+          understands the answer and wants to go further.
+        hint: >
+          Point to a specific part of the assistant's last answer that was
+          unclear or ambiguous and ask the assistant to explain it more clearly.
+          Do not use this to introduce a new topic.
+
+      - name: rag/ambiguous
+        description: >
+          User poses a vague, incomplete, or keyword-style question that could
+          apply to multiple aspects of the knowledge base. The assistant should
+          ask a clarifying question back rather than guessing the user's intent.
+          Use at most once per conversation.
+        hint: >
+          Ask a short, vague, or keyword-style question that does not specify
+          exactly what information is needed, so the assistant must ask for
+          clarification before answering.
+
+      - name: rag/termination
+        description: >
+          The scenario has been substantively resolved: the user's core
+          information need is covered, no meaningful open questions remain, and
+          continuing would only produce repetition. Select this pattern
+          proactively whenever those conditions are met, even if the user has
+          not explicitly said thank you. Do not wait for the user to close the
+          conversation if the scenario is clearly done.
+        hint: >
+          Generate a brief closing statement from the user that acknowledges
+          the scenario is resolved. This may include a thank-you, a statement
+          of what they plan to do next, or simply confirmation that they have
+          what they need. Avoid generic phrases like "have a good day"; make
+          the closing reflect the specific scenario.
+
+  - name: lm/user/rag
+    generator: generator
+
+  # Issues live retrieval calls each turn via the composite tool engine.
+  # The model selects from all registered tools; appends ToolCallStep +
+  # ToolResultStep + AssistantStep (or AssistantStep only when no retrieval needed).
+  - name: lm/assistant/rag
+    generator: generator

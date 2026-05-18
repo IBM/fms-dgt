@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Third Party
 import pytest
 
@@ -14,6 +17,7 @@ GREEDY_CFG = {
 }
 
 
+@pytest.mark.live
 @pytest.mark.parametrize("model_backend", ["watsonx"])
 def test_completion(model_backend):
     lm_judge = LMJudgeValidator(name=f"test_{model_backend}", **GREEDY_CFG)

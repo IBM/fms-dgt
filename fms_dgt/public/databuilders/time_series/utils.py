@@ -1,6 +1,10 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from collections import Counter
 from typing import Any, List, Literal, Tuple, Union
+import logging
 import random
 import warnings
 
@@ -16,7 +20,9 @@ import scipy
 import scipy.stats as stats
 
 # Local
-from fms_dgt.utils import dgt_logger
+from fms_dgt.constants import BASE_LOGGER_NAME
+
+_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 # ===========================================================================
 #                        PREPROCESSING BLOCK
@@ -52,8 +58,15 @@ def preprocess_train_data(
 
 
 def preprocess_uni_multi_variate_data(
-    data, train_channels, train_length, min_windows_length, min_windows_number, train_splitting
+    data,
+    train_channels,
+    train_length,
+    min_windows_length,
+    min_windows_number,
+    train_splitting,
+    logger=None,
 ):
+    log = logger or _logger
     if train_splitting not in {"minimize-overlap", "maximize-overlap", "no-periodicity"}:
         raise ValueError(
             f"Unsupported train_splitting strategy: '{train_splitting}'. "
@@ -70,17 +83,20 @@ def preprocess_uni_multi_variate_data(
     # Iterate over each channel and calculate its period and window length
     for idx, channel_data in enumerate(train_data):
         channel_name = train_channels[idx]
-        dgt_logger.info("CHANNEL: %s", channel_name)
+        log.info("CHANNEL: %s", channel_name)
 
         chosen_period, _ = compute_period(
-            channel_data, min_points=min_windows_length, min_windows=min_windows_number
+            channel_data,
+            min_points=min_windows_length,
+            min_windows=min_windows_number,
+            logger=logger,
         )
-        dgt_logger.info("Chosen period %d for channel (%s)", chosen_period, channel_name)
+        log.info("Chosen period %d for channel (%s)", chosen_period, channel_name)
         chosen_period_per_channel.append(chosen_period)
 
     # Use the most frequent period across channels
     chosen_period = max(chosen_period_per_channel, key=chosen_period_per_channel.count)
-    dgt_logger.info("Overall chosen period: %d", chosen_period)
+    log.info("Overall chosen period: %d", chosen_period)
 
     # Construct windows for each channel using the chosen period
     for idx, channel_data in enumerate(train_data):
@@ -92,22 +108,25 @@ def preprocess_uni_multi_variate_data(
             min_windows_number,
             train_splitting,
             verbose,
+            logger=logger,
         )
         preprocessed_train.append(windows)
 
     # Scale the preprocessed data
-    scaled_preprocessed_train, list_fitted_scaler = standardscale_train(preprocessed_train)
+    scaled_preprocessed_train, list_fitted_scaler = standardscale_train(
+        preprocessed_train, logger=logger
+    )
 
     return (scaled_preprocessed_train, preprocessed_train, list_fitted_scaler)
 
 
-def preprocess_multisample_data(data, train_channels, train_samples, train_length):
+def preprocess_multisample_data(data, train_channels, train_samples, train_length, logger=None):
 
     sample_str = train_channels[0]
     sample_columns = [col for col in data.columns if col.startswith(sample_str)]
 
     if len(list(sample_columns)) <= train_samples:
-        dgt_logger.info("Enough samples, choosing windows in different samples")
+        (logger or _logger).info("Enough samples, choosing windows in different samples")
         raise ValueError(
             f"Number of samples ({len(list(sample_columns))}) "
             f"is less than "
@@ -124,7 +143,7 @@ def preprocess_multisample_data(data, train_channels, train_samples, train_lengt
     train_data = get_data(data, start, end, id_train_samples)
     train_data = [train_data.tolist()]
 
-    scaled_preprocessed_train, list_fitted_scaler = standardscale_train(train_data)
+    scaled_preprocessed_train, list_fitted_scaler = standardscale_train(train_data, logger=logger)
 
     return (scaled_preprocessed_train, train_data, list_fitted_scaler)
 
@@ -193,8 +212,9 @@ def interpolate_na(data):
     return np.array(interpolated_data)
 
 
-def standardscale_train(preprocessed_train):
+def standardscale_train(preprocessed_train, logger=None):
     # Standard Scaling the data useful for aggregated scores in evaluation
+    log = logger or _logger
 
     # -- by timestamps --
     scaled_preprocessed_train = []
@@ -208,9 +228,7 @@ def standardscale_train(preprocessed_train):
         scaled_preprocessed_train.append(scaled_arr_train)
         list_fitted_scaler.append(scaler)
 
-        dgt_logger.info(
-            "Channel %d train data standardized. Shape: %s", idx, scaled_arr_train.shape
-        )
+        log.info("Channel %d train data standardized. Shape: %s", idx, scaled_arr_train.shape)
 
     return np.array(scaled_preprocessed_train), list_fitted_scaler
 
@@ -243,7 +261,7 @@ def estimate_period_acf(time_series):
     return sorted_peaks
 
 
-def compute_period(time_series, min_points=1120, min_windows=10):
+def compute_period(time_series, min_points=1120, min_windows=10, logger=None):
     """
     Computes the period of a time series using ACF as the primary method
     and Fourier Transform as a fallback. Ensures the period allows for at
@@ -258,6 +276,7 @@ def compute_period(time_series, min_points=1120, min_windows=10):
         period (int): The computed period for the time series.
         window_length (int): The calculated window length.
     """
+    log = logger or _logger
     # Determine maximum allowable period
     max_period = max(1, (len(time_series) - min_points) // (min_windows - 1))
 
@@ -293,15 +312,21 @@ def compute_period(time_series, min_points=1120, min_windows=10):
     window_length = N * period
 
     # Diagnostics
-    dgt_logger.info("  - Max possible period: %s", max_period)
-    dgt_logger.info("  - First ACF periods (ranked): %s", acf_periods[: (position + 1)])
-    dgt_logger.info("  - Selected period: %s (Source: %s)", period, period_source)
+    log.info("  - Max possible period: %s", max_period)
+    log.info("  - First ACF periods (ranked): %s", acf_periods[: (position + 1)])
+    log.info("  - Selected period: %s (Source: %s)", period, period_source)
 
     return period, window_length
 
 
 def construct_windows(
-    time_series, period, window_length=1120, min_windows=10, split="maximize-overlap", verbose=True
+    time_series,
+    period,
+    window_length=1120,
+    min_windows=10,
+    split="maximize-overlap",
+    verbose=True,
+    logger=None,
 ):
     """
     Constructs windows for the time series based on the computed period.
@@ -392,16 +417,17 @@ def construct_windows(
 
     # Diagnostics
     if verbose:
-        dgt_logger.info("Period: %s", period)
-        dgt_logger.info("Number of windows: %s", len(windows))
-        dgt_logger.info("Points in each window: %s", window_length)
-        dgt_logger.info("Periods in a window: %s", window_length // period)
-        dgt_logger.info("Overlapping points: %s", window_length - overlap_step)
-        dgt_logger.info("Overlapping periods: %s", (window_length - overlap_step) // period)
+        log = logger or _logger
+        log.info("Period: %s", period)
+        log.info("Number of windows: %s", len(windows))
+        log.info("Points in each window: %s", window_length)
+        log.info("Periods in a window: %s", window_length // period)
+        log.info("Overlapping points: %s", window_length - overlap_step)
+        log.info("Overlapping periods: %s", (window_length - overlap_step) // period)
         if extra_window:
-            dgt_logger.info("Extra window overlapping points: %s", overlap_extra_window)
-            dgt_logger.info("Extra window overlapping periods: %s", periods_extra_window)
-            dgt_logger.info("Total coverage: %s\n", total_coverage)
+            log.info("Extra window overlapping points: %s", overlap_extra_window)
+            log.info("Extra window overlapping periods: %s", periods_extra_window)
+            log.info("Total coverage: %s\n", total_coverage)
 
     return windows, window_length - overlap_step
 
@@ -411,8 +437,8 @@ def construct_windows(
 # ===========================================================================
 
 
-def fpc_embed_data(preprocessed_data, embedding_dim, percentage_of_variance_explained):
-
+def fpc_embed_data(preprocessed_data, embedding_dim, percentage_of_variance_explained, logger=None):
+    log = logger or _logger
     n_var = len(preprocessed_data)  # Number of features
 
     # Compute embeddings
@@ -445,12 +471,12 @@ def fpc_embed_data(preprocessed_data, embedding_dim, percentage_of_variance_expl
         else:
             embedding_dim = embedding_dim  # Use fixed embedding dimension if provided
 
-        dgt_logger.info(
+        log.info(
             "Latent dimension channel %s: %s",
             var,
             embedding_dim,
         )
-        dgt_logger.info(
+        log.info(
             "\nVariance retained for channel %s: %.4f",
             var,
             cumsum_eigvals[embedding_dim - 1],
@@ -484,8 +510,10 @@ def fpc_embed_data(preprocessed_data, embedding_dim, percentage_of_variance_expl
     )
 
 
-def fica_embed_data(preprocessed_data, embedding_dim, percentage_of_variance_explained):
-
+def fica_embed_data(
+    preprocessed_data, embedding_dim, percentage_of_variance_explained, logger=None
+):
+    log = logger or _logger
     n_var = len(preprocessed_data)  # Number of features
 
     # Compute embeddings
@@ -522,7 +550,7 @@ def fica_embed_data(preprocessed_data, embedding_dim, percentage_of_variance_exp
         else:
             embedding_dim = embedding_dim
 
-        dgt_logger.info(
+        log.info(
             "Latent dimension channel %s: %s",
             var,
             embedding_dim,
@@ -535,7 +563,7 @@ def fica_embed_data(preprocessed_data, embedding_dim, percentage_of_variance_exp
         original_var = np.var(data_train_std, axis=1).sum()
         reconstructed_var = np.var(data_reconstructed, axis=1).sum()
         retained = reconstructed_var / original_var
-        dgt_logger.info(
+        log.info(
             "\nVariance retained for channel %s: %.4f",
             var,
             retained,
@@ -646,6 +674,7 @@ def convert_texts_to_tabular_data(
     text_template: Literal[
         "base_template", "fim_template", "fim_template_textual_encoding"
     ] = "fim_template",
+    logger=None,
 ) -> pd.DataFrame:
     """Converts the sentences back to tabular data
 
@@ -768,7 +797,9 @@ def convert_texts_to_tabular_data(
                                 else:
                                     td[col_i] = val_i  # Keep categorical as string
                         except ValueError:
-                            dgt_logger.warning("Skipping malformed output: %s", features_output)
+                            (logger or _logger).warning(
+                                "Skipping malformed output: %s", features_output
+                            )
                             continue
             generated.append(td)
         df_gen = pd.DataFrame(generated)
@@ -786,20 +817,22 @@ def fpc_transform_to_original_feature_space(
     data_embedded,
     fpc_basis,
     fpc_basis_full,
+    logger=None,
 ):
+    log = logger or _logger
     n_var = len(preprocessed_data)  # Number of features
 
     # Reshape generated data to original format (for multivariate case)
-    dgt_logger.info("Generated data shape is: %s", generated_data.shape)
+    log.info("Generated data shape is: %s", generated_data.shape)
     index = 0
     new_data_embedded = []
     for i in range(n_var):
         k_i = data_embedded[i].shape[1]  # Number of basis components
         new_data_embedded.append(generated_data[:, index : index + k_i])
         index += k_i
-        dgt_logger.info("Reshaping for var_%s which uses %s basis components", n_var, k_i)
+        log.info("Reshaping for var_%s which uses %s basis components", n_var, k_i)
 
-    dgt_logger.info(
+    log.info(
         "Generated data shape has been reshaped to: %s", [arr.shape for arr in new_data_embedded]
     )
 
@@ -836,21 +869,22 @@ def fpc_transform_to_original_feature_space(
 
 
 def fica_transform_to_original_feature_space(
-    generated_data, preprocessed_data, data_embedded, fica_mixing, fica_mean
+    generated_data, preprocessed_data, data_embedded, fica_mixing, fica_mean, logger=None
 ):
+    log = logger or _logger
     n_var = len(preprocessed_data)  # Number of features
 
     # Reshape generated data to original format (for multivariate case)
-    dgt_logger.info("Generated data shape is: %s", generated_data.shape)
+    log.info("Generated data shape is: %s", generated_data.shape)
     index = 0
     new_data_embedded = []
     for i in range(n_var):
         k_i = data_embedded[i].shape[1]  # Number of basis components
         new_data_embedded.append(generated_data[:, index : index + k_i])
         index += k_i
-        dgt_logger.info("Reshaping for var_%s which uses %s basis components", n_var, k_i)
+        log.info("Reshaping for var_%s which uses %s basis components", n_var, k_i)
 
-    dgt_logger.info(
+    log.info(
         "Generated data shape has been reshaped to: %s", [arr.shape for arr in new_data_embedded]
     )
 

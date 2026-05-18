@@ -1,0 +1,103 @@
+book_hotel:
+  description: book a hotel to stay in.
+  name: book_hotel
+  parameters:
+    properties:
+      hotel-area:
+        description: hotel's area.
+        type: string
+      hotel-bookday:
+        description: hotel check-in date.
+        type: string
+      hotel-bookpeople:
+        description: Number of people staying in the hotel.
+        type: integer
+      hotel-bookstay:
+        description: number of nights to stay.
+        type: integer
+      hotel-name:
+        description: hotel's name.
+        type: string
+      hotel-pricerange:
+        description: hotel's price range.
+        type: string
+      hotel-stars:
+        description: hotel's star rating.
+        type: string
+    required: []
+    type: object
+find_hotel:
+  description: search for a hotel to stay in.
+  name: find_hotel
+  parameters:
+    properties:
+      hotel-area:
+        description: hotel's area.
+        type: string
+      hotel-internet:
+        description: hotel's wifi availability.
+        type: string
+      hotel-name:
+        description: hotel's name.
+        type: string
+      hotel-parking:
+        description: hotel parking lot availability.
+        type: string
+      hotel-pricerange:
+        description: hotel's price range.
+        type: string
+      hotel-stars:
+        description: hotel's star rating.
+        type: string
+      hotel-type:
+        description: hotel type (apartments, hostel, hotel, etc.)
+        type: string
+    required: []
+    type: object
+book_restaurant:
+  description: book a table at a restaurant.
+  name: book_restaurant
+  parameters:
+    properties:
+      restaurant-area:
+        description: area of the restaurant.
+        type: string
+      restaurant-bookday:
+        description: Date to book a table at the restaurant.
+        type: string
+      restaurant-bookpeople:
+        description: Number of people who will be eating at the restaurant.
+        type: integer
+      restaurant-booktime:
+        description: Time to book the restaurant at.
+        type: string
+      restaurant-food:
+        description: type of food served at the restaurant.
+        type: string
+      restaurant-name:
+        description: Name of the restaurant.
+        type: string
+    required: []
+    type: object
+find_train:
+  description: search for trains that take you places.
+  name: find_train
+  parameters:
+    properties:
+      train-arriveby:
+        description: Time to arrive at destination by.
+        type: string
+      train-day:
+        description: which day of the week to travel on.
+        type: string
+      train-departure:
+        description: The station where the train departs from.
+        type: string
+      train-destination:
+        description: destination station of the train.
+        type: string
+      train-leaveat:
+        description: Time at which to leave the departure station.
+        type: string
+    required: []
+    type: object

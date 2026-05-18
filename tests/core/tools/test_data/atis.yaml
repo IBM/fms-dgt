@@ -1,0 +1,118 @@
+atis_abbreviation:
+  description: This tool provides information about several airline abbreviations such as fares, and restrictions.
+  name: atis_abbreviation
+  parameters:
+    properties:
+      aircraft_code:
+        description: The code of the aircraft with which the airline operates.
+        type: string
+      airline_code:
+        description: The airline code.
+        type: string
+      airline_name:
+        description: Name of the airline.
+        type: string
+      airport_code:
+        description: The airport code of the airport you want to search for.
+        type: string
+      booking_class:
+        description: The booking class of a flight.
+        type: string
+      fare_basis_code:
+        description: The fare basis code.
+        type: string
+      fromloc.city_name:
+        description: City from which flight will depart.
+        type: string
+      toloc.city_name:
+        description: City to which flight is scheduled.
+        type: string
+    required: []
+    type: object
+atis_aircraft:
+  description: This tool provides information about an aircraft based on a specific aircraft code.
+  name: atis_aircraft
+  parameters:
+    properties:
+      aircraft_code:
+        description: The code of the aircraft.
+        type: string
+      airline_code:
+        description: The airline code of the aircraft.
+        type: string
+      arrive_date.day_name:
+        description: The day of the week the aircraft arrives.
+        type: string
+      arrive_time.time:
+        description: The scheduled time of arrival at the destination.
+        type: string
+      depart_date.day_name:
+        description: The day of the week the aircraft departs.
+        type: string
+      depart_time.time:
+        description: The scheduled time of departure for the aircraft.
+        type: string
+      fromloc.city_name:
+        description: City from which the flight departs.
+        type: string
+      toloc.city_name:
+        description: City to which the flight is scheduled.
+        type: string
+    required: []
+    type: object
+atis_flight:
+  description: This tool is used to retrieve information about a specific flight.
+  name: atis_flight
+  parameters:
+    properties:
+      airline_code:
+        description: The airline code of the flight.
+        type: string
+      arrive_date.day_name:
+        description: The day of the week the flight arrives.
+        type: string
+      arrive_time.time:
+        description: The scheduled arrival time.
+        type: string
+      depart_date.day_name:
+        description: The day of the week the flight departs.
+        type: string
+      depart_time.time:
+        description: The scheduled departure time.
+        type: string
+      flight_number:
+        description: The flight number.
+        type: string
+      fromloc.city_name:
+        description: City from which the flight departs.
+        type: string
+      toloc.city_name:
+        description: City to which the flight is scheduled.
+        type: string
+    required: []
+    type: object
+atis_airfare:
+  description: This tool provides airfare information for a specific route.
+  name: atis_airfare
+  parameters:
+    properties:
+      airline_code:
+        description: The airline code.
+        type: string
+      class_type:
+        description: Class type of flight (economy, business, first).
+        type: string
+      fare_basis_code:
+        description: The fare basis code.
+        type: string
+      fromloc.city_name:
+        description: City from which flight will depart.
+        type: string
+      round_trip:
+        description: Whether the fare is for a round trip.
+        type: boolean
+      toloc.city_name:
+        description: City to which the flight is scheduled.
+        type: string
+    required: []
+    type: object

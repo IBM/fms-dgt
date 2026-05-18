@@ -1,5 +1,12 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from collections import ChainMap
+from dataclasses import MISSING
+from dataclasses import fields as _dc_fields
+from dataclasses import is_dataclass
+from json import JSONDecodeError
 from typing import (
     Any,
     Callable,
@@ -14,6 +21,7 @@ from typing import (
 )
 import ast
 import copy
+import csv
 import fnmatch
 import glob
 import importlib.util
@@ -23,6 +31,7 @@ import math
 import os
 import signal
 import socket
+import threading
 
 # Third Party
 import datasets
@@ -33,7 +42,7 @@ import pyarrow.parquet as pq
 import yaml
 
 # Local
-from fms_dgt.constants import NAME_KEY
+from fms_dgt.constants import BASE_LOGGER_NAME, NAME_KEY
 
 # ===========================================================================
 #                       LOGGER CONFIGURATION
@@ -42,12 +51,12 @@ from fms_dgt.constants import NAME_KEY
 
 # Step 1: Create default log formatter
 DGT_LOG_FORMATTER = logging.Formatter(
-    fmt="%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
+    fmt="%(asctime)s,%(msecs)03d %(levelname)-8s [%(name)s:%(lineno)d] %(message)s",
     datefmt="%Y-%m-%d:%H:%M:%S",
 )
 
 # Step 2: Initialize logger
-dgt_logger = logging.getLogger("fms_dgt")
+dgt_logger = logging.getLogger(BASE_LOGGER_NAME)
 
 # Step 3: Set up logging level
 dgt_logger.setLevel(level=getattr(logging, os.getenv("LOG_LEVEL", "info").upper()))
@@ -57,6 +66,16 @@ _stream_handler = logging.StreamHandler()
 _stream_handler.setFormatter(DGT_LOG_FORMATTER)
 dgt_logger.propagate = False
 dgt_logger.addHandler(_stream_handler)
+
+# Local
+# Step 5: Attach the contextvars-based RunContextFilter so that ALL records
+# emitted on any fms_dgt logger — including module-level loggers in LLM
+# connectors and utilities — carry build_id and run_id automatically when a
+# run_context() is active.  Import is deferred here to avoid a circular
+# import (fms_dgt.log.context imports nothing from utils).
+from fms_dgt.log.context import RunContextFilter as _RunContextFilter  # noqa: E402
+
+dgt_logger.addFilter(_RunContextFilter())
 
 
 # ===========================================================================
@@ -386,12 +405,21 @@ def process_yaml_config(
 # ===========================================================================
 
 
-def group_data_by_attribute(data_list: List[T], attr: str) -> List[List[T]]:
-    attr_values = set([getattr(data_item, attr) for data_item in data_list])
-    return [
-        [data_item for data_item in data_list if getattr(data_item, attr) == attr_value]
-        for attr_value in attr_values
-    ]
+def group_by(data: List[T], key: Callable[[T], Any]) -> Dict[Any, List[T]]:
+    """Group a list of items by an arbitrary key function.
+
+    Args:
+        data: List of items to group.
+        key: Callable that returns the grouping key for each item.
+
+    Returns:
+        Dict mapping each distinct key value to the list of items that produced it.
+        Insertion order of first occurrence is preserved.
+    """
+    result: Dict[Any, List[T]] = {}
+    for item in data:
+        result.setdefault(key(item), []).append(item)
+    return result
 
 
 # ===========================================================================
@@ -557,12 +585,14 @@ def read_file(file_path: str, encoding: str = "utf-8"):
 
 
 def read_yaml(file_path: str, encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     with open(file_path, mode="r", encoding=encoding) as fp:
         data = yaml.safe_load(fp)
     return data
 
 
 def read_json(file_path: str, encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     with open(file_path, mode="r", encoding=encoding) as fp:
         try:
             data = json.load(fp)
@@ -572,6 +602,8 @@ def read_json(file_path: str, encoding: str = "utf-8"):
 
 
 def read_jsonl(file_path: str, encoding: str = "utf-8", lazy: bool = False):
+    file_path = os.path.expandvars(file_path)
+
     def _yield(file_path: str, encoding: str = "utf-8"):
         with open(file_path, mode="r", encoding=encoding) as fp:
             for line in fp:
@@ -579,7 +611,7 @@ def read_jsonl(file_path: str, encoding: str = "utf-8", lazy: bool = False):
                 if line:
                     try:
                         yield json.loads(line)
-                    except json.JSONDecodeError as err:
+                    except JSONDecodeError as err:
                         dgt_logger.warning("Decoding error %s for line: %s", str(err), line)
 
     if lazy:
@@ -615,6 +647,40 @@ def read_parquet(
         return pd.read_parquet(file_path, engine=engine).apply(dict, axis=1).to_list()
 
 
+def read_csv(
+    file_path: str,
+    encoding: str = "utf-8",
+    lazy: bool = False,
+    has_header: bool = False,
+    delimiter: str = ",",
+    quotechar: str = '"',
+    lineterminator: str = "\r\n",
+    skipinitialspace: bool = False,
+):
+    with open(file_path, mode="r", encoding=encoding) as fp:
+        if has_header:
+            reader = csv.DictReader(
+                fp,
+                delimiter=delimiter,
+                quotechar=quotechar,
+                lineterminator=lineterminator,
+                skipinitialspace=skipinitialspace,
+            )
+        else:
+            reader = csv.reader(
+                fp,
+                delimiter=delimiter,
+                quotechar=quotechar,
+                lineterminator=lineterminator,
+                skipinitialspace=skipinitialspace,
+            )
+
+        if lazy:
+            yield from reader
+        else:
+            return list(reader)
+
+
 def read_huggingface(dataset_args: List[str], split: str, lazy=False):
     if lazy:
         yield from datasets.load_dataset(
@@ -631,12 +697,14 @@ def read_huggingface(dataset_args: List[str], split: str, lazy=False):
 
 
 def write_yaml(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as fp:
         yaml.safe_dump(data_to_write, fp, sort_keys=False)
 
 
 def write_json(data_to_write: List[T], file_path: str, mode: str = "w", encoding: str = "utf-8"):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as f:
         json.dump(data_to_write, f, indent=4)
@@ -648,6 +716,7 @@ def write_jsonl(
     mode: str = "a",
     encoding: str = "utf-8",
 ):
+    file_path = os.path.expandvars(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, mode=mode, encoding=encoding) as f:
         for d in data_to_write:
@@ -694,6 +763,89 @@ def write_parquet(
 
 
 # ===========================================================================
+#                       ROTATING JSONL WRITER
+# ===========================================================================
+class RotatingJsonlWriter:
+    """Append-only JSONL writer with size-based rotation and age-based retention.
+
+    Rotation: when the active file exceeds ``max_bytes``, it is renamed to
+    ``{stem}.1.jsonl``, existing numbered files are shifted up by one, and a
+    fresh ``{stem}.jsonl`` is opened.
+
+    Retention: on each rotation and at construction time, any rotated file
+    whose mtime is older than ``max_age_days`` is deleted.  The active file is
+    never deleted by retention.
+
+    Thread safety: all writes and rotations are serialized by a single lock.
+
+    Args:
+        path: Full path to the active file (e.g. ``telemetry/traces.jsonl``).
+        max_bytes: Rotate when the active file reaches this size in bytes.
+        max_age_days: Delete rotated files older than this many days.
+            Set to 0 to disable age-based retention entirely.
+
+    Example::
+
+        writer = RotatingJsonlWriter("telemetry/traces.jsonl",
+                                     max_bytes=100 * 1024 * 1024,
+                                     max_age_days=14)
+        writer.write('{"span": "dgt.block", "duration_ms": 42}')
+    """
+
+    def __init__(self, path: str, max_bytes: int, max_age_days: int) -> None:
+        self._path = path
+        self._max_bytes = max_bytes
+        self._max_age_days = max_age_days
+        self._lock = threading.Lock()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        self._purge_old_files()
+
+    def write(self, line: str) -> None:
+        """Append ``line`` (without trailing newline) to the active file,
+        rotating first if the file is at or above ``max_bytes``."""
+        with self._lock:
+            if self._should_rotate():
+                self._rotate()
+            with open(self._path, "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+
+    def _should_rotate(self) -> bool:
+        try:
+            return os.path.getsize(self._path) >= self._max_bytes
+        except FileNotFoundError:
+            return False
+
+    def _rotate(self) -> None:
+        stem, _ = os.path.splitext(self._path)
+        existing = sorted(
+            glob.glob(f"{stem}.*.jsonl"),
+            key=lambda p: int(p[len(stem) + 1 : -len(".jsonl")]),
+            reverse=True,
+        )
+        for fpath in existing:
+            n = int(fpath[len(stem) + 1 : -len(".jsonl")])
+            os.rename(fpath, f"{stem}.{n + 1}.jsonl")
+        if os.path.exists(self._path):
+            os.rename(self._path, f"{stem}.1.jsonl")
+        self._purge_old_files()
+
+    def _purge_old_files(self) -> None:
+        if self._max_age_days <= 0:
+            return
+        # Standard
+        from datetime import datetime, timezone
+
+        stem, _ = os.path.splitext(self._path)
+        cutoff = datetime.now(tz=timezone.utc).timestamp() - (self._max_age_days * 86400)
+        for fpath in glob.glob(f"{stem}.*.jsonl"):
+            try:
+                if os.path.getmtime(fpath) < cutoff:
+                    os.remove(fpath)
+            except OSError:
+                pass
+
+
+# ===========================================================================
 #                       BYTE CONVERTER
 # ===========================================================================
 def convert_byte_size(size_bytes):
@@ -709,153 +861,502 @@ def convert_byte_size(size_bytes):
 # ===========================================================================
 #                       DICTIONARY PROCESSOR
 # ===========================================================================
-def from_dict(dictionary: Dict[str, Any], key: str):
-    """
-    Fetching value for key from the dictionary.
+# Path DSL used by ``from_dict`` / ``to_dict``:
+#
+#   ``a.b``           — plain key traversal.
+#   ``a[0]``          — integer index into a list.
+#   ``a[:n]`` / ``a[n:]`` — slice (read-only; ``to_dict`` rejects).
+#   ``a[+]``          — append (``to_dict`` only; ``from_dict`` rejects).
+#
+# Missing-key semantics on reads: intermediate segments always raise
+# ``KeyError``; the terminal segment raises when ``strict=True`` (default)
+# and returns ``dataclasses.MISSING`` when ``strict=False`` so callers can
+# distinguish "absent" from "present and ``None``".
 
-    NOTE:
-    - Nested key are allowed. Support for "." notation, "[:?\\d+:?]" notation
+
+def _parse_segment(segment: str) -> tuple[str, str | None]:
+    """Split a path segment into ``(name, modifier)``.
+
+    ``modifier`` is the raw content between the brackets (e.g. ``"0"``,
+    ``"+"``, ``":2"``) or ``None`` when the segment has no bracket.
+
+    Raises ``ValueError`` on malformed syntax (unclosed bracket, empty name,
+    nested brackets).
+    """
+    if not segment:
+        raise ValueError("Empty path segment")
+    if "[" not in segment:
+        return segment, None
+    if not segment.endswith("]"):
+        raise ValueError(f"Malformed segment '{segment}': unclosed bracket")
+    name, _, rest = segment.partition("[")
+    if not name:
+        raise ValueError(f"Malformed segment '{segment}': missing key before '['")
+    modifier = rest[:-1]
+    if "[" in modifier or "]" in modifier:
+        raise ValueError(f"Malformed segment '{segment}': nested brackets")
+    return name, modifier.strip()
+
+
+def _apply_read_modifier(container: Any, name: str, modifier: str) -> Any:
+    """Apply a bracket modifier to a value fetched by ``name``.
+
+    Handles ``[i]``, ``[:n]``, and ``[n:]``. Rejects ``[+]`` (write-only).
+    """
+    if modifier == "+":
+        raise ValueError(f"Append modifier '[+]' is not valid on reads (segment '{name}[+]')")
+    if not hasattr(container, "__getitem__"):
+        raise TypeError(f"Expected indexable object but got {type(container)} for '{name}'")
+    if modifier.startswith(":"):
+        return container[: int(modifier[1:])]
+    if modifier.endswith(":"):
+        return container[int(modifier[:-1]) :]
+    return container[int(modifier)]
+
+
+def from_dict(dictionary: Dict[str, Any], key: str, *, strict: bool = True):
+    """Read a value from ``dictionary`` at the DSL path ``key``.
 
     Args:
-        dictionary (Dict[str, Any]): _description_
-        key (str): _description_
+        dictionary: The source dictionary to read from.
+        key: Dot/bracket path (see module-level DSL reference above).
+        strict: When ``True`` (default), raises ``KeyError`` if the terminal
+            segment is absent. When ``False``, returns ``dataclasses.MISSING``
+            for an absent terminal so callers can distinguish "missing" from
+            a present-but-``None`` value. Intermediate segments always raise
+            regardless of ``strict``.
 
     Returns:
-        _type_: _description_
+        The value at the path, or ``dataclasses.MISSING`` when the terminal
+        is absent and ``strict=False``.
+
+    Raises:
+        KeyError: Intermediate segment missing, or terminal missing with
+            ``strict=True``.
+        TypeError: Path traverses a non-indexable value (e.g. ``.key`` on a
+            list, ``[i]`` on a non-indexable).
+        ValueError: Malformed path syntax.
     """
-    # Step 1: Split into individual key segments
     key_segments = key.split(".")
+    name, modifier = _parse_segment(key_segments[0])
+    is_terminal = len(key_segments) == 1
 
-    # Step 2: Get value, if last key segment
-    if len(key_segments) == 1:
-        # Step 2.a: key with list notation
-        if key_segments[0].endswith("]"):
-            dict_key, pos_idx = key_segments[0].split("[")
+    # Presence check at this level (distinguishes "absent" from "None value").
+    if name not in dictionary:
+        if is_terminal and not strict:
+            return MISSING
+        raise KeyError(
+            f"Missing key '{name}' while resolving path '{key}'"
+            + ("" if is_terminal else " (intermediate segment)")
+        )
 
-            if not hasattr(dictionary.get(dict_key), "__getitem__"):
-                raise TypeError(
-                    f"Expected indexable object but got {type(dictionary.get(dict_key))} for {dict_key}"
-                )
+    current = dictionary[name]
 
-            pos_idx = pos_idx.rstrip("]").strip()
-            if pos_idx.startswith(":"):
-                return dictionary.get(dict_key)[: int(pos_idx[1:])]
-            elif pos_idx.endswith(":"):
-                return dictionary.get(dict_key)[: int(pos_idx[:-1])]
-            else:
-                return dictionary.get(dict_key)[int(pos_idx)]
-        else:
-            # Step 2.b: dictionary key
-            return dictionary.get(key_segments[0])
-    else:
-        # Step 3.a: key with list notation
-        if key_segments[0].endswith("]"):
-            dict_key, pos_idx = key_segments[0].split("[")
+    if is_terminal:
+        if modifier is None:
+            return current
+        return _apply_read_modifier(current, name, modifier)
 
-            if ":" in pos_idx.rstrip("]").strip():
-                raise ValueError("List notation ([:n], [n:]) is not allowed for intermediate keys.")
-
-            if not isinstance(dictionary.get(dict_key), list):
-                raise TypeError(
-                    f"Expected list but got {type(dictionary.get(dict_key))} for {dict_key}"
-                )
-
-            return from_dict(
-                dictionary=dictionary.get(dict_key)[int(pos_idx.rstrip("]").strip())],
-                key=".".join(key_segments[1:]),
+    # Intermediate segment: descend.
+    if modifier is not None:
+        if ":" in modifier:
+            raise ValueError(
+                f"Slice notation '[{modifier}]' is not allowed on intermediate segment '{name}'"
             )
-        else:
-            # Step 3.b: dictionary key
-            return from_dict(
-                dictionary=dictionary.get(key_segments[0]),
-                key=".".join(key_segments[1:]),
-            )
+        if modifier == "+":
+            raise ValueError(f"Append modifier '[+]' is not valid on reads (segment '{name}[+]')")
+        if not isinstance(current, list):
+            raise TypeError(f"Expected list at '{name}' but got {type(current).__name__}")
+        current = current[int(modifier)]
+
+    # ``None``-as-absent at intermediate level: a dict with ``None`` value is
+    # semantically equivalent to "no child here" for path traversal. Raise a
+    # clean KeyError rather than letting the recursive call crash on ``NoneType``.
+    if current is None:
+        raise KeyError(f"Intermediate value at '{name}' is None while resolving path '{key}'")
+    if not isinstance(current, dict):
+        raise TypeError(f"Expected dict at intermediate '{name}' but got {type(current).__name__}")
+
+    return from_dict(current, ".".join(key_segments[1:]), strict=strict)
 
 
-def to_dict(dictionary: Dict[str, Any], key: str, value: Any):
-    # Step 1: Split into individual key segments
+def to_dict(dictionary: Dict[str, Any], key: str, value: Any) -> None:
+    """Write ``value`` into ``dictionary`` at the DSL path ``key``.
+
+    Intermediate containers are auto-created when missing: plain segments
+    create ``dict``s, bracketed segments create ``list``s. An intermediate
+    value of ``None`` is treated as absent (a common dataclass default),
+    and the appropriate container is materialized in its place.
+
+    Args:
+        dictionary: The dictionary to mutate in place.
+        key: Dot/bracket path (see module-level DSL reference above).
+        value: The value to write at the terminal segment.
+
+    Raises:
+        TypeError: Traversal encounters a non-container at an intermediate
+            segment, or a bracket modifier targets a non-list.
+        IndexError: List index is out of range for an existing list.
+        ValueError: Malformed path, or slice notation used (write-only DSL
+            rejects ``[:n]`` / ``[n:]``).
+    """
     key_segments = key.split(".")
+    name, modifier = _parse_segment(key_segments[0])
+    is_terminal = len(key_segments) == 1
 
-    # Step 2: Set value, if last key segment
-    if len(key_segments) == 1:
-        # Step 2.a: key with list notation
-        if key_segments[0].endswith("]"):
-            # Step 2.a.i: Identify dictionary key and position index
-            dict_key, pos_idx = key_segments[0].split("[")
+    if modifier is None:
+        # Plain-name segment.
+        if is_terminal:
+            dictionary[name] = value
+            return
 
-            # Step 2.a.ii: Create empty list and set position index to 0, if necessary
-            if dict_key not in dictionary:
-                dictionary[dict_key] = [None]
-                pos_idx = 0
-            else:
-                # Step 2.a.ii.*: Raise error, if position index refers to multiple multiple indices
-                if ":" in pos_idx:
-                    raise ValueError("List notation ([:n], [n:]) is not allowed for  keys.")
-                else:
-                    # Step 2.a.ii.**: Parse position index
-                    pos_idx = int(pos_idx.rstrip("]").strip())
+        # Intermediate: auto-create dict if missing or None.
+        if dictionary.get(name) is None:
+            dictionary[name] = {}
+        elif not isinstance(dictionary[name], dict):
+            raise TypeError(
+                f"Expected dict at intermediate '{name}' but got {type(dictionary[name]).__name__}"
+            )
+        to_dict(dictionary[name], ".".join(key_segments[1:]), value)
+        return
 
-                    # Step 2.a.ii.***: Raise error, if value for the key of interest is not of type list
-                    if not isinstance(dictionary[dict_key], list):
-                        raise TypeError(
-                            f"Expected list for {dict_key} key but got {type(dictionary[dict_key])} type."
-                        )
+    # Bracketed segment.
+    if ":" in modifier:
+        raise ValueError(
+            f"Slice notation '[{modifier}]' is not allowed in writes (segment '{name}')"
+        )
 
-                    # Step 2.a.ii.****: Raise error, if position index is out of index range
-                    if len(dictionary[dict_key]) < pos_idx:
-                        raise IndexError(
-                            f"Cannot insert at index {pos_idx} for list with lengh = {len(dictionary[dict_key])}"
-                        )
+    existing = dictionary.get(name)
+    absent = existing is None
 
-            # Step 2.a.iii: Set value
-            dictionary[dict_key][pos_idx] = value
-        else:
-            dictionary[key_segments[0]] = value
+    if modifier == "+":
+        # Append: always produces a new slot.
+        if absent:
+            dictionary[name] = []
+            existing = dictionary[name]
+        elif not isinstance(existing, list):
+            raise TypeError(
+                f"Expected list for '{name}' to use '[+]' append, got {type(existing).__name__}"
+            )
+        if is_terminal:
+            existing.append(value)
+            return
+        # Intermediate [+]: append a fresh {} and descend into it.
+        existing.append({})
+        to_dict(existing[-1], ".".join(key_segments[1:]), value)
+        return
+
+    # Numeric index.
+    pos_idx = int(modifier)
+    if absent:
+        # Preserve legacy quirk (documented): terminal ``[i]`` on a missing
+        # key creates ``[None]`` and writes at position 0; intermediate
+        # ``[i]`` creates ``[{}]`` and descends.
+        placeholder = None if is_terminal else {}
+        dictionary[name] = [placeholder]
+        existing = dictionary[name]
+        pos_idx = 0
     else:
-        # Step 2.a: key with list notation
-        if key_segments[0].endswith("]"):
-            # Step 2.a.i: Identify dictionary key and position index
-            dict_key, pos_idx = key_segments[0].split("[")
+        if not isinstance(existing, list):
+            raise TypeError(f"Expected list for '{name}' but got {type(existing).__name__}")
+        if len(existing) <= pos_idx:
+            raise IndexError(
+                f"Cannot assign at index {pos_idx} for list '{name}' of length {len(existing)}"
+            )
 
-            # Step 2.a.ii: Create empty list and set position index to 0, if necessary
-            if dict_key not in dictionary:
-                dictionary[dict_key] = [{}]
-                pos_idx = 0
+    if is_terminal:
+        existing[pos_idx] = value
+        return
+    if existing[pos_idx] is None:
+        existing[pos_idx] = {}
+    elif not isinstance(existing[pos_idx], dict):
+        raise TypeError(
+            f"Expected dict at '{name}[{pos_idx}]' but got {type(existing[pos_idx]).__name__}"
+        )
+    to_dict(existing[pos_idx], ".".join(key_segments[1:]), value)
+
+
+# ===========================================================================
+#                       DATACLASS PROCESSOR
+# ===========================================================================
+# ``from_dataclass`` / ``to_dataclass`` walk heterogeneous object graphs
+# (dataclass → dict → list → ...) using the same DSL as ``from_dict`` /
+# ``to_dict``. Attribute creation on dataclasses is intentionally disallowed:
+# the whole point of declaring fields is that typos are bugs, not silent
+# attribute additions. Nested dicts / lists that live inside dataclass fields
+# still auto-create per the dict rules.
+
+
+def _declared_fields(obj: Any) -> set[str]:
+    """Return the set of declared field names on a dataclass instance."""
+    return {f.name for f in _dc_fields(obj)}
+
+
+def _get_node_child(node: Any, name: str, modifier: str | None, path: str, segment: str) -> Any:
+    """Fetch ``node[name]`` (dataclass/dict) then apply ``modifier`` if present.
+
+    Shared read helper for ``from_dataclass``. Raises consistent errors naming
+    the failing segment and the full path.
+    """
+    if is_dataclass(node):
+        if name not in _declared_fields(node):
+            raise AttributeError(
+                f"Dataclass {type(node).__name__} has no field '{name}' "
+                f"(segment '{segment}' of path '{path}')"
+            )
+        current = getattr(node, name)
+    elif isinstance(node, dict):
+        if name not in node:
+            raise KeyError(f"Missing key '{name}' while resolving path '{path}'")
+        current = node[name]
+    else:
+        raise TypeError(
+            f"Cannot traverse '{name}' on {type(node).__name__} "
+            f"(segment '{segment}' of path '{path}')"
+        )
+
+    if modifier is None:
+        return current
+    if modifier == "+":
+        raise ValueError(f"Append modifier '[+]' is not valid on reads (segment '{segment}')")
+    if not isinstance(current, list):
+        raise TypeError(
+            f"Expected list at '{name}' but got {type(current).__name__} "
+            f"(segment '{segment}' of path '{path}')"
+        )
+    if modifier.startswith(":"):
+        return current[: int(modifier[1:])]
+    if modifier.endswith(":"):
+        return current[int(modifier[:-1]) :]
+    return current[int(modifier)]
+
+
+def from_dataclass(obj: Any, path: str, *, strict: bool = True):
+    """Read a value from a dataclass (or mixed dataclass/dict/list graph) by path.
+
+    Args:
+        obj: The root object. Typically a dataclass instance; dicts and lists
+            encountered as intermediate nodes are walked using the same DSL
+            semantics as :func:`from_dict`.
+        path: Dot/bracket path.
+        strict: When ``True`` (default), a missing terminal raises. When
+            ``False``, returns ``dataclasses.MISSING``. Intermediate segments
+            always raise regardless of ``strict``. Dataclass field names that
+            are not declared always raise ``AttributeError`` — "not declared"
+            is a schema error, not a missing value.
+
+    Returns:
+        The value at the path, or ``dataclasses.MISSING`` when the terminal
+        is absent on a dict node and ``strict=False``.
+
+    Raises:
+        AttributeError: Dataclass field not declared at any segment.
+        KeyError: Dict intermediate key missing, or terminal missing when strict.
+        TypeError: Path traverses a non-traversable value.
+        ValueError: Malformed path syntax.
+    """
+    segments = path.split(".")
+    name, modifier = _parse_segment(segments[0])
+    is_terminal = len(segments) == 1
+
+    # Dataclass field not declared → always raise, even when not strict.
+    if is_dataclass(obj) and name not in _declared_fields(obj):
+        raise AttributeError(
+            f"Dataclass {type(obj).__name__} has no field '{name}' "
+            f"(segment '{segments[0]}' of path '{path}')"
+        )
+
+    # Dict terminal miss with strict=False → sentinel.
+    if isinstance(obj, dict) and is_terminal and name not in obj and not strict:
+        return MISSING
+
+    current = _get_node_child(obj, name, modifier, path, segments[0])
+
+    if is_terminal:
+        return current
+
+    if current is None:
+        raise KeyError(f"Intermediate value at '{name}' is None while resolving path '{path}'")
+    return from_dataclass(current, ".".join(segments[1:]), strict=strict)
+
+
+def _descend_for_write(node: Any, name: str, modifier: str | None, path: str, segment: str) -> Any:
+    """Return the child container at ``node[name]`` (+ modifier), auto-creating
+    intermediate ``None`` dataclass fields and dict entries per design rules.
+
+    Used by ``to_dataclass``. The caller decides what to do at the terminal;
+    this helper only handles intermediate descent.
+    """
+    if is_dataclass(node):
+        if name not in _declared_fields(node):
+            raise ValueError(
+                f"Dataclass {type(node).__name__} has no field '{name}' "
+                f"(segment '{segment}' of path '{path}'). "
+                f"Attributes cannot be auto-created on dataclasses."
+            )
+        current = getattr(node, name)
+        # ``None``-valued dataclass field behaves as "absent": materialize the
+        # correct container based on the modifier shape.
+        if current is None:
+            current = [] if modifier is not None else {}
+            setattr(node, name, current)
+    elif isinstance(node, dict):
+        current = node.get(name)
+        if current is None:
+            current = [] if modifier is not None else {}
+            node[name] = current
+    else:
+        raise TypeError(
+            f"Cannot descend into '{name}' on {type(node).__name__} "
+            f"(segment '{segment}' of path '{path}')"
+        )
+
+    if modifier is None:
+        if not isinstance(current, dict) and not is_dataclass(current):
+            raise TypeError(
+                f"Expected dict or dataclass at intermediate '{name}' "
+                f"but got {type(current).__name__}"
+            )
+        return current
+
+    # Bracketed modifier: descend into list.
+    if ":" in modifier:
+        raise ValueError(
+            f"Slice notation '[{modifier}]' is not allowed in writes (segment '{segment}')"
+        )
+    if not isinstance(current, list):
+        raise TypeError(f"Expected list for '{name}' but got {type(current).__name__}")
+    if modifier == "+":
+        current.append({})
+        return current[-1]
+    pos_idx = int(modifier)
+    if len(current) <= pos_idx:
+        raise IndexError(
+            f"Cannot descend into index {pos_idx} for list '{name}' of length {len(current)}"
+        )
+    child = current[pos_idx]
+    if child is None:
+        child = {}
+        current[pos_idx] = child
+    elif not isinstance(child, (dict,)) and not is_dataclass(child):
+        raise TypeError(
+            f"Expected dict or dataclass at '{name}[{pos_idx}]' but got {type(child).__name__}"
+        )
+    return child
+
+
+def to_dataclass(obj: Any, path: str, value: Any) -> None:
+    """Write ``value`` into a dataclass (or mixed graph) at DSL ``path``.
+
+    Mutates ``obj`` in place. Rules:
+
+    - Dataclass fields must be declared. Undeclared paths raise ``ValueError``.
+      This is a schema contract, not a missing-value condition.
+    - Dict keys and list slots auto-create per the :func:`to_dict` rules
+      (plain segment → ``{}``; bracket segment → ``[]``).
+    - An intermediate dataclass field that is ``None`` is treated as absent
+      and replaced with the appropriate container, keeping the common
+      ``Optional[Dict] = None`` pattern writable without manual initialization.
+    - ``SRC_DATA`` is reserved; writing to it at the terminal raises.
+    - No leaf-type enforcement. Python dataclasses do not enforce field types
+      at runtime and neither does this helper.
+
+    Args:
+        obj: The root object to mutate (dataclass, dict, or mixed graph).
+        path: Dot/bracket path.
+        value: The value to assign at the terminal.
+
+    Raises:
+        ValueError: Undeclared dataclass field, slice notation in path, or
+            write targets ``SRC_DATA`` at the terminal.
+        TypeError: Path traverses an incompatible type, or ``[+]`` targets a
+            non-list field.
+        IndexError: List index is out of range.
+    """
+    segments = path.split(".")
+    name, modifier = _parse_segment(segments[0])
+    is_terminal = len(segments) == 1
+
+    if is_terminal and name == "SRC_DATA":
+        raise ValueError("Cannot write to reserved field 'SRC_DATA'")
+
+    if modifier is None:
+        if is_terminal:
+            if is_dataclass(obj):
+                if name not in _declared_fields(obj):
+                    raise ValueError(
+                        f"Dataclass {type(obj).__name__} has no field '{name}' "
+                        f"(path '{path}'). Attributes cannot be auto-created on dataclasses."
+                    )
+                setattr(obj, name, value)
+            elif isinstance(obj, dict):
+                obj[name] = value
             else:
-                # Step 2.a.ii.*: Raise error, if position index refers to multiple multiple indices
-                if ":" in pos_idx:
-                    raise ValueError("List notation ([:n], [n:]) is not allowed for  keys.")
-                else:
-                    # Step 2.a.ii.**: Parse position index
-                    pos_idx = int(pos_idx.rstrip("]").strip())
+                raise TypeError(f"Cannot set '{name}' on {type(obj).__name__} (path '{path}')")
+            return
+        child = _descend_for_write(obj, name, None, path, segments[0])
+        to_dataclass(child, ".".join(segments[1:]), value)
+        return
 
-                    # Step 2.a.ii.***: Raise error, if existing value for the key of interest is not of type list
-                    if not isinstance(dictionary[dict_key], list):
-                        raise TypeError(
-                            f"Expected list for {dict_key} key but got {type(dictionary[dict_key])} type."
-                        )
+    # Bracketed segment.
+    if ":" in modifier:
+        raise ValueError(
+            f"Slice notation '[{modifier}]' is not allowed in writes (segment '{segments[0]}')"
+        )
 
-                    # Step 2.a.ii.****: Raise error, if position index is out of index range
-                    if len(dictionary[dict_key]) < pos_idx:
-                        raise IndexError(
-                            f"Cannot insert at index {pos_idx} for list with lengh = {len(dictionary[dict_key])}"
-                        )
-
-            # Step 2.a.iii: Continue recursive call
-            to_dict(
-                dictionary=dictionary[dict_key][pos_idx],
-                key=".".join(key_segments[1:]),
-                value=value,
+    # Resolve the list that holds this position.
+    if is_dataclass(obj):
+        if name not in _declared_fields(obj):
+            raise ValueError(
+                f"Dataclass {type(obj).__name__} has no field '{name}' "
+                f"(path '{path}'). Attributes cannot be auto-created on dataclasses."
             )
-
-        else:
-            # Step 2.b: Create empty dictionary with key_segment as the key
-            if key_segments[0] not in dictionary:
-                dictionary[key_segments[0]] = {}
-
-            # Step 2.c: Continue
-            to_dict(
-                dictionary=dictionary[key_segments[0]],
-                key=".".join(key_segments[1:]),
-                value=value,
+        lst = getattr(obj, name)
+        if lst is None:
+            lst = []
+            setattr(obj, name, lst)
+        elif not isinstance(lst, list):
+            raise TypeError(
+                f"Field '{name}' on {type(obj).__name__} is {type(lst).__name__}, "
+                f"cannot use bracket modifier"
             )
+    elif isinstance(obj, dict):
+        lst = obj.get(name)
+        if lst is None:
+            lst = []
+            obj[name] = lst
+        elif not isinstance(lst, list):
+            raise TypeError(f"Expected list for '{name}' but got {type(lst).__name__}")
+    else:
+        raise TypeError(f"Cannot descend into '{name}' on {type(obj).__name__} (path '{path}')")
+
+    if modifier == "+":
+        if is_terminal:
+            lst.append(value)
+            return
+        lst.append({})
+        to_dataclass(lst[-1], ".".join(segments[1:]), value)
+        return
+
+    pos_idx = int(modifier)
+    if is_terminal:
+        if len(lst) <= pos_idx:
+            raise IndexError(
+                f"Cannot assign at index {pos_idx} for list '{name}' of length {len(lst)}"
+            )
+        lst[pos_idx] = value
+        return
+
+    if len(lst) <= pos_idx:
+        raise IndexError(
+            f"Cannot descend into index {pos_idx} for list '{name}' of length {len(lst)}"
+        )
+    child = lst[pos_idx]
+    if child is None:
+        child = {}
+        lst[pos_idx] = child
+    elif not isinstance(child, dict) and not is_dataclass(child):
+        raise TypeError(
+            f"Expected dict or dataclass at '{name}[{pos_idx}]' but got {type(child).__name__}"
+        )
+    to_dataclass(child, ".".join(segments[1:]), value)

@@ -1,0 +1,12 @@
+search:
+  name: search
+  namespace: tool_ns
+  description: Web search
+  parameters:
+    properties:
+      query:
+        description: Search query
+        type: string
+    required:
+      - query
+    type: object

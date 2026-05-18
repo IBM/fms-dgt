@@ -1,10 +1,18 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, fields
-from typing import Any, Dict, Iterable, List, Literal, Tuple
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple
 import abc
+import asyncio
+import contextvars
 import hashlib
 import json
 import os
+import threading
+import time
 
 # Third Party
 from sqlitedict import SqliteDict
@@ -13,8 +21,12 @@ from transformers import AutoTokenizer, PreTrainedTokenizer
 
 # Local
 from fms_dgt.base.block import DATASET_TYPE, Block, BlockData
+from fms_dgt.base.concurrency import CredentialPool, _DualSemaphore
+from fms_dgt.base.telemetry import (
+    Span,
+    payload_recording_enabled,
+)
 from fms_dgt.constants import NOT_GIVEN, NotGiven
-from fms_dgt.utils import dgt_logger
 
 MODEL_ID_OR_PATH = "model_id_or_path"
 
@@ -83,6 +95,9 @@ class LMProvider(Block):
     COMPLETION = "completion"
     CHAT_COMPLETION = "chat_completion"
 
+    # Emitted at most once per process to avoid log spam.
+    _payload_warning_emitted: bool = False
+
     def __new__(cls, *args: Any, **kwargs: Any):
         if "lm_cache" in kwargs and cls is not CachingLM:
             kwargs = dict(kwargs)
@@ -123,6 +138,28 @@ class LMProvider(Block):
         # Initialize usage tracker in profiler data
         self.profiler_data["usage"] = {"tokens": {"completion": 0, "prompt": 0}}
 
+        # Persistent event loop: created once at init, reused across all calls.
+        # Running on a dedicated daemon thread so it never blocks the caller.
+        self._loop = asyncio.new_event_loop()
+        self._loop_thread = threading.Thread(
+            target=self._loop.run_forever, daemon=True, name=f"dgt-lm-loop-{self._name}"
+        )
+        self._loop_thread.start()
+
+        # Credential semaphore: None until a subclass calls _init_semaphore().
+        # When set, every LLM call acquires it to enforce max_concurrent_requests.
+        self._semaphore: Optional[_DualSemaphore] = None
+
+        # Warn once per process when payload recording is on, since it fills
+        # traces.jsonl quickly and should only be used for short debugging runs.
+        if payload_recording_enabled() and not LMProvider._payload_warning_emitted:
+            LMProvider._payload_warning_emitted = True
+            self.logger.warning(
+                "DGT_TELEMETRY_RECORD_PAYLOADS=1 is active: LLM prompts and completions "
+                "will be written to traces.jsonl. Use this only for small debugging runs "
+                "as it fills the telemetry directory quickly."
+            )
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
@@ -154,12 +191,12 @@ class LMProvider(Block):
         try:
             return AutoTokenizer.from_pretrained(model_id_or_path or self.model_id_or_path)
         except (OSError, ValueError) as err:
-            dgt_logger.warning(
+            self.logger.warning(
                 'Failed to initialize tokenizer for "%s" due to %s',
                 model_id_or_path or self.model_id_or_path,
                 err.args[0],
             )
-            dgt_logger.warning(
+            self.logger.warning(
                 'Certain capabilites like "apply_chat_template", "truncation" will be unavailable.'
             )
             return None
@@ -242,6 +279,115 @@ class LMProvider(Block):
     def set_cache_hook(self, cache_hook) -> None:
         self._cache_hook = cache_hook
 
+    def _init_semaphore(self, credential: str, max_concurrent_requests: int = 10) -> None:
+        """Register this provider with the process-wide CredentialPool.
+
+        Call this from a subclass ``__init__`` after the credential is known.
+        All providers sharing the same credential (API key) will share one
+        semaphore, capping total concurrent LLM requests across all of them.
+
+        Args:
+            credential: The API key or other credential string.  Only its hash
+                is stored in the pool.
+            max_concurrent_requests: Concurrency limit for this credential.
+                Only applied on first registration; subsequent calls with the
+                same credential return the existing semaphore.
+        """
+        self._semaphore = CredentialPool.get_instance().get(
+            credential, max_concurrent_requests=max_concurrent_requests
+        )
+
+    @asynccontextmanager
+    async def _llm_span(
+        self,
+        method: str,
+        batch_size: int,
+        params: Dict,
+        task_names: List[str] | None = None,
+    ):
+        """Async context manager that wraps one LLM API call with a ``dgt.llm_call`` span.
+
+        Acquires the credential semaphore, then opens a ``Span`` whose
+        ``duration_ms`` reflects only the API call latency (not the wait).
+        The semaphore wait time is recorded as the ``semaphore_wait_ms``
+        attribute on the span.
+
+        Yields a mutable ``attrs`` dict.  The caller must populate:
+        - ``prompt_tokens`` (int)
+        - ``completion_tokens`` (int)
+
+        Optionally (when payload recording is on):
+        - ``prompt`` or ``messages`` (str / list)
+        - ``completion`` (str / dict)
+        - ``payload_truncated`` (bool)
+
+        Args:
+            method: ``"completion"`` or ``"chat_completion"``.
+            batch_size: Number of individual prompts in this work item.
+            params: The resolved generation parameters dict (for extracting
+                ``temperature``, ``n``, ``max_tokens`` / ``max_completion_tokens``).
+        """
+        _temperature = params.get("temperature", None)
+        _n = params.get("n", None)
+        _max_tokens = params.get(
+            "max_tokens",
+            params.get(
+                "max_completion_tokens",
+                params.get("max_new_tokens", params.get("num_predict", None)),
+            ),
+        )
+        attrs: Dict[str, Any] = {
+            "provider": type(self).__name__,
+            "model_id": self.model_id_or_path,
+            "method": method,
+            "batch_size": batch_size,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "semaphore_wait_ms": 0.0,
+        }
+        if _temperature is not None:
+            attrs["temperature"] = _temperature
+        if _n is not None:
+            attrs["n"] = _n
+        if _max_tokens is not None:
+            attrs["max_tokens"] = _max_tokens
+        if task_names:
+            attrs["task_names"] = task_names
+
+        # Measure how long we wait for the semaphore separately from API time.
+        _wait_start = time.monotonic()
+        async with self._semaphore:
+            attrs["semaphore_wait_ms"] = round((time.monotonic() - _wait_start) * 1000, 2)
+            # The Span context manager captures start/end time and writes on exit.
+            # duration_ms therefore equals pure API latency.
+            with Span(
+                "dgt.llm_call",
+                self._span_writer,
+                parent_span_name="dgt.block",
+                **attrs,
+            ) as span:
+                yield attrs
+                # Flush any updates the caller made to attrs into the span record.
+                for k, v in attrs.items():
+                    span.set_attribute(k, v)
+
+    def run_async(self, coro):
+        """Run a coroutine on the persistent event loop and block until it completes.
+
+        Copies the current contextvars context into the loop-thread task so
+        that run_id/build_id from RunContextFilter are visible on log records
+        emitted inside the coroutine.
+        """
+        ctx = contextvars.copy_context()
+
+        async def _with_ctx():
+            # create_task with an explicit context propagates the caller's
+            # contextvars (run_id, build_id) into the coroutine's execution.
+            return await self._loop.create_task(coro, context=ctx)
+
+        future = asyncio.run_coroutine_threadsafe(_with_ctx(), self._loop)
+        return future.result()
+
     def serve(self, *args: Any, **kwargs: Any):
         pass
 
@@ -250,6 +396,9 @@ class LMProvider(Block):
 
     def close(self):
         self.release_model()
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._loop_thread.join(timeout=5)
+        self._loop.close()
 
     def update_instance_with_result(
         self,
@@ -303,10 +452,10 @@ class LMProvider(Block):
                 prompt_tokens.append(entry.addtl.get("prompt_tokens", 0))
             else:
                 num_failed_inputs += 1
-                dgt_logger.debug("Failed to generate valid output for input: %s ", entry.input)
+                self.logger.debug("Failed to generate valid output for input: %s ", entry.input)
 
         if num_failed_inputs:
-            dgt_logger.warning(
+            self.logger.warning(
                 "Prompt token usage count maybe incorrect due to %d failed instances",
                 num_failed_inputs,
             )
@@ -417,7 +566,7 @@ class CachingLM:
             res = []
             remaining_reqs: List[LMBlockData] = []
             # figure out which ones are cached and which ones are new
-            dgt_logger.info(
+            self._lm.logger.info(
                 "Loading '%s' responses from cache '%s' where possible...",
                 method,
                 self._cache_db,
@@ -433,7 +582,7 @@ class CachingLM:
                     res.append(None)
                     remaining_reqs.append(req)
 
-            dgt_logger.info(
+            self._lm.logger.info(
                 "Cached requests: %s, Requests remaining: %s",
                 len(requests) - len(remaining_reqs),
                 len(remaining_reqs),

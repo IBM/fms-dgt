@@ -1,0 +1,60 @@
+add:
+  description: Add two numbers
+  name: add
+  parameters:
+    properties:
+      num1:
+        description: First number
+        type: number
+      num2:
+        description: Second number
+        type: number
+    required:
+      - num1
+      - num2
+    type: object
+add_calendar_event:
+  description: Add a new calendar event
+  name: add_calendar_event
+  parameters:
+    properties:
+      event:
+        description: The details of the event
+        type: string
+    required:
+      - event
+    type: object
+add_contact:
+  description: Add a new contact to the address book
+  name: add_contact
+  parameters:
+    properties:
+      email:
+        description: The email address of the contact
+        type: string
+      name:
+        description: The name of the contact
+        type: string
+      phone:
+        description: The phone number of the contact
+        type: string
+    required:
+      - name
+      - phone
+      - email
+    type: object
+add_contacts:
+  description: Add contacts to the phonebook
+  name: add_contacts
+  parameters:
+    properties:
+      name:
+        description: The name of the contact
+        type: string
+      phone_number:
+        description: The phone number of the contact
+        type: string
+    required:
+      - name
+      - phone_number
+    type: object

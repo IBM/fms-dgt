@@ -1,0 +1,4 @@
+.Header-module-scss-module__yUQ6Nq__statusDot{border-radius:50%;flex-shrink:0;width:10px;height:10px;margin:auto .5rem;display:inline-block}
+.Notification-module-scss-module__HxYVmW__notification{z-index:20;position:fixed;top:4rem;right:1rem}
+.DataPointsTable-module-scss-module__XsETiq__table{overflow-y:auto}
+.RunMetrics-module-scss-module__8-UfFa__metrics{column-gap:1rem;display:flex}.RunMetrics-module-scss-module__8-UfFa__grid{grid-template-columns:repeat(4,1fr);column-gap:1rem;display:grid}.RunMetrics-module-scss-module__8-UfFa__metric{background-color:var(--cds-layer-02);flex-direction:column;align-items:center;row-gap:1rem;max-width:450px;max-height:300px;margin:1rem;display:flex}.RunMetrics-module-scss-module__8-UfFa__tileHeading{font-weight:600}.RunMetrics-module-scss-module__8-UfFa__tileBody{flex-direction:column;row-gap:1rem;display:flex}.RunMetrics-module-scss-module__8-UfFa__metricTextValue{align-self:center;font-size:32px;font-weight:700}

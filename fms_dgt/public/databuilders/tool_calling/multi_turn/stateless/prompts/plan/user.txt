@@ -1,0 +1,19 @@
+<tools>
+{{ tools }}
+</tools>
+
+<date>
+Today's date is {{ date }}
+</date>
+
+<persona>
+{{ persona }}
+</persona>
+
+<length>
+{{ plan_length }}
+</length>
+
+<prior_tool_calls>
+{{ prior_tool_calls }}
+</prior_tool_calls>

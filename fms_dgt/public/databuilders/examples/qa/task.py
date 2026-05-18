@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 """
 In DiGiT, `Task` is one of the fundamental concept. There are two kinds of task natively supported in DiGiT.
 

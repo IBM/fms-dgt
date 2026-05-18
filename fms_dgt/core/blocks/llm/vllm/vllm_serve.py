@@ -31,7 +31,7 @@ from fms_dgt.core.blocks.llm.openai import (
     OpenAIChatCompletionParameters,
     OpenAICompletionParameters,
 )
-from fms_dgt.utils import dgt_logger, get_open_port
+from fms_dgt.utils import get_open_port
 
 try:
     # Third Party
@@ -142,7 +142,7 @@ class vLLMServer(LMProvider):
         ]
         cmd = [str(x) for entry in cmd for x in entry]
 
-        dgt_logger.info("Starting vllm server with command:\n\t%s", " ".join(cmd))
+        self.logger.info("Starting vllm server with command:\n\t%s", " ".join(cmd))
 
         self._vllm_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -159,7 +159,7 @@ class vLLMServer(LMProvider):
                 status_code = None
 
             if status_code == 200:
-                dgt_logger.info("VLLM server has been initialized")
+                self.logger.info("VLLM server has been initialized")
                 break
             elif self._vllm_process.poll() is not None:
                 lines.append(
@@ -174,7 +174,7 @@ class vLLMServer(LMProvider):
                     ).strip()
                 )
                 # if process has error'd out, kill it
-                dgt_logger.error(
+                self.logger.error(
                     "Error in vllm server instance. The full traceback is provided below:\n\n%s\n\n%s\n\n%s",
                     "*" * 50,
                     "\n".join([line for line in lines if line]),
@@ -183,7 +183,7 @@ class vLLMServer(LMProvider):
                 raise SystemError("Underlying vllm process has terminated!")
 
     def release_model(self):
-        dgt_logger.info("Releasing model by killing process %d", self._vllm_process.pid)
+        self.logger.info("Releasing model by killing process %d", self._vllm_process.pid)
         base_proc = psutil.Process(self._vllm_process.pid)
         for child_proc in base_proc.children(recursive=True):
             child_proc.kill()

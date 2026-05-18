@@ -1,6 +1,10 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from abc import abstractmethod
 from typing import Any, Iterator, List, Optional
+import logging
 
 # Local
 from fms_dgt.constants import DATASET_TYPE
@@ -16,10 +20,21 @@ class Datastore:
         self,
         store_name: str,
         restart: Optional[bool] = False,
+        fanout_handler: logging.Handler | None = None,
         **kwargs: Any,
     ) -> None:
         self._store_name = store_name
         self._restart = restart
+
+        # Initialize datastore-scoped logger. Attach the shared FanOutHandler so
+        # records are routed to all currently-active task log files. Falls back
+        # to stdout-only via propagation to dgt_logger if no handler is provided.
+        self._logger = logging.getLogger(f"fms_dgt.datastore.{store_name}")
+        if fanout_handler is not None:
+            self._logger.addHandler(fanout_handler)
+
+        # Additional kwargs
+        self._addtl_kwargs = kwargs | {}
 
     # ===========================================================================
     #                       PROPERTIES
@@ -28,9 +43,45 @@ class Datastore:
     def store_name(self):
         return self._store_name
 
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the datastore-scoped logger.
+
+        Records propagate to the root dgt_logger for terminal output and, when
+        a FanOutHandler is attached, are also routed to all active task log files.
+
+        Returns:
+            logging.Logger: Datastore-scoped logger
+        """
+        return self._logger
+
     # ===========================================================================
     #                       FUNCTIONS
     # ===========================================================================
+    @abstractmethod
+    def exists(self) -> bool:
+        """Return True if this store has previously persisted data.
+
+        Used to probe for stale stores (e.g. ``postproc_data_N`` from a prior
+        run) without relying on filesystem-specific APIs.
+        """
+        raise NotImplementedError(
+            f"Missing implementation in {self.__module__}.{self.__class__.__name__}"
+        )
+
+    @abstractmethod
+    def clear(self) -> None:
+        """Remove all previously stored data for this store.
+
+        Subclasses should call this at the end of their own ``__init__`` when
+        ``self._restart`` is True (after their own state is fully initialised).
+        Implementations must be idempotent: calling ``clear()`` on a store that
+        does not yet exist must succeed without raising an error.
+        """
+        raise NotImplementedError(
+            f"Missing implementation in {self.__module__}.{self.__class__.__name__}"
+        )
+
     @abstractmethod
     def save_data(self, data_to_save: DATASET_TYPE) -> None:
         """

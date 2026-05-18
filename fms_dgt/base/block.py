@@ -1,9 +1,14 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from abc import abstractmethod
-from dataclasses import asdict, is_dataclass
+from dataclasses import MISSING, asdict, is_dataclass
 from typing import Any, Dict, Iterable, List, Tuple
+import asyncio
 import dataclasses
 import inspect
+import logging
 import os
 import time
 import tracemalloc
@@ -16,37 +21,89 @@ import pandas as pd
 from fms_dgt.base.data_objects import BlockData, ValidatorBlockData
 from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.registry import get_datastore
+from fms_dgt.base.telemetry import Span, _NoOpSpanWriter
 from fms_dgt.constants import (
     DATASET_ROW_TYPE,
     DATASET_TYPE,
     DGT_DIR,
     STORE_NAME_KEY,
+    STORE_NAMES_KEY,
+    TASK_NAME_KEY,
     TYPE_KEY,
 )
-from fms_dgt.utils import dgt_logger
+from fms_dgt.utils import from_dataclass as _from_dataclass
+from fms_dgt.utils import from_dict as _from_dict
+from fms_dgt.utils import to_dataclass as _to_dataclass
+from fms_dgt.utils import to_dict as _to_dict
 
 # ===========================================================================
 #                       CONSTATNTS
 # ===========================================================================
 _SRC_DATA = "SRC_DATA"
 
+# Framework-reserved fields on BlockData / ValidatorBlockData that the default
+# output_map must never round-trip back onto SRC_DATA. These are sidecar
+# attributes the framework attaches for its own use, not payload:
+#
+# - SRC_DATA: the original user row, carried on BlockData so transform_output
+#   can write back onto it. Echoing it to itself is nonsense.
+# - store_names: input-only routing metadata. The databuilder decides per-call
+#   which datastore(s) a block's rejects go to (see get_block_store_names and
+#   Block.save_data's dispatch at the store_names iteration below). Letting it
+#   escape back onto the user's DataPoint would conflate payload and routing
+#   and make save_data's dispatch depend on transform_output ordering.
+#
+# A caller who explicitly lists one of these in their output_map still gets
+# the strict behavior in transform_output; only the framework-synthesized
+# default is trimmed here.
+_FRAMEWORK_FIELDS = frozenset({_SRC_DATA, STORE_NAMES_KEY})
+
 
 # ===========================================================================
 #                       HELPER FUNCTIONS
 # ===========================================================================
-def get_row_name(gen_inst: DATASET_ROW_TYPE) -> str:
+_warned_missing_task_name: set = set()
+
+
+def get_row_name(gen_inst: DATASET_ROW_TYPE) -> str | None:
     """Gets the task name associated with the particular input instance.
+
+    Lookup order:
+    1. ``task_name`` directly on the object (covers ``DataPoint`` and dicts).
+    2. ``SRC_DATA`` recursion (covers ``BlockData`` / ``ValidatorBlockData``
+       whose original row is a ``DataPoint`` carrying ``task_name``).
+    3. Returns ``None`` and emits a one-time warning per type so developers
+       know that structured logs and lifecycle events will be degraded.
 
     Args:
         gen_inst (DATASET_ROW_TYPE): The input to get the task name from.
 
     Returns:
-        str: Name of task
+        str | None: Name of task, or None if not found.
     """
     if isinstance(gen_inst, dict):
-        return gen_inst.get("task_name")
+        if TASK_NAME_KEY in gen_inst:
+            return gen_inst[TASK_NAME_KEY]
+        src = gen_inst.get(_SRC_DATA)
+        if src is not None:
+            return get_row_name(src)
     else:
-        return getattr(gen_inst, "task_name")
+        task_name = getattr(gen_inst, TASK_NAME_KEY, None)
+        if task_name is not None:
+            return task_name
+        src = getattr(gen_inst, _SRC_DATA, None)
+        if src is not None:
+            return get_row_name(src)
+
+    type_name = type(gen_inst).__qualname__
+    if type_name not in _warned_missing_task_name:
+        _warned_missing_task_name.add(type_name)
+        logging.getLogger(__name__).warning(
+            "get_row_name: could not find 'task_name' on '%s' or its SRC_DATA; "
+            "task_name will be missing from structured logs and lifecycle events.",
+            type_name,
+        )
+    return None
 
 
 # ===========================================================================
@@ -64,9 +121,9 @@ class Block:
         type: str | None = None,
         input_map: List | Dict | None = None,
         output_map: List | Dict | None = None,
-        build_id: str | None = None,
         builder_name: str | None = None,
         datastores: List[Dict] | Dict = None,
+        fanout_handler: logging.Handler | None = None,
         **kwargs: Any,
     ) -> None:
         """A block is a unit of computation that takes in some inputs and produces an
@@ -80,9 +137,10 @@ class Block:
         Kwargs:
             input_map (List | Dict, optional): A mapping of field names from input objects to internal objects.
             output_map (List | Dict, optional): A mapping of field names from internal objects to output objects.
-            build_id (str, optional): ID to identify a particular SDG run.
             builder_name (str, optional): Name of the calling databuilder
             datastores (List[Dict] | Dict, optional): Dictionaries containing the configuration for the datastores.
+            fanout_handler (logging.Handler, optional): Shared FanOutHandler from the DataBuilder. When provided,
+                block log records are routed to all currently-active task log files.
 
         Raises:
             TypeError: If any of the arguments are not of the correct type.
@@ -127,6 +185,19 @@ class Block:
         # Initialize profiler data
         self.profiler_data = {"executions": []}
 
+        # Initialize block-scoped logger. Attach the shared FanOutHandler so
+        # records are routed to all currently-active task log files alongside
+        # the builder's own records. Falls back to stdout-only via propagation
+        # to dgt_logger if no FanOutHandler is provided (e.g. standalone tests).
+        self._logger = logging.getLogger(f"fms_dgt.block.{self._name}")
+        if fanout_handler is not None:
+            self._logger.addHandler(fanout_handler)
+
+        # SpanWriter set by DataBuilder.span_writer setter when telemetry is
+        # configured. Defaults to no-op so __call__ is safe before wiring.
+        self._span_writer = _NoOpSpanWriter()
+        self._builder_name = builder_name or ""
+
     # ===========================================================================
     #                       PROPERTIES
     # ===========================================================================
@@ -147,6 +218,15 @@ class Block:
             str: The type of the block
         """
         return self._block_type
+
+    @property
+    def span_writer(self):
+        """Returns the SpanWriter for telemetry (set by DataBuilder)."""
+        return self._span_writer
+
+    @span_writer.setter
+    def span_writer(self, writer) -> None:
+        self._span_writer = writer
 
     @property
     def input_map(self) -> List | Dict:
@@ -180,6 +260,19 @@ class Block:
     @property
     def blocks(self) -> List["Block"]:
         return self._blocks
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Returns the block-scoped logger.
+
+        Records are routed to all currently-active task log files via the
+        shared FanOutHandler, and propagate to the root dgt_logger for
+        terminal output.
+
+        Returns:
+            logging.Logger: Block-scoped logger
+        """
+        return self._logger
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -227,7 +320,7 @@ class Block:
                 try:
                     self._datastores[store_name].save_data([to_serializable(x) for x in datapoints])
                 except KeyError:
-                    dgt_logger.warning(
+                    self.logger.warning(
                         'Unable to save instances due to missing datastore with "%s" name.',
                         store_name,
                     )
@@ -256,17 +349,28 @@ class Block:
         if isinstance(inp_obj, (dict, pd.DataFrame, Dataset)):
             # NOTE: we flip this here because from a DGT pipeline, the input map goes from UserData -> BlockData
             data_type_map = {
-                **{v: k for k, v in self._get_default_map(inp).items()},
+                **{v: k for k, v in self._get_default_map(inp, direction="in").items()},
                 **{v: k for k, v in input_map.items()},
             }
 
             args = (self._req_args + self._opt_args) or data_type_map.keys()
 
-            mapped_data = {
-                arg: inp_obj.get(data_type_map.get(arg))
-                for arg in args
-                if data_type_map.get(arg) in inp_obj
-            }
+            # Read each mapped arg via the nested DSL. Skip the arg entirely
+            # when its path is absent (no mapping) or the terminal segment is
+            # missing on the row — the dataclass constructor's declared default
+            # then applies. Intermediate-segment misses on nested paths still
+            # raise (by contract of ``from_dict``): those are config errors
+            # where the user asserted a shape the row does not satisfy.
+            # ``None`` at the terminal is a real value and flows through.
+            mapped_data = {}
+            for arg in args:
+                path = data_type_map.get(arg)
+                if path is None:
+                    continue
+                value = _from_dict(inp_obj, path, strict=False)
+                if value is MISSING:
+                    continue
+                mapped_data[arg] = value
 
             missing = [r_a for r_a in self._req_args if r_a not in mapped_data]
             if missing:
@@ -300,32 +404,86 @@ class Block:
         if output_map is None:
             output_map = dict()
 
-        # start with assuming elements of input will be used
-        output_map = {**self._get_default_map(src_data), **output_map}
+        # Keep the caller-declared keys distinct from the framework-synthesized
+        # default so the strict-raise from commit 7659d86 only fires on caller
+        # typos, not on default-map entries for fields SRC_DATA happens not to
+        # declare. A user DataPoint that omits e.g. ``is_valid`` should not
+        # raise when a ValidatorBlock's default echo tries to write it back.
+        user_declared = set(output_map)
+        output_map = {**self._get_default_map(src_data, direction="out"), **output_map}
 
         if is_dataclass(src_data):
-            for k, v in output_map.items():
-                # since a dataclass will throw an error, only try to add attributes if original data type has them
-                if hasattr(src_data, v):
-                    attr_val = inp[k] if isinstance(inp, dict) else getattr(inp, k)
-                    setattr(src_data, v, attr_val)
+            for k, path in output_map.items():
+                # Read the block's output value. When ``inp`` is a dict (DATA_TYPE=None
+                # blocks), the DSL on ``k`` lets callers pull nested values out of the
+                # block's returned dict. When ``inp`` is a dataclass, ``k`` is a
+                # declared field name by construction of the dataclass schema, so the
+                # dataclass walker covers the rare nested-dataclass-field case.
+                if isinstance(inp, dict):
+                    attr_val = _from_dict(inp, k)
+                else:
+                    attr_val = _from_dataclass(inp, k)
+                try:
+                    _to_dataclass(src_data, path, attr_val)
+                except ValueError:
+                    if k in user_declared:
+                        raise
+                    # Framework-synthesized default for a field SRC_DATA doesn't
+                    # declare; silently skip (this is exactly the narrow case
+                    # the pre-7659d86 hasattr skip was protecting).
+                    continue
         elif isinstance(src_data, (dict, pd.DataFrame, Dataset)):
-            # TODO: handle things other than dictionaries
-            for k, v in output_map.items():
-                attr_val = inp[k] if isinstance(inp, dict) else getattr(inp, k)
-                src_data[v] = attr_val
+            # TODO: handle things other than dictionaries (pd.DataFrame / Dataset
+            # rows are dicts by the time they reach here; full DataFrame / Dataset
+            # objects in this branch are likely dead — audit tracked in design doc
+            # item 5 before removing the type from this isinstance tuple).
+            for k, path in output_map.items():
+                # Reads on `inp` use the DSL when `inp` is a dict (DATA_TYPE=None
+                # blocks returning nested dicts benefit from this). When `inp` is
+                # a dataclass, `k` is a flat field name by construction of the
+                # dataclass schema; `getattr` is the correct accessor.
+                if isinstance(inp, dict):
+                    attr_val = _from_dict(inp, k)
+                else:
+                    attr_val = getattr(inp, k)
+                _to_dict(src_data, path, attr_val)
         else:
             raise TypeError(f"Unexpected input type: {type(inp)}")
 
         return src_data
 
-    def _get_default_map(self, data: Dict | BlockData):
+    def _get_default_map(self, data: Dict | BlockData, *, direction: str = "out"):
+        """Return the identity default map for ``transform_input`` / ``transform_output``.
+
+        The ``direction`` flag controls whether framework bookkeeping fields
+        (``_FRAMEWORK_FIELDS``) are excluded:
+
+        - ``direction="out"`` excludes them. The output-side echo would
+          otherwise try to write ``store_names`` back onto a user
+          ``DataPoint`` that does not declare it, triggering the
+          strict-raise in ``_to_dataclass``.
+        - ``direction="in"`` keeps them. Framework bookkeeping like
+          ``store_names`` is **supplied on the way in** by the caller
+          (``execute_postprocessing`` injects it into each row's dict;
+          direct in-loop callers hand-build dicts that include it). The
+          input-side default map is the route by which that injected value
+          lands on the block-side ``BlockData`` instance where
+          ``Block.save_data`` reads it for routing. Excluding framework
+          fields here silently severs that route, and ``save_data`` finds
+          ``store_names=None`` on every rejected instance, so nothing gets
+          persisted.
+
+        The asymmetry is intentional: bookkeeping fields flow in, never
+        flow back out, and the two directions must be filtered differently.
+        """
         # if DATA_TYPE is not provided, assume it maps to the input
         if is_dataclass(self.DATA_TYPE):
             fields = dataclasses.fields(self.DATA_TYPE)
         else:
             fields = data.keys() if isinstance(data, dict) else dataclasses.fields(data)
         fields = [f if isinstance(f, str) else f.name for f in fields]
+        if direction == "out":
+            return {f: f for f in fields if f not in _FRAMEWORK_FIELDS}
         return {f: f for f in fields if f != _SRC_DATA}
 
     # ===========================================================================
@@ -373,9 +531,22 @@ class Block:
                     }
                 )
 
+        input_count = len(inputs) if isinstance(inputs, (list, tuple)) else None
+
         start_time = time.monotonic()
         tracemalloc.start()
-        outputs = self.execute(transformed_inputs, *args, **kwargs)
+        with Span(
+            "dgt.block",
+            self._span_writer,
+            parent_span_name="dgt.epoch",
+            block_name=self._name,
+            block_type=self._block_type,
+            builder_name=self._builder_name,
+            input_count=input_count,
+        ) as _span:
+            outputs = self.execute(transformed_inputs, *args, **kwargs)
+            if isinstance(outputs, (list, tuple)):
+                _span.set_attribute("output_count", len(outputs))
         memory = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         self.profiler_data["executions"].append(
@@ -391,6 +562,72 @@ class Block:
             transformed_outputs = type(inputs)(transformed_outputs)
 
         return transformed_outputs
+
+    async def acall(
+        self,
+        inputs: DATASET_TYPE,
+        *args,
+        input_map: List | Dict | None = None,
+        output_map: List | Dict | None = None,
+        **kwargs,
+    ) -> DATASET_TYPE:
+        """Async variant of ``__call__``.
+
+        Applies the same input/output mapping as ``__call__`` but runs
+        ``execute`` in a thread pool via ``asyncio.to_thread`` so the event
+        loop is not blocked.  Subclasses with native async implementations
+        (e.g. ``LMProvider``) may override ``aexecute`` to avoid the thread
+        hop entirely.
+
+        Args:
+            inputs (DATASET_TYPE): Dataset to be processed.
+            input_map (Optional[Union[List, Dict]]): Override for instance-level input map.
+            output_map (Optional[Union[List, Dict]]): Override for instance-level output map.
+
+        Returns:
+            DATASET_TYPE: Dataset resulting from processing in ``execute``.
+        """
+        input_map = input_map or self._input_map
+        output_map = output_map or self._output_map
+
+        transformed_inputs = list(map(lambda x: self.transform_input(x, input_map), inputs))
+
+        outputs = await self.aexecute(transformed_inputs, *args, **kwargs)
+
+        transformed_outputs = map(lambda x: self.transform_output(x, output_map), outputs)
+        if isinstance(inputs, (list, tuple)):
+            transformed_outputs = type(inputs)(transformed_outputs)
+
+        return transformed_outputs
+
+    async def aexecute(
+        self,
+        inputs: DATASET_TYPE,
+        *args,
+        **kwargs,
+    ) -> DATASET_TYPE:
+        """Async variant of ``execute``.
+
+        The default implementation offloads the synchronous ``execute`` to a
+        thread pool via ``asyncio.to_thread``, which is safe for any subclass
+        whose ``execute`` does not itself schedule work on the running event
+        loop.  Subclasses with a native async implementation may override this
+        method directly.
+
+        Args:
+            inputs (DATASET_TYPE): Pre-transformed inputs (output of ``transform_input``).
+
+        Returns:
+            DATASET_TYPE: Results as returned by ``execute``.
+
+        TODO: Override ``aexecute`` in ``LMProvider`` to drive
+        ``_execute_requests`` directly on the caller's event loop, eliminating
+        the ``asyncio.to_thread`` hop and the internal ``run_async`` /
+        ``run_coroutine_threadsafe`` round-trip.  Requires refactoring
+        ``completion`` / ``chat_completion`` in each provider so the async
+        path is callable without going through the sync wrapper.
+        """
+        return await asyncio.to_thread(self.execute, inputs, *args, **kwargs)
 
     @abstractmethod
     def execute(
@@ -464,23 +701,36 @@ class ValidatorBlock(Block):
         # Turn filtering ON/OFF, if requested
         filter = filter and self._filter_invalids
 
+        inputs = list(inputs)
+        validation_outputs = self._validate_batch(inputs)
+
         # Validate instances
         retained_instances, filtered_instances = [], []
-        for x in inputs:
-            validation_output = self._validate(x)
+        for x, validation_output in zip(inputs, validation_outputs):
             if isinstance(validation_output, bool):
                 x.is_valid = validation_output
             elif isinstance(validation_output, tuple) and len(validation_output) == 2:
                 x.is_valid, x.metadata = validation_output
             else:
                 raise RuntimeError(
-                    '"_validate" function must return a bool or tuple of [bool, Dict]',
+                    '"_validate_batch" must return a list of bool or tuple of [bool, Dict]',
                 )
 
             if x.is_valid or not filter:
                 retained_instances.append(x)
             elif not x.is_valid:
                 filtered_instances.append(x)
+                self.logger.info(
+                    "Data point rejected by block '%s'",
+                    self.name,
+                    extra={
+                        "event": "data_point_rejected",
+                        "block_name": self.name,
+                        "block_type": self.block_type,
+                        "task_name": get_row_name(x),
+                        "reason": getattr(x, "metadata", None),
+                    },
+                )
 
         # Save filtered instances for record keeping
         self.save_data(filtered_instances)
@@ -488,12 +738,35 @@ class ValidatorBlock(Block):
         # Return retained instances
         return retained_instances
 
-    @abstractmethod
-    def _validate(self, *args: Any, **kwargs: Any) -> bool | Tuple[bool, Dict | None]:
-        """Derived validators must implement _validate with their core logic.
+    def _validate_batch(
+        self, inputs: List[ValidatorBlockData]
+    ) -> List[bool | Tuple[bool, Dict | None]]:
+        """Validate a batch of inputs.
+
+        The default implementation calls ``_validate`` per item. Subclasses that
+        can process a batch more efficiently (e.g. by making a single LM call)
+        should override this method instead of ``_validate``.
+
+        Args:
+            inputs: List of ``ValidatorBlockData`` instances to validate.
 
         Returns:
-            Tuple[bool, Dict | None]: a boolean (True or False) to reflect whether an input was valid or not and optional second entry to reflect any additional metadata
+            List of per-input results, each either a ``bool`` or a
+            ``(bool, Dict | None)`` tuple — same contract as ``_validate``.
+        """
+        return [self._validate(x) for x in inputs]
+
+    @abstractmethod
+    def _validate(self, *args: Any, **kwargs: Any) -> bool | Tuple[bool, Dict | None]:
+        """Validate a single input instance.
+
+        Implement this for simple per-item validation logic. For batch-capable
+        validators (e.g. those making LM calls), override ``_validate_batch``
+        instead and raise ``NotImplementedError`` here.
+
+        Returns:
+            A ``bool`` or ``(bool, Dict | None)`` tuple where the bool indicates
+            whether the input is valid.
         """
         raise NotImplementedError(
             f"Missing implementation in {self.__module__}.{self.__class__.__name__}"

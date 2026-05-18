@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Dict, List, Literal, Optional
 import random
@@ -7,6 +10,7 @@ from fms_dgt.base.databuilder import GenerationDataBuilder
 from fms_dgt.base.prompt import JinjaPromptTemplate
 from fms_dgt.base.registry import register_data_builder
 from fms_dgt.base.task import GenerationTask
+from fms_dgt.constants import STORE_NAMES_KEY
 from fms_dgt.core.blocks.llm import LMProvider
 from fms_dgt.core.blocks.validators.lm_judge import LMJudgeValidator
 from fms_dgt.public.blocks.magpie.tag import MagpieTagger
@@ -16,7 +20,6 @@ from fms_dgt.public.databuilders.instructlab.knowledge.data_objects import (
 from fms_dgt.public.databuilders.instructlab.knowledge.task import (
     KnowledgeTask,
 )
-from fms_dgt.utils import dgt_logger
 import fms_dgt.public.databuilders.instructlab.knowledge.utils as utils
 
 
@@ -43,15 +46,17 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         _ = request_idx
         outputs: List[KnowledgeData] = []
         for task in tasks:
-            dgt_logger.info("=" * 99)
-            dgt_logger.info('\t\tTask: "%s"', task.name)
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
+            self.logger.info('\t\tTask: "%s"', task.name)
+            self.logger.info("=" * 99)
 
             outputs.extend(
                 self(
                     domain=task.domain,
                     documents=task.get_documents(docs_per_batch=task.num_docs_per_iteration),
-                    seed_data=task.get_batch_examples(),
+                    seed_data=task.sample_examples(
+                        k=task.seed_batch_size + task.machine_batch_size
+                    ),
                     prompt_templates=task.prompt_templates,
                     num_icl_examples_per_prompt=task.num_icl_examples_per_prompt,
                     question_style=task.question_style,
@@ -60,7 +65,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
             )
             task.save_knowledge_dataloader_state()
 
-            dgt_logger.info("=" * 99)
+            self.logger.info("=" * 99)
 
         return outputs
 
@@ -75,7 +80,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         criteria: List[str] | None = None,
     ) -> List[KnowledgeData]:
         # Generation
-        dgt_logger.info("Generating question-answer pairs for the domain %s ...", domain)
+        self.logger.info("Generating question-answer pairs for the domain %s ...", domain)
         generated_question_answer_pairs = self._generate_question_answer_pairs(
             seed_data=seed_data,
             domain=domain,
@@ -86,7 +91,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
         )
 
         # Verification
-        dgt_logger.info("Validating generated question-answer pairs...")
+        self.logger.info("Validating generated question-answer pairs...")
         validated_question_answer_pairs = self._validate_question_answer_pairs(
             question_answer_pairs=generated_question_answer_pairs,
             prompt_templates=prompt_templates,
@@ -132,6 +137,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                         "gen_kwargs": {"stop": prompt_templates["mcq_question_generation"].stop},
                         "document": document,
                         "reference": shuffled_seed_data,
+                        "task_name": shuffled_seed_data[0].task_name,
                     }
                 )
             else:
@@ -159,6 +165,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                             },
                             "document": document,
                             "reference": icl_examples,
+                            "task_name": icl_examples[0].task_name,
                         }
                     )
 
@@ -205,7 +212,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
             # Build validator inputs
             validator_inputs: List[Dict] = [
                 {
-                    "store_names": self.get_block_store_names(
+                    STORE_NAMES_KEY: self.get_block_store_names(
                         block_name=self.validator.name,
                         task_name=question_answer_pair.task_name,
                     ),
@@ -218,6 +225,7 @@ class KnowledgeDataBuilder(GenerationDataBuilder):
                             for attr in ["question", "answer", "context"]
                         },
                     ),
+                    "task_name": question_answer_pair.task_name,
                 }
                 for question_answer_pair in valid_question_answer_pairs
             ]

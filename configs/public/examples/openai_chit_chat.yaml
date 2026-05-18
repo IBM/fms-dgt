@@ -1,0 +1,14 @@
+databuilders:
+  public/examples/chit_chat:
+    data_builder: core/conversation
+    blocks:
+      - name: generator
+        type: openai
+        model_id_or_path: gpt-4o-mini
+
+tasks:
+  public/examples/chit_chat:
+    seed_examples: null
+    seed_datastore:
+      type: default
+      data_path: ${DGT_DATA_DIR}/public/examples/chit_chat/seed_examples.jsonl

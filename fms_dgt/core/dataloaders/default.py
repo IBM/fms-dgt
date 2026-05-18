@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from itertools import islice
 from typing import Any, Dict, Iterator, List
@@ -6,7 +9,7 @@ from typing import Any, Dict, Iterator, List
 from fms_dgt.base.dataloader import Dataloader
 from fms_dgt.base.datastore import Datastore
 from fms_dgt.base.registry import register_dataloader
-from fms_dgt.utils import dgt_logger, from_dict, to_dict
+from fms_dgt.utils import from_dict, to_dict
 
 # ===========================================================================
 #                       CONSTANTS
@@ -55,6 +58,8 @@ class DatastoreDataloader(Dataloader):
         loop_over: bool = False,
         **kwargs: Any,
     ) -> None:
+
+        super().__init__(**kwargs)
 
         if datastore and iterators:
             raise ValueError("Must specify one of 'datastore' or 'iterators' but not both")
@@ -114,7 +119,7 @@ class DatastoreDataloader(Dataloader):
             self._iterators = self._datastore.load_iterators()
         elif self._iterators:
             # Attempt to reinitialize only if original iterators were callable (like generator functions)
-            dgt_logger.warning(
+            self.logger.warning(
                 "reset_state() is not supported when initialized with iterators.\n"
                 "Please reinitialize with a datastore instead."
             )
@@ -161,7 +166,7 @@ class DatastoreDataloader(Dataloader):
             try:
                 to_dict(updated_item, key=dest_field, value=from_dict(item, src_field))
             except (AttributeError, ValueError, TypeError, KeyError) as e:
-                dgt_logger.error("Error transforming field '%s': %s", src_field, e)
+                self.logger.error("Error transforming field '%s': %s", src_field, e)
                 raise KeyError(f"Missing or invalid key in input item: {src_field}") from e
 
         return updated_item
@@ -186,7 +191,7 @@ class DatastoreDataloader(Dataloader):
                 self._row_index = 0
 
         if self._loop_over:
-            dgt_logger.info("No more rows left in dataloader. Resetting index to 0.")
+            self.logger.info("No more rows left in dataloader. Resetting index to 0.")
             self.reset_state()
 
         raise StopIteration

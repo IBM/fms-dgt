@@ -1,3 +1,6 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from typing import Iterator, List, TypeVar
 import glob
@@ -44,6 +47,8 @@ def _read_file(data_format: str, data_path: str, **file_kwargs) -> Iterator:
             yield from [content]
     elif data_format == ".parquet":
         yield from utils.read_parquet(data_path, lazy=True, **file_kwargs)
+    elif data_format == ".csv":
+        yield from utils.read_csv(data_path, lazy=True, **file_kwargs)
     else:
         raise ValueError(f"Unhandled data format: {data_format}")
 
@@ -80,7 +85,17 @@ def _is_glob_path(path: str):
 # ===========================================================================
 @register_datastore("default")
 class DefaultDatastore(Datastore):
-    """Base Class for all data stores"""
+    """Local-filesystem-backed datastore.
+
+    All data is stored as files under ``output_dir``.  The store name becomes
+    the file stem (e.g. ``<output_dir>/<store_name>.jsonl``).
+
+    Note: this datastore assumes a local POSIX filesystem.  If you need to
+    write to a remote store (e.g. S3, GCS) implement a new ``Datastore``
+    subclass and register it with ``@register_datastore``.  The ``clear()``,
+    ``save_data()``, ``load_iterators()``, and ``load_data()`` abstracts give
+    you the full surface area you need to support any backend.
+    """
 
     def __init__(
         self,
@@ -106,11 +121,12 @@ class DefaultDatastore(Datastore):
         self._data_split = data_split
         self._buffer_size = buffer_size
         self._data = data or []
-        if self._restart and os.path.exists(self._output_path):
-            os.remove(self._output_path)
 
         if output_dir is not None:
             os.makedirs(output_dir, exist_ok=True)
+
+        if self._restart:
+            self.clear()
 
     # ===========================================================================
     #                       PROPERTIES
@@ -126,6 +142,15 @@ class DefaultDatastore(Datastore):
     # ===========================================================================
     #                       MAIN FUNCTIONS
     # ===========================================================================
+    def exists(self) -> bool:
+        """Return True if the output file for this store exists on disk."""
+        return bool(self._output_path and os.path.exists(self._output_path))
+
+    def clear(self) -> None:
+        """Delete the output file for this store if it exists."""
+        if self._output_path and os.path.exists(self._output_path):
+            os.remove(self._output_path)
+
     def save_data(self, data_to_save: DATASET_TYPE | Iterator) -> None:
 
         output_data_format = os.path.splitext(self._output_path)[-1]
@@ -158,10 +183,19 @@ class DefaultDatastore(Datastore):
                     )
 
                 data_format = os.path.splitext(data_path)[-1]
+
                 # for local files
                 file_kwargs = {}
                 if data_format == ".parquet":
                     file_kwargs = {"buffer_size": self._buffer_size}
+                elif data_format == ".csv":
+                    file_kwargs = {
+                        "has_header": self._addtl_kwargs.get("has_header", False),
+                        "delimiter": self._addtl_kwargs.get("delimiter", ","),
+                        "quotechar": self._addtl_kwargs.get("quotechar", '"'),
+                        "lineterminator": self._addtl_kwargs.get("lineterminator", "\r\n"),
+                        "skipinitialspace": self._addtl_kwargs.get("skipinitialspace", False),
+                    }
 
                 return (item for item in _read_file(data_format, data_path, **file_kwargs))
 

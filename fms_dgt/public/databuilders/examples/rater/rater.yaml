@@ -9,8 +9,9 @@ name: public/examples/qa_rater
 blocks:
   - name: rater
     type: ollama
-    model_id_or_path: mistral-small3.2
+    model_id_or_path: granite4:3b
     temperature: 0.0
     max_tokens: 1024
+    num_ctx: 4096
 metadata:
   version: 1.0

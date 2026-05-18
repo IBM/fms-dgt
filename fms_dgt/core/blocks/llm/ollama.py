@@ -1,20 +1,28 @@
+# Copyright The DiGiT Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # Standard
 from dataclasses import dataclass, fields
 from typing import Any, Callable, Dict, List, Tuple
-import asyncio
 import logging
 
 # Third Party
 from httpx import HTTPError
-from ollama import Client, show
-from tqdm import tqdm
+from ollama import AsyncClient, Client, show
 
 # Local
+from fms_dgt.base.block import get_row_name
 from fms_dgt.base.registry import register_block
+from fms_dgt.base.telemetry import (
+    payload_max_chars,
+    payload_recording_enabled,
+    record_llm_payload,
+)
 from fms_dgt.constants import NOT_GIVEN, NotGiven
 from fms_dgt.core.blocks.llm import LMBlockData, LMProvider, Parameters
+from fms_dgt.core.blocks.llm.executor import AsyncLLMExecutor
 from fms_dgt.core.blocks.llm.openai import OpenAI
-from fms_dgt.core.blocks.llm.utils import remap
+from fms_dgt.core.blocks.llm.utils import normalize_tool_call_arguments, remap
 
 # Disable third party logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -26,6 +34,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 @dataclass(kw_only=True)
 class OllamaCompletionParameters(Parameters):
     num_predict: int | NotGiven = NOT_GIVEN
+    num_ctx: int | NotGiven = NOT_GIVEN
     seed: int | NotGiven = NOT_GIVEN
     top_p: int | NotGiven = NOT_GIVEN
     temperature: float | NotGiven = NOT_GIVEN
@@ -79,8 +88,9 @@ class Ollama(OpenAI):
         if not self.batch_size or self.batch_size > 1:
             self._batch_size = 1
 
-        # Create Ollama client
+        # Sync client for non-async use; async client for the executor path
         self._client = Client(host=base_url)
+        self._async_client = AsyncClient(host=base_url)
 
     # ===========================================================================
     #                       PROPERTIES
@@ -129,60 +139,80 @@ class Ollama(OpenAI):
     def _extract_choice_content(self, choice: Any, method: str) -> str | Dict:
         # If choice is generated via chat completion
         if method == self.CHAT_COMPLETION:
-            return choice.message.dict()
+            message = choice.message.model_dump()
+            if isinstance(message, dict) and message.get("tool_calls"):
+                message["tool_calls"] = [
+                    normalize_tool_call_arguments(tc) for tc in message["tool_calls"]
+                ]
+            return message
 
         # If choice is generated via text completion
         return choice.response
 
-    async def async_executor(
+    async def _process_item(
         self,
-        queue: asyncio.Queue,
-        update_progress_tracker: Callable,
+        instance: LMBlockData,
+        update_progress: Callable,
         method: str = LMProvider.COMPLETION,
     ):
-        """
-        Execute text completion or chat completion asynchronously.
+        """Process one Ollama request using the native async client.
+
+        Uses ``self._async_client`` so parallel execution actually happens.
+        The sync ``self._client`` is retained for non-async use cases only.
 
         Args:
-            queue (asyncio.Queue): instances to complete.
-            update_progress_tracker (Callable): progress tracker update function
-            method (str, optional): Either "completion" or "chat_completion". Defaults to LMProvider.COMPLETION.
-
-        Raises:
-            ValueError: If method outside "completion" or "chat_completion" is passed
-            RuntimeError: If number of responses does not match number of inputs * n
+            instance: The request to process.
+            update_progress: Zero-argument callable to advance the progress bar.
+            method: ``LMProvider.COMPLETION`` or ``LMProvider.CHAT_COMPLETION``.
         """
-        while not queue.empty():
-            # Get a "work item" out of the queue.
-            instance = await queue.get()
+        params = (
+            self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
+        ).to_params(instance.gen_kwargs)
 
-            # Extract parameters
-            params = (
-                self._chat_parameters if method == self.CHAT_COMPLETION else self._parameters
-            ).to_params(instance.gen_kwargs)
-
-            # Trigger OpenAI completion functions
+        _task_name = get_row_name(instance)
+        async with self._llm_span(
+            method=method,
+            batch_size=1,
+            params=params,
+            task_names=[_task_name] if _task_name is not None else None,
+        ) as span_attrs:
             if method == self.CHAT_COMPLETION:
-                response = self._client.chat(
+                messages = self._prepare_input(
+                    instance,
+                    method=method,
+                    max_tokens=params.get("num_predict", None),
+                )
+                # Map response_format (OpenAI convention) to Ollama's native
+                # format parameter.  Ollama accepts either the string "json"
+                # (JSON mode, no schema) or a raw JSON schema dict (structured
+                # outputs).  The OpenAI wrapper is never passed through as-is.
+                rf = params.pop("response_format", None)
+                ollama_format = None
+                if rf is not None:
+                    t = rf.get("type")
+                    if t == "json_schema":
+                        ollama_format = rf.get("json_schema", {}).get("schema", {})
+                    elif t == "json_object":
+                        ollama_format = "json"
+                    # type == "text" → leave ollama_format as None
+                response = await self._async_client.chat(
                     model=self.model_id_or_path,
-                    messages=self._prepare_input(
-                        instance,
-                        method=method,
-                        max_tokens=params.get("num_predict", None),
-                    ),
+                    messages=messages,
                     tools=instance.tools,
                     options=params,
+                    format=ollama_format,
                     stream=False,
                 )
             elif method == self.COMPLETION:
-                response = self._client.generate(
+                prompt = self._prepare_input(
+                    instance,
+                    method=self.COMPLETION,
+                    max_tokens=params.get("num_predict", None),
+                )
+                response = await self._async_client.generate(
                     model=self._model_id_or_path,
-                    prompt=self._prepare_input(
-                        instance,
-                        method=self.COMPLETION,
-                        max_tokens=params.get("num_predict", None),
-                    ),
-                    options=params,
+                    prompt=prompt,
+                    # options=params,
                     stream=False,
                 )
             else:
@@ -190,24 +220,36 @@ class Ollama(OpenAI):
                     f'Unsupported method ({method}). Only "{self.COMPLETION}" or "{self.CHAT_COMPLETION}" values are allowed.'
                 )
 
-            # Add output
-            self.update_instance_with_result(
-                method,
-                self._extract_choice_content(response, method=method),
-                instance,
-                params.get("stop", None),
-                {
-                    "completion_tokens": response.eval_count,
-                    "prompt_tokens": response.prompt_eval_count,
-                    "token_logprobs": [],
-                },
-            )
+            span_attrs["prompt_tokens"] = response.prompt_eval_count or 0
+            span_attrs["completion_tokens"] = response.eval_count or 0
 
-            # Notify the queue that the "work item" has been processed.
-            queue.task_done()
+            if payload_recording_enabled():
+                if method == self.CHAT_COMPLETION:
+                    rc = response.message.dict()
+                else:
+                    rc = response.response or ""
+                record_llm_payload(
+                    span_attrs,
+                    method,
+                    payload_max_chars(),
+                    prompt=prompt if method == self.COMPLETION else None,
+                    messages=messages if method == self.CHAT_COMPLETION else None,
+                    response_completion=rc,
+                )
 
-            # Update progress tracker
-            update_progress_tracker()
+        self.update_instance_with_result(
+            method,
+            self._extract_choice_content(response, method=method),
+            instance,
+            params.get("stop", None),
+            {
+                "completion_tokens": response.eval_count,
+                "prompt_tokens": response.prompt_eval_count,
+                "token_logprobs": [[]],
+            },
+        )
+
+        update_progress(1)
 
     async def _execute_requests(
         self,
@@ -216,39 +258,20 @@ class Ollama(OpenAI):
         method: str = LMProvider.COMPLETION,
         **kwargs,
     ):
-        # Initialize necessary variables
-        queue = asyncio.Queue()
-
-        # Add to queue
-        for instance in requests:
-            queue.put_nowait(instance)
-
-        # Initialize progress tracker
-        pbar = tqdm(
-            total=len(requests),
-            disable=disable_tqdm,
-            desc=f"Running {method} requests",
+        await AsyncLLMExecutor.run(
+            work_items=requests,
+            process_item=lambda item, upd: self._process_item(item, upd, method=method),
+            call_limit=self._call_limit,
+            total_requests=len(requests),
+            method=method,
+            disable_tqdm=disable_tqdm,
         )
-
-        # Create generate tasks
-        executors = []
-        for _ in range(min(queue.qsize(), self._call_limit)):
-            executors.append(
-                self.async_executor(
-                    queue,
-                    update_progress_tracker=lambda: pbar.update(1),
-                    method=method,
-                )
-            )
-
-        # Wait until all worker are finished
-        await asyncio.gather(*executors, return_exceptions=True)
 
     # ===========================================================================
     #                       MAIN FUNCTIONS
     # ===========================================================================
     def completion(self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs) -> None:
-        asyncio.run(
+        self.run_async(
             self._execute_requests(
                 requests=requests,
                 disable_tqdm=disable_tqdm,
@@ -260,7 +283,7 @@ class Ollama(OpenAI):
     def chat_completion(
         self, requests: List[LMBlockData], disable_tqdm: bool = False, **kwargs
     ) -> None:
-        asyncio.run(
+        self.run_async(
             self._execute_requests(
                 requests=requests,
                 disable_tqdm=disable_tqdm,
