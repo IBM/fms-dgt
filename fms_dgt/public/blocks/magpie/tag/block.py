@@ -227,6 +227,39 @@ class MagpieTagger(Block):
     # ===========================================================================
     #                       UTILITY FUNCTIONS
     # ===========================================================================
+    def _set_error_values(
+        self, entry: Dict, tag_task: str, model_name: str, error: Any, response: Any
+    ):
+        """Record a tagging failure into the magpie payload.
+
+        Args:
+            entry: The ``magpie_tags`` dict being populated for this datapoint.
+            tag_task: The tagging task that failed (e.g. "quality", "difficulty").
+            model_name: Model identifier, written to ``metadata.label_model``.
+            error: Error message string.
+            response: Raw model response that could not be parsed.
+        """
+        if "metadata" not in entry or not entry["metadata"]:
+            entry["metadata"] = {}
+        entry["metadata"]["label_model"] = [model_name]
+        entry["metadata"][f"{tag_task}_err"] = error
+        entry["metadata"][f"{tag_task}_raw"] = response
+        if tag_task == "quality":
+            entry["input_quality"] = None
+            entry["input_quality_explanation"] = None
+        elif tag_task == "sample_quality":
+            entry["judge_quality_score"] = None
+            entry["judge_quality_explanation"] = None
+        elif tag_task == "difficulty":
+            entry["intent"] = None
+            entry["knowledge"] = None
+            entry["difficulty"] = None
+        elif tag_task == "classification":
+            entry["task_category"] = None
+        elif tag_task == "conversation_quality":
+            entry["conversation_score"] = None
+            entry["conversation_explanation"] = None
+
     def parse(self, response: str, instance: MagpieTaggerBlockData, tag_task: str):
         """
         Parse language model response to prepare final tagged outputs
@@ -303,40 +336,6 @@ class MagpieTagger(Block):
                 return text[3:-3].strip()
             return text
 
-        def set_error_values(
-            entry: Dict, tag_task: str, model_name: str, error: Any, response: Any
-        ):
-            if tag_task == "quality":
-                entry["input_quality"] = None
-                entry["input_quality_explanation"] = None
-                entry["metadata"]["label_model"] = [model_name]
-                entry["metadata"]["quality_err"] = error
-                entry["metadata"]["quality_raw"] = response
-            elif tag_task == "sample_quality":
-                entry["judge_quality_score"] = None
-                entry["judge_quality_explanation"] = None
-                entry["metadata"]["label_model"] = [model_name]
-                entry["metadata"]["sample_quality_err"] = error
-                entry["metadata"]["sample_quality_raw"] = response
-            elif tag_task == "difficulty":
-                entry["intent"] = None
-                entry["knowledge"] = None
-                entry["difficulty"] = None
-                entry["metadata"]["label_model"] = [model_name]
-                entry["metadata"]["difficulty_err"] = error
-                entry["metadata"]["difficulty_raw"] = response
-            elif tag_task == "classification":
-                entry["task_category"] = None
-                entry["metadata"]["label_model"] = [model_name]
-                entry["metadata"]["classification_err"] = error
-                entry["metadata"]["classification_raw"] = response
-            elif tag_task == "conversation_quality":
-                entry["conversation_score"] = None
-                entry["conversation_explanation"] = None
-                entry["metadata"]["label_model"] = [model_name]
-                entry["metadata"]["conv_quality_err"] = error
-                entry["metadata"]["conv_quality_raw"] = response
-
         # Step 1: Extract model name used to generate
         model_name = self._llm_generator.model_id_or_path
 
@@ -370,7 +369,7 @@ class MagpieTagger(Block):
         if tag_task == "quality":
             # Step 3.c.ii: Validate
             if "input_quality" not in response_dict:
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -391,7 +390,7 @@ class MagpieTagger(Block):
 
             # Step 3.c.iii: Validate format
             if not isinstance(response_dict["input_quality"], str):
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -414,7 +413,7 @@ class MagpieTagger(Block):
         elif tag_task == "sample_quality":
             # Step 3.d.i: Validate
             if "score" not in response_dict:
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -432,7 +431,7 @@ class MagpieTagger(Block):
                 (isinstance(response_dict["score"], str) and response_dict["score"].isdigit())
                 or isinstance(response_dict["score"], (int, float))
             ):
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -456,7 +455,7 @@ class MagpieTagger(Block):
         elif tag_task == "difficulty":
             # Step 3.e.i: Validate
             if "difficulty" not in response_dict:
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -477,7 +476,7 @@ class MagpieTagger(Block):
 
             # Step 3.e.iii: Validate format
             if not isinstance(response_dict["difficulty"], str):
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -498,7 +497,7 @@ class MagpieTagger(Block):
         elif tag_task == "classification":
             # Step 3.f.i: Validate
             if "primary_tag" not in response_dict:
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -511,7 +510,7 @@ class MagpieTagger(Block):
             if "primary_tag" not in response_dict or not isinstance(
                 response_dict["primary_tag"], str
             ):
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -530,7 +529,7 @@ class MagpieTagger(Block):
         elif tag_task == "conversation_quality":
             # Step 3.g.i: Validate format
             if "score" not in response_dict:
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -548,7 +547,7 @@ class MagpieTagger(Block):
                 (isinstance(response_dict["score"], str) and response_dict["score"].isdigit())
                 or isinstance(response_dict["score"], (int, float))
             ):
-                set_error_values(
+                self._set_error_values(
                     instance.magpie_tags,
                     tag_task,
                     model_name,
@@ -747,6 +746,13 @@ class MagpieTagger(Block):
 
                 # Step 3.b.ii.***: Skip processing, if failed to find dictionary
                 if start_idx is None or end_idx is None:
+                    self._set_error_values(
+                        instance.magpie_tags,
+                        llm_output["task"],
+                        self._llm_generator.model_id_or_path,
+                        error="No JSON object found in response",
+                        response=model_response,
+                    )
                     continue
                 else:
                     model_response = model_response[start_idx : end_idx + 1]

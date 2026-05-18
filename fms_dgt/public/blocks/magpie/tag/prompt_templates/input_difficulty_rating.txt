@@ -1,21 +1,15 @@
-# Instruction 
-
-You first need to identify the given user intent and then label the difficulty level of the user query based on the content of the user query.
+Classify the difficulty of the following user query. Output only a valid JSON object, no other text.
 
 ## User Query
 ```
 {input}
 ```
 
-## Output Format
-Given the user query, in your output, you first need to identify the user intent and the knowledge needed to solve the task in the user query.
-Then, rate the difficulty level of the user query as `very easy`, `easy`, `medium`, `hard`, or `very hard`.
+To determine difficulty, first identify what the user wants to accomplish and what knowledge is required to solve the task. Then rate the difficulty as one of: very easy, easy, medium, hard, very hard.
 
-Now, please output the user intent and difficulty level below in a json format by filling in the placeholders in []:
-```
-{{   
-    "intent": "The user wants to [....]",
-    "knowledge": "To solve this problem, the models need to know [....]",
-    "difficulty": "[very easy/easy/medium/hard/very hard]"
+Respond with exactly this JSON structure:
+{{
+    "intent": "What the user wants to accomplish.",
+    "knowledge": "The knowledge and skills required to solve this task.",
+    "difficulty": "very easy/easy/medium/hard/very hard"
 }}
-```
