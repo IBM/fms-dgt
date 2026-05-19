@@ -1,31 +1,24 @@
-## Instruction 
+Rate the quality of the following AI assistant response. Output only a valid JSON object, no other text.
 
-We would like to request your feedback on the performance of AI assistant in regard to the instruction and response displayed following.
-
-Instruction: 
+## Instruction
 ```
 {input}
 ```
-Response:
+
+## Response
 ```
 {output}
 ```
 
-Please rate according to the accuracy, instruction following, and presentation of the response to the instruction. In particular, when judging, consider:
-
+## Rating Criteria
 - Instruction Following: Does the answer directly address the question?
 - Accuracy: Is the information provided in the response correct?
 - Presentation: Is the answer logically structured and easy to understand?
 
-You should provide each assistant a score on a scale from 0 to 5, where a higher score indicates a higher overall quality. 
-You should also provide a comprehensive explanation of your assesment.
+Rate on a scale from 1 to 5, where a higher score indicates higher overall quality.
 
-## Output Format
-Please provide your response in the following format, by filling in the placeholders in [...]:
-
-```
-{{   
-    "score": "[1,2,3,4,5]",
-    "explanation": "[...]"
+Respond with exactly this JSON structure:
+{{
+    "score": "1/2/3/4/5",
+    "explanation": "A concise assessment of the response covering instruction following, accuracy, and presentation."
 }}
-```
