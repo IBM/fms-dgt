@@ -37,9 +37,7 @@ _OUTPUT_DIR: str = os.environ.get("DGT_OUTPUT_DIR", "")
 _TELEMETRY_DIR: str | None = os.environ.get("DGT_TELEMETRY_DIR") or None
 
 # Path to the bundled static frontend (studio/out/ after `next build`).
-_STUDIO_DIST = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "studio", "dist")
-)
+_STUDIO_DIST = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
 
 
 def configure(output_dir: str, telemetry_dir: str | None) -> None:
