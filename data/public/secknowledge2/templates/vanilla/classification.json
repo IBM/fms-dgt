@@ -1,0 +1,47 @@
+[
+    {
+    "name": "Classification",
+    "subcategories": [
+      {
+        "name": "general classification",
+        "description": "Classify one or multiple objects given by the user into the specified categories.",
+        "structure": "This is a classification task. First, answer. Then, explain.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "ordering",
+        "description": "Sort some things, according to some criteria.",
+        "structure": "This is an ordering question. First, answer. Then, explain.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "sentiment analysis",
+        "description": "Identify and categorize the subjective opinions, attitudes, and feelings of the writer towards a particular subject.",
+        "structure": "This is a sentiment analysis question. First, answer. Then, explain.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "language classification",
+        "description": "Classify the language for the given text.",
+        "structure": "This is a task to classify the language for the given text. First, answer. Then, explain.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "topic classification",
+        "description": "Extract the high-level topics or themes from a given text, i.e., what kind of topics are discussed in the text.",
+        "structure": "This is a task to extract the high-level topics or themes from a given text. First, answer. Then, explain.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

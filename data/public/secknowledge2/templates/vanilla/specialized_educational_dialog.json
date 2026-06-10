@@ -1,0 +1,47 @@
+[
+    {
+    "name": "Specialized Educational Dialog",
+    "subcategories": [
+      {
+        "name": "natural language tutor",
+        "description": "Write an answer for the given question about natural language learning.",
+        "structure": "This is a task to answer the given question about natural language learning. First, analyze the question and give a brief analysis in the first paragraph. Then output the answer. Next, give an explanation. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "exam problem tutor",
+        "description": "Solve an exam question (like fill-in-the-blank, multiple choice, problem solving, etc) with no math involved.",
+        "structure": "This is an exam problem. First, analyze the question and give a brief analysis in the first paragraph. Then output the answer. Next, give an explanation. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "AI tutor",
+        "description": "Write an answer for the given question about machine learning, artificial intelligence or language model.",
+        "structure": "This is a question about machine learning, artificial intelligence or language model. Then output the answer. Next, give an explanation. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "math puzzles",
+        "description": "Write an answer with the step-by-step reasoning process for a math question.",
+        "structure": "This is a math question. First, analyze the question and give a brief analysis in the first paragraph. Then, use a list to present the step-by-step solution. Next, give another list to output a detailed explanation. Last, give the correct result and a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "fill in the blank",
+        "description": "Complete the missing parts with the most appropriate words to make the text coherent and meaningful.",
+        "structure": "This is a task to complete the missing parts with the most appropriate words to make the text coherent and meaningful. First, analyze the question and give a brief analysis in the first paragraph. Then, give the answer and an explanation.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

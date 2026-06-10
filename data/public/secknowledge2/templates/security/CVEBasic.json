@@ -1,0 +1,23 @@
+[
+  {
+    "name": "CVEBasic",
+    "subcategories": [
+      {
+        "name": "cve_description",
+        "description": "Detail explanation of a requested cve number ",
+        "structure": "The task is to provide a detailed explanation of a specified CVE (Common Vulnerabilities and Exposures) number.\n\nResponse Structure:  \n1. Summarize shortly the nature and technical specifics of the vulnerability, including affected systems or software and attack vectors.  \n2. State the potential impact or risks posed by the vulnerability.  \n3. State any known mitigation steps, fixes, or advisories related to the CVE.\n4. Finish with a short conclusion paragraph emphasizing the important points from above. \nGeneral Instructions:  \nEnsure all information is accurate, clearly sourced, and presented in an accessible manner. Use concise and logical reasoning throughout each step.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "cvss",
+        "description": "Determine CVSS score for a given CVE by its description",
+        "structure": "Your task is to analyze a given CVE (Common Vulnerabilities and Exposures) description and calculate the CVSS (Common Vulnerability Scoring System) v3.1 Base Score by determining the values for each base metric.\n\n**Response Structure**\n   - Begin by carefully reading the CVE description to understand the nature of the vulnerability.\n   - Identify the attack vector (AV) based on how the vulnerability is exploited (remotely, locally, etc.).\n   - Determine the attack complexity (AC) by assessing the difficulty of exploiting the vulnerability.\n   - Evaluate the privileges required (PR) to exploit the vulnerability (none, low, high).\n   - Assess if user interaction (UI) is needed for the exploit to be successful.\n   - Determine the scope (S) of the vulnerability, whether it affects the same or different components.\n   - Evaluate the impact on confidentiality (C), integrity (I), and availability (A) based on the vulnerability's effects.\n   - Combine the values of the base metrics to form the CVSS v3.1 Vector String.\n\n**General Instructions**\n   - Ensure that each step is clearly reasoned and supported by the CVE description.\n   - The final line of your response should contain only the CVSS v3.1 Vector String in the specified format.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

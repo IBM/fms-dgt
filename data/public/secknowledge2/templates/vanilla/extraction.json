@@ -1,0 +1,31 @@
+[
+    {
+    "name": "Extraction",
+    "subcategories": [
+      {
+        "name": "information extraction",
+        "description": "Extract one or multiple user-specified categories of information from a piece of text attached in the user's query.",
+        "structure": "This is an information extraction task. Use a structured format to give the extracted information, such as a list or table.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "keywords extraction",
+        "description": "Extract the keywords from a piece of text.",
+        "structure": "This is a keywords extraction task. Use a list to give the keywords.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "table extraction",
+        "description": "Generate a table include the key information from a piece of text attached in the user's query.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      }
+    ]
+  }
+]

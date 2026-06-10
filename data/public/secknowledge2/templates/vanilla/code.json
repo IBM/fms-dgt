@@ -1,0 +1,71 @@
+[
+    {
+    "name": "Code",
+    "subcategories": [
+      {
+        "name": "code correction",
+        "description": "Correct the potential errors in a piece of code.",
+        "structure": "This is a code correction task. First, output the corrected code and its corresponding comments within a code block. And then output a list to present what has been changed and why it changed.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "code simplification",
+        "description": "Rewrite a piece of code to make it more concise and easy to understand.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "explain code",
+        "description": "Write an explanation for a piece of code.",
+        "structure": "This is a code explanation task. First, analyze the question and give a brief analysis in the first paragraph. Then, a structured format to give the explanation such as a list or table. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "text-to-code translation",
+        "description": "Write a piece of code based on the given description.",
+        "structure": "This is a task to write code based on text requirements. First, analyze the question and give a brief analysis in the first paragraph. Next, output the code and corresponding comments in a code block. Then, use a list to give the explanation for each piece of code. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "code-to-code translation",
+        "description": "Convert the given code into another programming language.",
+        "structure": "This is a task to convert the given code into another programming language. First, analyze the question and give a brief analysis in the first paragraph. Next, output the converted code and corresponding comments in a code block. Then, use a list to give the explanation for each piece of code. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "language learning questions",
+        "description": "Write an answer for the given question about programming language learning.",
+        "structure": "This is a task to answer the given question about programming language learning. First, analyze the question and give a brief analysis in the first paragraph. Then output the answer. Next, give an explanation. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "language type classification",
+        "description": "Classify the programming language for the given code.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "code-to-text translation",
+        "description": "Write a document for the given code.",
+        "structure": "This is a task to write a document for the given code. First, analyze the question and give a brief analysis in the first paragraph. Next, take a segmented and structured way to write this document. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

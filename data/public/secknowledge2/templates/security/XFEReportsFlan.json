@@ -1,0 +1,23 @@
+[
+  {
+    "name": "XFEReportsFlan",
+    "subcategories": [
+      {
+        "name": "xfe_report_simple",
+        "description": "XFE report simple",
+        "structure": "**Task Introduction:**  \nThe core task is to analyze and explain a specific cyber-security threat by systematically breaking down its key aspects.\n\n**Response Structure:**  \n1. Identify and specify the type of cyber-security threat presented.  \n2. Summarize the overall nature and activity of the threat, including context and origin.  \n3. Describe any Indicators of Compromise (IoCs) associated with the threat, if available.  \n4. Provide concrete recommendations for detection, defense, or mitigation against the threat.  \n5. List any related MITRE ATT&CK Tactics, Techniques, and Procedures (TTPs) relevant to the threat.  \n6. Cite any references or sources that provide further information or primary analysis.\n\n**General Instructions:**  \n- Ensure each step is addressed explicitly and in order to maintain a logical flow.  \n- Use clear, concise language and avoid ambiguity in explanations.  \n- If certain information is not available in the source, clearly state its absence instead of omitting the step.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "xfe_report_new",
+        "description": "XFE report new",
+        "structure": "**Task Introduction:**  \nThe core task is to produce a structured, chain-of-thought threat-intelligence report that explains a specific cyber-security threat.\n\n**Response Structure:**  \n1. Carefully read and understand the cyber-security question.  \n2. Identify the main topics and concepts referred in the question.  \n3. Gather and provide all relevant background information and context for the requested cyber-security threat report.\n4. Provide a full comprehensive report as the user requested - you MUST keep the same report structure and content as the original response. You are not allowed to omit information, but you are allowed to enrich with further new information if needed, and you are also allowed to fix text to to be more fluent and human friendly to read\n5. Add short explanation when addressing any specific MITRE tactic/technique/sub-technique, mitigations, detections, etc. Then, briefly explain why each such MITRE entity is mentioned in the report.\n\n**General Instructions:**  \nEnsure each step flows logically into the next, with clear reasoning and explicit justification for each point. Use structured formatting (such as headings or bullet points) for clarity.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

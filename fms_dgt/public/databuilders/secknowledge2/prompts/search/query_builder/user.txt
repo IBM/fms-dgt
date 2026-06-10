@@ -1,0 +1,3 @@
+Question: {user_question}
+
+Please generate up to {K} search queries, following all system rules.
