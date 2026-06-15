@@ -202,6 +202,26 @@ class DataBuilder:
         self._span_writer = writer
         for block in self._blocks:
             block.span_writer = writer
+        if not isinstance(writer, _NoOpSpanWriter):
+            self._warn_noop_writers(self._blocks)
+
+    def _warn_noop_writers(self, blocks) -> None:
+        """Warn for any block in the tree that still holds a no-op writer.
+
+        This fires after the recursive setter has run, so any surviving no-op
+        belongs to a block whose author stored a child in a plain attribute
+        instead of registering it in self._blocks.
+        """
+        for block in blocks:
+            if isinstance(block._span_writer, _NoOpSpanWriter):
+                self._logger.warning(
+                    "Block '%s' (type=%s) still holds a _NoOpSpanWriter after "
+                    "telemetry wiring — its child blocks may not be registered "
+                    "in self._blocks and will emit no telemetry spans.",
+                    block.name,
+                    block.block_type,
+                )
+            self._warn_noop_writers(block._blocks)
 
     # ===========================================================================
     #                       HELPER FUNCTIONS
@@ -229,7 +249,6 @@ class DataBuilder:
         if len(self._config.blocks) != len([b.get("name") for b in self._config.blocks]):
             raise ValueError(f"Duplicate block in '{self.name}' data builder detected")
 
-        # TODO: need to handle nested blocks
         for block_configuration in self._config.blocks:
             # Verify "name" and "type" properties are provided for each block
             for mandatory_property in [NAME_KEY, TYPE_KEY]:
