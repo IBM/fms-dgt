@@ -227,6 +227,8 @@ class Block:
     @span_writer.setter
     def span_writer(self, writer) -> None:
         self._span_writer = writer
+        for block in self._blocks:
+            block.span_writer = writer
 
     @property
     def input_map(self) -> List | Dict:

@@ -81,6 +81,7 @@ class OpenAIChatCompletionParameters(Parameters):
     response_format: Dict | NotGiven = NOT_GIVEN
     top_logprobs: int | NotGiven = NOT_GIVEN
     extra_body: Dict | NotGiven = NOT_GIVEN
+    reasoning_effort: Literal["none", "low", "medium", "high"] | NotGiven = NOT_GIVEN
 
     @classmethod
     def from_dict(cls, params: Dict):
