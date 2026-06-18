@@ -1,0 +1,55 @@
+[
+    {
+    "name": "Conversation",
+    "subcategories": [
+      {
+        "name": "open qa",
+        "description": "The user's query is an open domain question with no attached passage or article.",
+        "structure": "This is an open-ended question-and-answer task. First, analyze the question and give a brief analysis in the first paragraph. Next, give the answer. Then, give an explanation. Last, give a conclusion.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "closed qa",
+        "description": "Answer the questions that can be directly answered by the attached passage.",
+        "structure": "This is a task to answer the questions that can be directly answered by the attached passage. First, analyze the question and give a brief analysis in the first paragraph. Next, give the answer. Then, give an explanation. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "fact verification",
+        "description": "Verify if the given fact is true or false.",
+        "structure": "This is a fact-verification task. First, give the answer. Then, give an explanation.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "value judgement",
+        "description": "Provide a value judgement on a given topic or statement.",
+        "structure": "This is a value judgment task. First, analyze the question and give a brief analysis in the first paragraph. Then output the answer. Next, give an explanation. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "roleplay",
+        "description": "Pretend to be a specific person, character, profession or identity, and complete the required task on this basis.",
+        "structure": "First, analyse the question and give a brief analysis in the first paragraph. Then output the answer. Next, use a list to give explanations. Last, give a conclusion.",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      },
+      {
+        "name": "explain answer",
+        "description": "Explain something the user wants to know.",
+        "structure": "This is an explanation task. First, analyze the question and give a brief analysis in the first paragraph. Then, a structured format to give the explanation such as a list or table. Last, give a conclusion.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,31 @@
+[
+  {
+    "name": "apt-notes",
+    "subcategories": [
+      {
+        "name": "natural_questions",
+        "description": "Answer a question about an APT report (the report is not provided in the question)",
+        "structure": "**Task Introduction:**  \nThe core task is to answer questions that require analysis and synthesis of information from specific Advanced Persistent Threat (APT) reports, leveraging detailed knowledge of threat actor behaviors, techniques, and campaign outcomes as documented in those reports.\n\n**Response Structure:**  \n1. State the specific APT report name and provide a brief background on it. Do not refer to the report as given.\n2. Extract and summarize the key techniques, tactics, or events described in the report related to the question.  \n3. Analyze the motivations, challenges, or decision criteria that are relevant to the extracted key techniques, tactics, or events from step 2.\n4. Connect the extracted details to the broader context or objectives of the threat actor as described in the report.  \n5. Conclude with how these findings answer the question, supported by evidence from the report.\n\n**General Instructions:**  \n- Ensure each step references explicit information from the relevant APT report.  \n- Maintain logical, structured reasoning throughout the response.  \n- Focus on clarity and conciseness in linking report findings to the question.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "retrieval1",
+        "description": "Answer a question about an APT report (the report is provided in the question)",
+        "structure": "**Task Introduction:**  \nThe core task is to answer questions that require analysis and synthesis of information from specific Advanced Persistent Threat (APT) reports, leveraging detailed knowledge of threat actor behaviors, techniques, and campaign outcomes as documented in those reports.\n\n**Response Structure:**  \n1. Extract and summarize the key techniques, tactics, or events described in the report related to the question.  \n2. Analyze the motivations, challenges, or decision criteria that are relevant to the extracted key techniques, tactics, or events from step 2.\n3. Connect the extracted details to the broader context or objectives of the threat actor as described in the report.  \n4. Conclude with how these findings answer the question, supported by evidence from the report.\n\n**General Instructions:**  \n- Ensure each step references explicit information from the relevant APT report.  \n- Maintain logical, structured reasoning throughout the response.  \n- Focus on clarity and conciseness in linking report findings to the question.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      },
+      {
+        "name": "aptnotes_summarization",
+        "description": "",
+        "structure": "",
+        "requires_search": false,
+        "requires_grounding_doc": false,
+        "requires_rewrite": false
+      }
+    ]
+  }
+]

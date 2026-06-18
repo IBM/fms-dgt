@@ -1,0 +1,19 @@
+Web Page Content:
+--
+
+{document}
+
+
+Question:
+--
+
+{question}
+
+
+Expected Answer Structure:
+--
+
+{structure}
+
+
+Please summarize the web page according to the insturcions.

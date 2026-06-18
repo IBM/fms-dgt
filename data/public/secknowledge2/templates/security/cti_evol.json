@@ -1,0 +1,15 @@
+[
+  {
+    "name": "cti_evol",
+    "subcategories": [
+      {
+        "name": "external_natural_question",
+        "description": "General cyber-security Q&A",
+        "structure": "**Task Introduction:**  \nThe core task is to answer general cyber-security questions in a clear and reasoned manner.\n\n**Response Structure:**  \n1. Carefully read and understand the cyber-security question.  \n2. Identify the main topics and concepts referred in the question.  \n3. Gather and provide all relevant background information and context for the topics and concepts. \n4. Analyze the key security principles or mechanisms involved.  \n5. Consider possible solutions, explanations, or recommendations.\n6. Clearly articulate the reasoning behind the chosen answer or advice.\n7. When needed - provide examples to support, enrich,  improve, and complete your answer.\n8. Summarize your reasoning process into a coherent and comprehensive summary.\n9. Lastly, after summarizing your reasoning process, provide a final response that follows the user's question or instruction precisely.\n\n\n**General Instructions:**  \n- Always ensure each step logically builds upon the previous one, and support conclusions with clear rationale.\n- Follow and provide your final answer to the given instruction exactly as requested.",
+        "requires_search": true,
+        "requires_grounding_doc": false,
+        "requires_rewrite": true
+      }
+    ]
+  }
+]
