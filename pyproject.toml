@@ -31,11 +31,11 @@ dependencies = [
     "python-dateutil",
     "tqdm",
     "ollama",
-    "anthropic",
+    "anthropic<1",
     "faiss-cpu",
     "fastapi",
     "uvicorn[standard]",
-    "mcp>=1.0",
+    "mcp>=1.28.1,<2",
 ]
 
 [tool.setuptools.packages.find]
@@ -55,7 +55,7 @@ Repository = "https://github.com/IBM/fms_dgt"
 
 [project.optional-dependencies]
 # Feature specific dependencies
-vllm = ["vllm", "more_itertools"]
+vllm = ["vllm>=0.24", "more_itertools"]
 telemetry = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
 search = ["elasticsearch>=8.0", "ddgs>=9.0", "trafilatura>=1.8.0"]
 
