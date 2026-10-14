@@ -21,7 +21,7 @@ export default function Page() {
     RunInformationCard | undefined
   >();
   const [loading, setLoading] = useState<boolean>(true);
-  const [lastFetched, setLastFetched] = useState<number>(Date.now());
+  const [lastFetched, setLastFetched] = useState<number>(() => Date.now());
 
   // Stable ref so fetchRuns can read current selectedRun without being a dep.
   const selectedRunRef = useRef<RunInformationCard | undefined>(undefined);

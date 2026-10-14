@@ -72,13 +72,10 @@ export default function DataPointsTable({
                         {headers.map((header) => {
                           const { key, ...headerProps } = getHeaderProps({
                             header,
+                            id: header.key,
                           });
                           return (
-                            <TableHeader
-                              id={header.key}
-                              key={header.key}
-                              {...headerProps}
-                            >
+                            <TableHeader key={header.key} {...headerProps}>
                               {header.header}
                             </TableHeader>
                           );
